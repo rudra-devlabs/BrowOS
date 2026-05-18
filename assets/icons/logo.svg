@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Single arrow pointing up, with flat base at center -->
+    <polygon id="arrow" points="256,80 310,170 280,170 280,256 232,256 232,170 202,170"/>
+  </defs>
+  <g fill="#ffffff">
+    <!-- Up arrow -->
+    <use href="#arrow"/>
+    <!-- Down-right arrow (rotated 120 degrees around center) -->
+    <use href="#arrow" transform="rotate(120, 256, 256)"/>
+    <!-- Down-left arrow (rotated 240 degrees around center) -->
+    <use href="#arrow" transform="rotate(240, 256, 256)"/>
+  </g>
+</svg>

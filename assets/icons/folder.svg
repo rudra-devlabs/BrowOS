@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="folderTop" x1="0" y1="14" x2="0" y2="30">
+      <stop offset="0" stop-color="#8ad8ff"/>
+      <stop offset="1" stop-color="#4fc3f7"/>
+    </linearGradient>
+    <linearGradient id="folderBody" x1="0" y1="26" x2="0" y2="60">
+      <stop offset="0" stop-color="#0a84ff"/>
+      <stop offset="1" stop-color="#0057d6"/>
+    </linearGradient>
+    <filter id="folderShadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Back plate -->
+  <path filter="url(#folderShadow)" d="M10 16h16l5 6h23c5 0 8 3 8 8v22c0 6-3 10-10 10H12C5 62 2 58 2 52V24c0-5 3-8 8-8Z" fill="url(#folderTop)"/>
+
+  <!-- Front body -->
+  <path d="M4 26h56v26c0 6-3 10-10 10H14C7 62 4 58 4 52V26Z" fill="url(#folderBody)"/>
+
+  <!-- Lip highlight -->
+  <path d="M4 26h56" stroke="#d6f0ff" stroke-width="2" opacity="0.55"/>
+
+  <!-- Tab -->
+  <path d="M10 16h16l3.2 4H10c-3 0-6 2-6 6v-2c0-5 3-8 6-8Z" fill="#a6e4ff" opacity="0.9"/>
+
+  <!-- Inner sheen -->
+  <path d="M8 34c10-6 28-8 48-4v18c0 6-3 10-10 10H14C7 58 4 54 4 48V38c1.3-1.6 2.5-2.8 4-4Z" fill="#ffffff" opacity="0.08"/>
+
+  <!-- Outline -->
+  <path d="M10 16h16l5 6h23c5 0 8 3 8 8v22c0 6-3 10-10 10H14C7 62 4 58 4 52V24c0-5 3-8 6-8Z" stroke="#0b63d1" stroke-width="2" opacity="0.55"/>
+</svg>

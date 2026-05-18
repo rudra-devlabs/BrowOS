@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrowOS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/desktop.css">
+    <link rel="stylesheet" href="css/window.css">
+    <link rel="stylesheet" href="css/apps.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <link rel="stylesheet" href="css/terminal.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+</head>
+<body>
+    <!-- Desktop Environment -->
+    <div id="desktop">
+        <div class="wallpaper" aria-hidden="true">
+            <div class="wallpaper-blob wallpaper-blob--1"></div>
+            <div class="wallpaper-blob wallpaper-blob--2"></div>
+            <div class="wallpaper-blob wallpaper-blob--3"></div>
+            <div class="wallpaper-blob wallpaper-blob--4"></div>
+            <div class="wallpaper-blob wallpaper-blob--5"></div>
+            <div class="wallpaper-noise"></div>
+        </div>
+        <!-- Menu Bar -->
+        <div id="menu-bar">
+            <div class="apple-menu">
+                <img src="assets/icons/logo.svg" alt="Logo">
+            </div>
+            <div class="menu-item">BrowOS</div>
+            <div class="status-bar">
+                <span id="clock"></span>
+            </div>
+        </div>
+
+        <!-- Dock -->
+        <div id="dock">
+            <div class="dock-background"></div>
+            <div class="dock-apps">
+                <div class="dock-app" data-app="filebrow" data-title="FileBrow">
+                    <img src="assets/icons/filebrow.svg" alt="FileBrow">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="safari" data-title="BrowOSer">
+                    <img src="assets/icons/safari.svg" alt="Safari">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="messages" data-title="Messages">
+                    <img src="assets/icons/messages.svg" alt="Messages">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="launchpad" data-title="Apps">
+                    <img src="assets/icons/launchpad.svg" alt="Apps">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="settings" data-title="Settings">
+                    <img src="assets/icons/settings.svg" alt="Settings">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="terminal" data-title="Terminal">
+                    <img src="assets/icons/terminal.svg" alt="Terminal">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="brownote" data-title="Brow Note">
+                    <img src="assets/icons/brownote.svg" alt="Brow Note">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="music" data-title="Brow Music">
+                    <img src="assets/icons/apps/music.svg" alt="Brow Music">
+                    <div class="minimized-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Launchpad Overlay -->
+        <div id="launchpad-overlay" class="launchpad-overlay">
+            <div class="launchpad-panel">
+                <div class="launchpad-search">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="rgba(255,255,255,0.5)"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242.156a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+                    <input type="text" id="launchpad-search-input" placeholder="Search apps...">
+                </div>
+                <div class="launchpad-grid" id="launchpad-grid"></div>
+            </div>
+        </div>
+
+        <!-- Windows Container -->
+        <div id="windows-container"></div>
+    </div>
+
+    <!-- Core System Scripts -->
+    <script src="js/icons.js"></script>
+    <script src="js/apps.js"></script>
+    <script src="js/desktop.js"></script>
+    <script src="js/window.js"></script>
+    <script src="js/filebrow.js"></script>
+    <script src="js/filesystem.js"></script>
+    <script src="js/shell.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+.terminal-shell-container {
+    height: 100% !important;
+    width: 100% !important;
+    background: #000000 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.terminal-shell {
+    height: 100% !important;
+    width: 100% !important;
+    background: #000000 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* Keep xterm text metrics predictable. */
+#xterm-container,
+#xterm-container .xterm {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#xterm-container .xterm {
+    padding: 8px !important;
+    box-sizing: border-box !important;
+    letter-spacing: 0 !important;
+    font-kerning: none !important;
+    font-variant-ligatures: none !important;
+    text-rendering: optimizeSpeed !important;
+}
+
+#xterm-container .xterm-rows,
+#xterm-container .xterm-screen,
+#xterm-container .xterm-helpers textarea,
+#xterm-container .xterm-char-measure-element {
+    letter-spacing: 0 !important;
+    word-spacing: 0 !important;
+    font-family: "Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "SF Mono", "DejaVu Sans Mono", monospace !important;
+    font-kerning: none !important;
+    font-variant-ligatures: none !important;
+    font-feature-settings: "liga" 0, "calt" 0 !important;
+}
+
+#xterm-container .xterm-rows span {
+    letter-spacing: 0 !important;
+    word-spacing: 0 !important;
+    font-kerning: none !important;
+    font-variant-ligatures: none !important;
+    font-feature-settings: "liga" 0, "calt" 0 !important;
+}
+
+/* Terminal window chrome — dark gray frame, no outlines */
+.window.terminal-window {
+    background: #2a2a2c !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+}
+
+.window.terminal-window .window-header {
+    background: #2a2a2c !important;
+    border: none !important;
+    border-bottom: none !important;
+}
+
+.window.terminal-window .window-title {
+    color: #d1d1d6 !important;
+}
+
+.window.terminal-window .window-content {
+    padding: 0 !important;
+    background: #1a1a1c !important;
+    color: #f5f5f7 !important;
+    border: none !important;
+}
+
+.window.terminal-window .terminal-shell-container,
+.window.terminal-window .terminal-shell {
+    background: #1a1a1c !important;
+}

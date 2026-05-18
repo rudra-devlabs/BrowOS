@@ -1,0 +1,321 @@
+/* Window management styles */
+.window {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    pointer-events: all;
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    min-height: 200px;
+    resize: both;
+}
+
+.window-header {
+    height: 32px;
+    background: #f6f6f6;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: move;
+    user-select: none;
+}
+
+.window-controls {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+    gap: 8px;
+}
+
+.window-control {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    background: #ff5f57;
+}
+
+.window-control.minimize {
+    background: #febc2e;
+}
+
+.window-control.maximize {
+    background: #28c840;
+}
+
+.window-control-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    pointer-events: none;
+}
+
+.window-control:hover .window-control-icon,
+.window-control:focus-visible .window-control-icon {
+    opacity: 1;
+}
+
+.window-control:hover,
+.window-control:focus-visible {
+    background: transparent;
+}
+
+.window-title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #333;
+    cursor: default;
+    min-width: 0;
+}
+
+.window-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.window-app-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.window-content {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+}
+
+.window-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: se-resize;
+    background: transparent;
+}
+
+/* Window states */
+.window-minimized {
+    display: none !important;
+}
+
+.window-transitioning {
+    transition: top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+                left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+                width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+                height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.window-maximized {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    z-index: 20000 !important;
+    resize: none;
+}
+
+/* Window animations */
+.window-opening {
+    animation: windowFadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+}
+
+.window-minimizing {
+    animation: genieMinimize 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    pointer-events: none !important;
+    transform-origin: top center !important;
+}
+
+.window-restoring {
+    animation: genieRestore 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    transform-origin: top center !important;
+}
+
+@keyframes genieMinimize {
+    0% {
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+        transform: translate(0px, 0px) scaleY(1) scaleX(1);
+        opacity: 1;
+    }
+    100% {
+        clip-path: polygon(48% 0%, 52% 0%, 50% 100%, 50% 100%);
+        transform: translate(var(--dash-x, 0px), var(--dash-y, 0px)) scaleY(0.01) scaleX(0.01);
+        opacity: 0;
+    }
+}
+
+@keyframes genieRestore {
+    0% {
+        clip-path: polygon(48% 0%, 52% 0%, 50% 100%, 50% 100%);
+        transform: translate(var(--dash-x, 0px), var(--dash-y, 0px)) scaleY(0.01) scaleX(0.01);
+        opacity: 0;
+    }
+    100% {
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+        transform: translate(0px, 0px) scaleY(1) scaleX(1);
+        opacity: 1;
+    }
+}
+
+@keyframes windowFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.window-closing {
+    animation: windowFadeOut 0.15s ease-in;
+}
+
+@keyframes windowFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+}
+
+/* Custom macOS Dialog Styles */
+.brow-dialog-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: dialogFadeIn 0.2s ease-out;
+}
+
+.brow-dialog {
+    background: rgba(40, 40, 40, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    width: 280px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    animation: dialogPopIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.brow-dialog-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.brow-dialog-message {
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 16px;
+    color: #d1d1d6;
+    line-height: 1.4;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.brow-dialog-input {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background: #1e1e1e;
+    color: #fff;
+    font-size: 12px;
+    margin-bottom: 16px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.brow-dialog-input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+}
+
+.brow-dialog-buttons {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+}
+
+.brow-dialog-btn {
+    flex: 1;
+    padding: 6px 0;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: filter 0.1s;
+}
+
+.brow-dialog-btn:hover {
+    filter: brightness(1.1);
+}
+
+.brow-dialog-btn:active {
+    filter: brightness(0.9);
+}
+
+.brow-dialog-btn.primary {
+    background: #007aff;
+    color: white;
+}
+
+.brow-dialog-btn.secondary {
+    background: #4a4a4d;
+    color: white;
+}
+
+.brow-dialog-btn.danger {
+    background: #ff3b30;
+    color: white;
+}
+
+@keyframes dialogFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes dialogPopIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}

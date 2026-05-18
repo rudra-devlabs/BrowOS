@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="fb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="fb-folder-back" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="fb-folder-front" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="fb-folder-tab" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#fcd34d"/>
+    </linearGradient>
+    <linearGradient id="fb-file1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="fb-file2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="fb-file3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="100%" stop-color="#4ade80"/>
+    </linearGradient>
+    <linearGradient id="fb-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="fb-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+    <clipPath id="fb-round">
+      <rect x="4" y="4" width="56" height="56" rx="14"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#fb-round)">
+    <!-- Background -->
+    <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#fb-bg)"/>
+    <rect x="4" y="4" width="56" height="28" rx="14" fill="url(#fb-highlight)"/>
+
+    <!-- Folder back -->
+    <path d="M14 26 L14 44 Q14 46 16 46 L48 46 Q50 46 50 44 L50 26 Q50 24 48 24 L34 24 L30 20 L16 20 Q14 20 14 22 Z"
+          fill="url(#fb-folder-back)" filter="url(#fb-shadow)"/>
+
+    <!-- Folder tab -->
+    <path d="M16 20 L16 17 Q16 16 17 16 L26 16 Q27 16 27 17 L27 20 Z"
+          fill="url(#fb-folder-tab)"/>
+
+    <!-- Files inside folder -->
+    <!-- File 1 (white) -->
+    <rect x="18" y="26" width="8" height="12" rx="1" fill="url(#fb-file1)"/>
+    <line x1="20" y1="29" x2="24" y2="29" stroke="#94a3b8" stroke-width="0.8" stroke-linecap="round"/>
+    <line x1="20" y1="32" x2="24" y2="32" stroke="#94a3b8" stroke-width="0.8" stroke-linecap="round"/>
+    <line x1="20" y1="35" x2="22" y2="35" stroke="#94a3b8" stroke-width="0.8" stroke-linecap="round"/>
+
+    <!-- File 2 (blue) -->
+    <rect x="28" y="24" width="8" height="14" rx="1" fill="url(#fb-file2)"/>
+    <line x1="30" y1="27" x2="34" y2="27" stroke="#3b82f6" stroke-width="0.8" stroke-linecap="round"/>
+    <line x1="30" y1="30" x2="34" y2="30" stroke="#3b82f6" stroke-width="0.8" stroke-linecap="round"/>
+    <line x1="30" y1="33" x2="33" y2="33" stroke="#3b82f6" stroke-width="0.8" stroke-linecap="round"/>
+    <line x1="30" y1="36" x2="32" y2="36" stroke="#3b82f6" stroke-width="0.8" stroke-linecap="round"/>
+
+    <!-- File 3 (green) -->
+    <rect x="38" y="28" width="8" height="10" rx="1" fill="url(#fb-file3)"/>
+    <line x1="40" y1="31" x2="44" y2="31" stroke="#22c55e" stroke-width="0.8" stroke-linecap="round"/>
+    <line x1="40" y1="34" x2="43" y2="34" stroke="#22c55e" stroke-width="0.8" stroke-linecap="round"/>
+
+    <!-- Folder front -->
+    <path d="M14 30 L14 44 Q14 46 16 46 L48 46 Q50 46 50 44 L50 30 Q50 28 48 28 L34 28 L32 26 L30 28 L16 28 Q14 28 14 30 Z"
+          fill="url(#fb-folder-front)" filter="url(#fb-shadow)"/>
+  </g>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="w-bg" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffdf6"/>
+      <stop offset="1" stop-color="#fff6d9"/>
+    </linearGradient>
+    <radialGradient id="w-sun" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(26 26) rotate(90) scale(13)">
+      <stop offset="0" stop-color="#ffe98a"/>
+      <stop offset="1" stop-color="#ffcd29"/>
+    </radialGradient>
+    <filter id="w-soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#w-bg)"/>
+
+  <g opacity="0.45">
+    <path d="M26 10v5" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M26 37v5" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M10 26h5" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M37 26h5" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M15 15l3.5 3.5" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M33.5 33.5L37 37" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M37 15l-3.5 3.5" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M18.5 33.5L15 37" stroke="#f6c32f" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="26" cy="26" r="11" fill="url(#w-sun)" filter="url(#w-soft)"/>
+  <circle cx="22" cy="22" r="4" fill="#fff7cf" opacity="0.7"/>
+
+  <g filter="url(#w-soft)">
+    <path d="M43 45H22.5a9.5 9.5 0 1 1 3.3-18.4A10.5 10.5 0 0 1 45 31.3 7.7 7.7 0 0 1 43 45Z" fill="#ffffff"/>
+    <path d="M40.5 41H23.5a6.8 6.8 0 1 1 2.2-13.2 8.1 8.1 0 0 1 14.8 3.6 5.6 5.6 0 0 1 0 9.6Z" fill="#f8f8fa"/>
+  </g>
+
+  <path d="M42 44H22.7a9 9 0 1 1 2.8-17.6A10.2 10.2 0 0 1 44 31a7.3 7.3 0 0 1-2 13Z" stroke="#ececf0" stroke-width="1.5"/>
+</svg>
