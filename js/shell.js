@@ -8,15 +8,22 @@ class BrowShell {
         this.wasmReady = false;
         this.inputBuffer = [];
         this.isProcessing = false;
-        this.commandHistory = [];
+        this.commandHistory = JSON.parse(localStorage.getItem('browos_terminal_history') || '[]');
         this.historyIndex = -1;
         this.currentInput = '';
         this.cursorPos = 0;
         this.lastPrompt = '';
+        this.fitAddon = null;
+        this._fitFrame = null;
+        this._terminalElement = null;
         
         this.setupFsBridge();
         this.setupHttpBridge();
         this.initWasm();
+    }
+
+    saveHistory() {
+        localStorage.setItem('browos_terminal_history', JSON.stringify(this.commandHistory));
     }
 
     setupFsBridge() {
@@ -45,6 +52,15 @@ class BrowShell {
             }
             const success = await window.filesystem.createDirectory(path);
             if (!success) throw new Error('Failed to create directory');
+            return true;
+        };
+
+        window.browos_fs_mkdir_p = async (path) => {
+            if (!window.filesystem || typeof window.filesystem.ensureDirectory !== 'function') {
+                throw new Error('Filesystem not available');
+            }
+            const success = await window.filesystem.ensureDirectory(path);
+            if (!success) throw new Error('Failed to create directory structure');
             return true;
         };
 
@@ -91,6 +107,15 @@ class BrowShell {
                 throw new Error('Filesystem not available');
             }
             const result = await window.filesystem.move(src, dest);
+            if (!result.ok) throw new Error(result.error);
+            return true;
+        };
+
+        window.browos_fs_copy = async (src, dest) => {
+            if (!window.filesystem || typeof window.filesystem.copy !== 'function') {
+                throw new Error('Filesystem not available');
+            }
+            const result = await window.filesystem.copy(src, dest);
             if (!result.ok) throw new Error(result.error);
             return true;
         };
@@ -156,10 +181,10 @@ class BrowShell {
         
         const contentArea = container.closest('.window-content');
         if (contentArea) {
-            contentArea.style.cssText = 'padding:0!important;margin:0!important;overflow:hidden!important;background:#000!important;display:flex!important;flex-direction:column!important;';
+            contentArea.style.cssText = 'padding:0!important;margin:0!important;overflow:hidden!important;background:#000!important;display:flex!important;flex-direction:column!important;min-height:0!important;';
         }
-        container.style.cssText = 'height:100%!important;width:100%!important;background:#000!important;padding:0!important;margin:0!important;position:relative!important;overflow:hidden!important;';
-        container.innerHTML = '<div id="xterm-container" style="width:100%;height:100%;position:absolute;top:0;left:0;"></div>';
+        container.style.cssText = 'height:100%!important;width:100%!important;flex:1 1 auto!important;min-height:0!important;background:#000!important;padding:0!important;margin:0!important;position:relative!important;overflow:hidden!important;';
+        container.innerHTML = '<div id="xterm-container" style="position:absolute;inset:0;width:100%;height:100%;"></div>';
 
         await this.waitForStableLayout(windowElement);
         
@@ -180,7 +205,7 @@ class BrowShell {
                 white: '#ffffff'
             },
             fontSize: 14,
-            fontFamily: '"Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "SF Mono", "DejaVu Sans Mono", monospace',
+            fontFamily: '"Ubuntu Mono", "Cascadia Mono", Consolas, "Lucida Console", "SF Mono", "DejaVu Sans Mono", monospace',
             fontWeight: '400',
             fontWeightBold: '700',
             letterSpacing: 0,
@@ -190,17 +215,28 @@ class BrowShell {
             allowProposedApi: true,
             rendererType: 'dom'
         });
+
+        if (window.FitAddon && window.FitAddon.FitAddon) {
+            this.fitAddon = new window.FitAddon.FitAddon();
+            this.term.loadAddon(this.fitAddon);
+        }
         
         // Wait for font to load before opening terminal
         await document.fonts.ready;
         const terminalElement = container.querySelector('#xterm-container');
+        this._terminalElement = terminalElement;
         this.term.open(terminalElement);
         
-        // Force resize to ensure correct character measurement
-        setTimeout(() => {
-            this.term.resize(this.term.cols, this.term.rows);
-            this.term.refresh(0, this.term.rows - 1);
-        }, 50);
+        this.scheduleFit();
+        setTimeout(() => this.scheduleFit(), 50);
+
+        // Auto-resize terminal when container size changes (maximize, drag, etc.)
+        const resizeObserver = new ResizeObserver(() => this.scheduleFit());
+        resizeObserver.observe(terminalElement);
+        resizeObserver.observe(container);
+        if (contentArea) resizeObserver.observe(contentArea);
+        if (windowElement) resizeObserver.observe(windowElement);
+        this._resizeObserver = resizeObserver;
 
         this.term.writeln('\x1b[32mWelcome to BrowShell Terminal v4.0 (Wasm Native)\x1b[0m');
         this.term.writeln('Type \x1b[1mhelp\x1b[0m for available commands.\n');
@@ -218,6 +254,7 @@ class BrowShell {
                 if (line.trim()) {
                     this.commandHistory.push(line);
                     this.historyIndex = -1;
+                    this.saveHistory();
                 }
                 this.inputBuffer = [];
                 this.currentInput = '';
@@ -235,7 +272,10 @@ class BrowShell {
                             si++;
                         }, 80);
                     }
-                    const output = await this.wasmShell.exec(line);
+                    
+                    const cwd = this.wasmShell ? this.wasmShell.get_cwd() : '/';
+                    const output = await preprocessAndExecute(line, cwd, this.wasmShell);
+
                     if (spinnerInterval) {
                         clearInterval(spinnerInterval);
                         const spinnerLen = 'Downloading... ⠏'.length;
@@ -318,10 +358,8 @@ class BrowShell {
                     this.inputBuffer.splice(this.cursorPos, 1);
                     this.redrawInputLine();
                 }
-            } else if (data >= ' ' && data <= '~') {
-                this.inputBuffer.splice(this.cursorPos, 0, data);
-                this.cursorPos++;
-                this.redrawInputLine();
+            } else if (this.isPrintableInput(data)) {
+                this.insertPrintableInput(data);
             }
         });
         
@@ -360,6 +398,7 @@ class BrowShell {
                                         if (line.trim()) {
                                             this.commandHistory.push(line);
                                             this.historyIndex = -1;
+                                            this.saveHistory();
                                         }
                                         this.inputBuffer = [];
                                         this.cursorPos = 0;
@@ -406,6 +445,7 @@ class BrowShell {
                             if (line.trim()) {
                                 this.commandHistory.push(line);
                                 this.historyIndex = -1;
+                                this.saveHistory();
                             }
                             this.inputBuffer = [];
                             this.cursorPos = 0;
@@ -417,6 +457,50 @@ class BrowShell {
                 }
             }
         });
+    }
+
+    scheduleFit() {
+        if (this._fitFrame) {
+            cancelAnimationFrame(this._fitFrame);
+        }
+
+        this._fitFrame = requestAnimationFrame(() => {
+            this._fitFrame = null;
+            this.fitTerminal();
+        });
+    }
+
+    fitTerminal() {
+        const terminalElement = this._terminalElement;
+        if (!this.term || !this.term.element || !terminalElement) return;
+
+        if (this.fitAddon) {
+            try {
+                this.fitAddon.fit();
+                this.term.refresh(0, this.term.rows - 1);
+                return;
+            } catch (err) {
+                console.warn('xterm fit addon failed, using manual fit:', err);
+            }
+        }
+
+        const dims = this.term._core?._renderService?.dimensions;
+        const cellWidth = dims?.css?.cell?.width || dims?.actualCellWidth;
+        const cellHeight = dims?.css?.cell?.height || dims?.actualCellHeight;
+        if (!cellWidth || !cellHeight) return;
+
+        const terminalStyle = window.getComputedStyle(this.term.element);
+        const paddingX = parseFloat(terminalStyle.paddingLeft) + parseFloat(terminalStyle.paddingRight);
+        const paddingY = parseFloat(terminalStyle.paddingTop) + parseFloat(terminalStyle.paddingBottom);
+        const availableWidth = Math.max(0, terminalElement.clientWidth - paddingX);
+        const availableHeight = Math.max(0, terminalElement.clientHeight - paddingY);
+        const newCols = Math.max(2, Math.floor(availableWidth / cellWidth));
+        const newRows = Math.max(1, Math.floor(availableHeight / cellHeight));
+
+        if (newCols !== this.term.cols || newRows !== this.term.rows) {
+            this.term.resize(newCols, newRows);
+            this.term.refresh(0, this.term.rows - 1);
+        }
     }
 
     waitForStableLayout(windowElement) {
@@ -448,6 +532,25 @@ class BrowShell {
         this.redrawInputLine();
     }
 
+    isPrintableInput(data) {
+        return data.length > 0 && [...data].every((ch) => ch >= ' ' && ch <= '~');
+    }
+
+    insertPrintableInput(data) {
+        const chars = [...data];
+        const isAppending = this.cursorPos === this.inputBuffer.length;
+
+        this.inputBuffer.splice(this.cursorPos, 0, ...chars);
+        this.cursorPos += chars.length;
+
+        if (isAppending) {
+            this.term.write(data);
+            return;
+        }
+
+        this.redrawInputLine();
+    }
+
     redrawInputLine() {
         const line = this.inputBuffer.join('');
         const cols = this.term.cols || 80;
@@ -460,27 +563,315 @@ class BrowShell {
         const targetRow = Math.floor((promptLen + this.cursorPos) / cols);
         const targetCol = (promptLen + this.cursorPos) % cols;
 
-        this.term.write('\r');
+        let redraw = '\x1b[?25l\r';
         for (let r = 0; r < cursorRow; r++) {
-            this.term.write('\x1b[A');
+            redraw += '\x1b[A';
         }
-        this.term.write('\x1b[J');
+        redraw += '\x1b[J';
 
-        this.term.write(this.lastPrompt);
-        this.term.write(line);
+        redraw += this.lastPrompt;
+        redraw += line;
 
         for (let r = 0; r < endRow - targetRow; r++) {
-            this.term.write('\x1b[A');
+            redraw += '\x1b[A';
         }
-        this.term.write('\r');
+        redraw += '\r';
         for (let c = 0; c < targetCol; c++) {
-            this.term.write('\x1b[C');
+            redraw += '\x1b[C';
         }
+        redraw += '\x1b[?25h';
+        this.term.write(redraw);
     }
 
     _stripAnsi(str) {
         return str.replace(/\x1b\[[0-9;]*m/g, '');
     }
+}
+
+function parseArgs(input) {
+    let args = [];
+    let currentArg = '';
+    let inQuotes = false;
+    let quoteChar = ' ';
+
+    for (let i = 0; i < input.length; i++) {
+        let c = input[i];
+        if (inQuotes) {
+            if (c === quoteChar) {
+                inQuotes = false;
+            } else {
+                currentArg += c;
+            }
+        } else {
+            if (c === '"' || c === "'") {
+                inQuotes = true;
+                quoteChar = c;
+            } else if (/\s/.test(c)) {
+                if (currentArg.length > 0) {
+                    args.push(currentArg);
+                    currentArg = '';
+                }
+            } else {
+                currentArg += c;
+            }
+        }
+    }
+    if (currentArg.length > 0) {
+        args.push(currentArg);
+    }
+    return args;
+}
+
+async function execGetnet(line, cwd) {
+    const parts = parseArgs(line.trim());
+    const args = parts.slice(1);
+    
+    if (args.length === 0) {
+        return "\x1b[31mgetnet: missing URL operand\x1b[0m\n\x1b[1mUsage:\x1b[0m getnet <url> [-o|--out <file>] [-v|--verbose]";
+    }
+
+    let url = null;
+    let outputFile = null;
+    let verbose = false;
+
+    let i = 0;
+    while (i < args.length) {
+        switch (args[i]) {
+            case "-o":
+            case "--out":
+                if (i + 1 >= args.length) {
+                    return `\x1b[31mgetnet: ${args[i]} requires a value\x1b[0m`;
+                }
+                outputFile = args[i + 1];
+                i += 2;
+                break;
+            case "-v":
+            case "--verbose":
+                verbose = true;
+                i += 1;
+                break;
+            default:
+                if (!args[i].startsWith('-')) {
+                    if (url === null) {
+                        url = args[i];
+                    } else {
+                        return `\x1b[31mgetnet: unexpected argument '${args[i]}'\x1b[0m`;
+                    }
+                    i += 1;
+                } else {
+                    return `\x1b[31mgetnet: unknown flag '${args[i]}'\x1b[0m`;
+                }
+                break;
+        }
+    }
+
+    if (url === null) {
+        return "\x1b[31mgetnet: missing URL operand\x1b[0m";
+    }
+
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        return "\x1b[31mgetnet: URL must start with http:// or https://\x1b[0m";
+    }
+
+    let filename = outputFile;
+    if (!filename) {
+        let pathPart = url.includes('?') ? url.split('?')[0] : url;
+        let lastSlash = pathPart.lastIndexOf('/');
+        if (lastSlash !== -1) {
+            let afterSlash = pathPart.substring(lastSlash + 1);
+            if (afterSlash.length > 0) {
+                filename = afterSlash;
+            }
+        }
+        if (!filename) {
+            filename = "download";
+        }
+    }
+
+    const filePath = cwd === "/" ? `/${filename}` : `${cwd}/${filename}`;
+    let outputLines = [];
+
+    if (verbose) {
+        outputLines.push(`\x1b[36mFetching ${url}\x1b[0m`);
+    }
+
+    let blob = null;
+    let status = 0;
+    let contentType = "";
+
+    const doFetch = async (fetchUrl) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        try {
+            const response = await fetch(fetchUrl, {
+                signal: controller.signal,
+                headers: { 'Accept': '*/*' }
+            });
+            clearTimeout(timeout);
+            if (response.ok) {
+                status = response.status;
+                contentType = response.headers.get('content-type') || 'application/octet-stream';
+                blob = await response.blob();
+                return true;
+            }
+        } catch (e) {
+            clearTimeout(timeout);
+        }
+        return false;
+    };
+
+    let success = await doFetch(url);
+    if (!success && verbose) {
+        outputLines.push("\x1b[33mDirect fetch failed, retrying via proxy...\x1b[0m");
+    }
+    if (!success) {
+        const proxyUrl = `/__proxy__/${encodeURIComponent(url)}`;
+        success = await doFetch(proxyUrl);
+    }
+
+    if (!success || !blob) {
+        return `\x1b[31mgetnet: Failed to download from ${url}\x1b[0m`;
+    }
+
+    if (verbose) {
+        outputLines.push(`\x1b[36mHTTP ${status}\x1b[0m ${contentType}`);
+        outputLines.push(`\x1b[36mSize:\x1b[0m ${blob.size} bytes`);
+    }
+
+    try {
+        if (!window.filesystem || typeof window.filesystem.createFileFromBlob !== 'function') {
+            return "\x1b[31mgetnet: Filesystem not available\x1b[0m";
+        }
+        const successWrite = await window.filesystem.createFileFromBlob(filePath, blob);
+        if (successWrite) {
+            if (verbose) {
+                outputLines.push(`\x1b[32mSaved to ${filename}\x1b[0m (${blob.size} bytes)`);
+            } else {
+                outputLines.push(`\x1b[32mSaved ${filename}\x1b[0m (${blob.size} bytes)`);
+            }
+        } else {
+            return `\x1b[31mgetnet: failed to save file '${filename}'\x1b[0m`;
+        }
+    } catch (err) {
+        return `\x1b[31mgetnet: failed to save file '${filename}': ${err.message}\x1b[0m`;
+    }
+
+    return outputLines.join("\n");
+}
+
+async function preprocessAndExecute(line, cwd, wasmShell) {
+    const trimmed = line.trim();
+    if (!trimmed) return "";
+
+    let inQuotes = false;
+    let quoteChar = ' ';
+    
+    let redirectOp = null;
+    let redirectFile = '';
+    let pipeOp = null;
+    let pipeCommand = '';
+    
+    let commandPart = '';
+    
+    for (let i = 0; i < trimmed.length; i++) {
+        let c = trimmed[i];
+        if (inQuotes) {
+            if (c === quoteChar) {
+                inQuotes = false;
+            }
+            commandPart += c;
+        } else {
+            if (c === '"' || c === "'") {
+                inQuotes = true;
+                quoteChar = c;
+                commandPart += c;
+            } else if (c === '|' && !pipeOp && !redirectOp) {
+                pipeOp = '|';
+                pipeCommand = trimmed.substring(i + 1).trim();
+                break;
+            } else if (c === '>' && !pipeOp && !redirectOp) {
+                if (trimmed[i + 1] === '>') {
+                    redirectOp = '>>';
+                    redirectFile = trimmed.substring(i + 2).trim();
+                } else {
+                    redirectOp = '>';
+                    redirectFile = trimmed.substring(i + 1).trim();
+                }
+                break;
+            } else {
+                commandPart += c;
+            }
+        }
+    }
+
+    commandPart = commandPart.trim();
+
+    const resolvePath = (file) => {
+        let f = file.replace(/^["']|["']$/g, '').trim();
+        if (f.startsWith('/')) return f;
+        return cwd === "/" ? `/${f}` : `${cwd}/${f}`;
+    };
+
+    const writeRedirect = async (filePath, content, append) => {
+        if (!window.filesystem || typeof window.filesystem.createFile !== 'function') {
+            return "\x1b[31mFailed to redirect: Filesystem not available\x1b[0m";
+        }
+        let finalContent = content;
+        if (append) {
+            const existing = await window.filesystem.readFile(filePath);
+            if (existing !== null) {
+                finalContent = existing + "\n" + content;
+            }
+        }
+        const success = await window.filesystem.createFile(filePath, finalContent);
+        if (success) {
+            return "";
+        } else {
+            return `\x1b[31mFailed to write to redirection target: ${filePath}\x1b[0m`;
+        }
+    };
+
+    const runCoreCommand = async (cmd) => {
+        if (cmd.startsWith('getnet ')) {
+            return await execGetnet(cmd, cwd);
+        } else if (wasmShell) {
+            return await wasmShell.exec(cmd);
+        }
+        return `\x1b[31mCommand not found: ${cmd}\x1b[0m`;
+    };
+
+    if (pipeOp) {
+        let stdout = await runCoreCommand(commandPart);
+        let cleanStdout = stdout.replace(/\x1b\[[0-9;]*m/g, '');
+        
+        const pipeParts = parseArgs(pipeCommand);
+        if (pipeParts[0] === 'grep') {
+            if (pipeParts.length < 2) {
+                return "\x1b[31mgrep: missing pattern\x1b[0m";
+            }
+            const pattern = pipeParts[1];
+            const lines = cleanStdout.split('\n');
+            const matches = lines.filter(line => line.includes(pattern));
+            return matches.join('\n');
+        } else {
+            return `\x1b[31mUnsupported piped command: ${pipeParts[0]}. Only 'grep' is supported in pipes.\x1b[0m`;
+        }
+    }
+
+    if (redirectOp) {
+        if (!redirectFile) {
+            return "\x1b[31mShell: missing redirection target\x1b[0m";
+        }
+        const filePath = resolvePath(redirectFile);
+        let stdout = await runCoreCommand(commandPart);
+        let cleanStdout = stdout.replace(/\x1b\[[0-9;]*m/g, '');
+        
+        const err = await writeRedirect(filePath, cleanStdout, redirectOp === '>>');
+        if (err) return err;
+        return "";
+    }
+
+    return await runCoreCommand(commandPart);
 }
 
 window.BrowShell = BrowShell;

@@ -69,6 +69,10 @@ class WindowManager {
             this.initMusicEvents(windowElement);
         } else if (appName === 'photos') {
             this.initPhotosEvents(windowElement);
+        } else if (appName === 'starship') {
+            if (window.initStarshipGame) window.initStarshipGame(windowElement);
+        } else if (appName === 'browracer') {
+            if (window.initBrowRacerGame) window.initBrowRacerGame(windowElement);
         }
 
         // Add window to tracking
@@ -2227,6 +2231,45 @@ class WindowManager {
                         <input type="file" id="photos-file-input" accept="image/*,video/*" multiple style="display:none;">
                     </div>
                 `;
+            case 'starship':
+                return `
+                    <div class="starship-window" style="background: #00001a; display: flex; align-items: center; justify-content: center; height: 100%; position: relative; overflow: hidden; font-family: monospace;">
+                        <canvas id="starship-canvas" width="600" height="700" style="background: transparent; max-height: 100%; max-width: 100%;"></canvas>
+                        
+                        <div id="starship-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,26,0.85); color: white; z-index: 10;">
+                            <h1 style="color: #ff3366; text-shadow: 2px 2px 0px #000; margin-bottom: 20px; font-size: 40px; letter-spacing: 2px; text-align: center;">VOID INVADERS</h1>
+                            <p id="starship-score-msg" style="display: none; font-size: 20px; margin-bottom: 10px; color: #4A90E2;">Score: 0</p>
+                            <p id="starship-credits-msg" style="font-size: 18px; margin-bottom: 30px; color: #F6E05E;">Credits: 0</p>
+                            <button id="starship-start-btn" style="background: transparent; border: 2px solid #ff3366; color: #ff3366; font-family: monospace; font-size: 20px; padding: 10px 20px; margin-bottom: 15px; cursor: pointer; transition: all 0.2s;">START GAME</button>
+                            <button id="starship-station-btn" style="background: transparent; border: 2px solid #4A90E2; color: #4A90E2; font-family: monospace; font-size: 16px; padding: 8px 16px; cursor: pointer; transition: all 0.2s;">SPACE STATION (SHOP)</button>
+                        </div>
+
+                        <div id="starship-station" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; flex-direction: column; align-items: center; justify-content: flex-start; background: rgba(0,0,26,0.95); color: white; z-index: 20; padding: 40px;">
+                            <h2 style="color: #4A90E2; font-size: 30px; margin-bottom: 10px; letter-spacing: 2px;">SPACE STATION</h2>
+                            <p id="station-credits-display" style="color: #F6E05E; font-size: 20px; margin-bottom: 30px;">Credits: 0</p>
+                            <div id="station-ships-list" style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 450px; overflow-y: auto; max-height: 400px; padding-right: 10px;">
+                                <!-- Populated by JS -->
+                            </div>
+                            <button id="station-back-btn" style="margin-top: 30px; background: transparent; border: 2px solid #A0AEC0; color: #A0AEC0; font-family: monospace; font-size: 18px; padding: 8px 16px; cursor: pointer;">RETURN TO MENU</button>
+                        </div>
+                    </div>
+                `;
+            case 'browracer':
+                return `
+                    <div class="racer-window" style="background: #080810; display: flex; align-items: center; justify-content: center; height: 100%; position: relative; overflow: hidden; font-family: monospace;">
+                        <canvas id="racer-canvas" width="600" height="400" style="background: transparent; max-height: 100%; max-width: 100%; width: 100%; height: 100%; object-fit: contain;"></canvas>
+                        
+                        <div id="racer-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(8, 8, 16, 0.85); color: white; z-index: 10; padding: 20px; text-align: center;">
+                            <h1 id="racer-title-text" style="color: #ff3366; text-shadow: 0 0 10px rgba(255, 51, 102, 0.6); margin-bottom: 20px; font-size: 38px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase;">SONOMA HIGHWAY</h1>
+                            <p id="racer-score-msg" style="display: none; font-size: 14px; line-height: 1.6; margin-bottom: 25px; color: #a1a1a6; max-width: 400px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);"></p>
+                            <button id="racer-start-btn" style="background: linear-gradient(135deg, #ff3366 0%, #8b5cf6 100%); border: none; color: white; font-family: monospace; font-size: 18px; font-weight: bold; padding: 12px 30px; border-radius: 24px; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4); text-transform: uppercase; letter-spacing: 1px;">START GAME</button>
+                            <div style="margin-top: 30px; font-size: 11px; color: rgba(255, 255, 255, 0.4); line-height: 1.5; background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                                STEER: A/D or Arrow Keys | ACCEL: W or Up | BRAKE: S or Down<br>
+                                Avoid traffic and hit checkpoints to extend your time!
+                            </div>
+                        </div>
+                    </div>
+                `;
             default:
                 return `
                     <div style="padding: 20px;">
@@ -2248,6 +2291,14 @@ class WindowManager {
         let dragOffset = { x: 0, y: 0 };
         let originalPosition = { x: 0, y: 0 };
         let originalSize = { width: 0, height: 0 };
+        
+        // Ensure the visual snap-preview landing guide exists in DOM
+        let snapPreview = document.getElementById('snap-preview');
+        if (!snapPreview) {
+            snapPreview = document.createElement('div');
+            snapPreview.id = 'snap-preview';
+            document.body.appendChild(snapPreview);
+        }
 
         // Window dragging
         header.addEventListener('mousedown', (e) => {
@@ -2256,9 +2307,37 @@ class WindowManager {
             isDragging = true;
             this.bringToFront(windowElement);
             
-            const rect = windowElement.getBoundingClientRect();
-            dragOffset.x = e.clientX - rect.left;
-            dragOffset.y = e.clientY - rect.top;
+            // Interactive peeling: if snapped or maximized, drag immediately peels it off
+            if (windowObj.isMaximized || windowElement.classList.contains('snapped')) {
+                if (windowObj.isMaximized) {
+                    this.maximizeWindow(windowElement, windowObj);
+                }
+                
+                windowElement.classList.remove('snapped', 'window-snapped-left', 'window-snapped-right');
+                windowElement.style.removeProperty('position');
+                windowElement.style.removeProperty('top');
+                windowElement.style.removeProperty('left');
+                windowElement.style.removeProperty('width');
+                windowElement.style.removeProperty('height');
+                windowElement.style.removeProperty('border-radius');
+                windowElement.style.removeProperty('z-index');
+
+                // Center cursor horizontally on the peeled floating header
+                const floatWidth = windowObj.savedPosition ? windowObj.savedPosition.width : 600;
+                const floatHeight = windowObj.savedPosition ? windowObj.savedPosition.height : 400;
+                
+                windowElement.style.width = floatWidth + 'px';
+                windowElement.style.height = floatHeight + 'px';
+                windowElement.style.left = (e.clientX - floatWidth / 2) + 'px';
+                windowElement.style.top = (e.clientY - 16) + 'px'; // center vertically on header
+                
+                dragOffset.x = floatWidth / 2;
+                dragOffset.y = 16;
+            } else {
+                const rect = windowElement.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+            }
             
             e.preventDefault();
         });
@@ -2290,8 +2369,54 @@ class WindowManager {
         // Global mouse events
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
-                windowElement.style.left = (e.clientX - dragOffset.x) + 'px';
-                windowElement.style.top = (e.clientY - dragOffset.y) + 'px';
+                const newLeft = e.clientX - dragOffset.x;
+                const newTop = e.clientY - dragOffset.y;
+                windowElement.style.left = newLeft + 'px';
+                windowElement.style.top = newTop + 'px';
+
+                // Screen edge snapping boundary checks (20px edge threshold)
+                const edgeThreshold = 20;
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                let activeZone = null;
+
+                if (mouseX < edgeThreshold) {
+                    activeZone = 'left';
+                } else if (mouseX > window.innerWidth - edgeThreshold) {
+                    activeZone = 'right';
+                } else if (mouseY < edgeThreshold + 40) { // menu-bar height margin
+                    activeZone = 'top';
+                }
+
+                // Calculate available heights deducting taskbar modes
+                const hasTaskbar = document.getElementById('dock')?.classList.contains('taskbar-mode');
+                const taskbarHeight = hasTaskbar ? 44 : 0;
+                const menuBarHeight = 38;
+                const availableHeight = window.innerHeight - taskbarHeight;
+
+                if (activeZone === 'left') {
+                    snapPreview.style.top = `${menuBarHeight}px`;
+                    snapPreview.style.left = '0px';
+                    snapPreview.style.width = `${window.innerWidth / 2}px`;
+                    snapPreview.style.height = `${availableHeight - menuBarHeight}px`;
+                    snapPreview.classList.add('visible');
+                } else if (activeZone === 'right') {
+                    snapPreview.style.top = `${menuBarHeight}px`;
+                    snapPreview.style.left = `${window.innerWidth / 2}px`;
+                    snapPreview.style.width = `${window.innerWidth / 2}px`;
+                    snapPreview.style.height = `${availableHeight - menuBarHeight}px`;
+                    snapPreview.classList.add('visible');
+                } else if (activeZone === 'top') {
+                    snapPreview.style.top = '0px';
+                    snapPreview.style.left = '0px';
+                    snapPreview.style.width = `${window.innerWidth}px`;
+                    snapPreview.style.height = `${window.innerHeight}px`;
+                    snapPreview.classList.add('visible');
+                } else {
+                    snapPreview.classList.remove('visible');
+                }
+
+                windowElement.dataset.activeSnapZone = activeZone || '';
             }
             
             if (isResizing) {
@@ -2304,6 +2429,46 @@ class WindowManager {
         });
 
         document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                const activeZone = windowElement.dataset.activeSnapZone;
+                const hasTaskbar = document.getElementById('dock')?.classList.contains('taskbar-mode');
+                const taskbarHeight = hasTaskbar ? 44 : 0;
+                const menuBarHeight = hasTaskbar ? 0 : 38;
+                const availableHeight = window.innerHeight - taskbarHeight;
+
+                if (activeZone === 'left' || activeZone === 'right') {
+                    // Save floating position before docking
+                    windowObj.savedPosition = {
+                        top: windowElement.offsetTop,
+                        left: windowElement.offsetLeft,
+                        width: windowElement.offsetWidth,
+                        height: windowElement.offsetHeight
+                    };
+
+                    windowElement.classList.add('snapped');
+                    if (activeZone === 'left') {
+                        windowElement.classList.add('window-snapped-left');
+                        windowElement.style.setProperty('left', '0', 'important');
+                        windowElement.style.setProperty('border-radius', '12px 0 0 12px', 'important');
+                    } else {
+                        windowElement.classList.add('window-snapped-right');
+                        windowElement.style.setProperty('left', `${window.innerWidth / 2}px`, 'important');
+                        windowElement.style.setProperty('border-radius', '0 12px 12px 0', 'important');
+                    }
+
+                    windowElement.style.setProperty('position', 'fixed', 'important');
+                    windowElement.style.setProperty('top', `${menuBarHeight}px`, 'important');
+                    windowElement.style.setProperty('width', `${window.innerWidth / 2}px`, 'important');
+                    windowElement.style.setProperty('height', `${availableHeight - menuBarHeight}px`, 'important');
+                    windowElement.style.setProperty('z-index', '19999', 'important');
+                } else if (activeZone === 'top') {
+                    this.maximizeWindow(windowElement, windowObj);
+                }
+
+                if (snapPreview) snapPreview.classList.remove('visible');
+                windowElement.dataset.activeSnapZone = '';
+            }
+
             isDragging = false;
             isResizing = false;
         });
@@ -2322,14 +2487,22 @@ class WindowManager {
 
     bringToFront(windowElement) {
         windowElement.style.zIndex = this.zIndexCounter++;
+        if (window.desktop && window.desktop.updateTaskbar) {
+            window.desktop.updateTaskbar();
+        }
     }
 
     closeWindow(windowElement, windowObj) {
+        // Dispatch close event so apps can safely dispose resources immediately
+        windowElement.dispatchEvent(new CustomEvent('window-closing'));
         windowElement.classList.add('window-closing');
         setTimeout(() => {
             windowElement.remove();
             this.windows = this.windows.filter(w => w.id !== windowObj.id);
-        }, 150);
+            if (window.desktop && window.desktop.updateTaskbar) {
+                window.desktop.updateTaskbar();
+            }
+        }, 300); // 300ms exit transition
     }
 
     minimizeWindow(windowElement, windowObj) {
@@ -2359,6 +2532,9 @@ class WindowManager {
             windowObj.isMinimized = true;
             const dockIcon = document.querySelector(`.dock-app[data-app="${appName}"]`);
             if (dockIcon) dockIcon.classList.add('is-minimized');
+            if (window.desktop && window.desktop.updateTaskbar) {
+                window.desktop.updateTaskbar();
+            }
         }, 550);
     }
 
@@ -2373,6 +2549,9 @@ class WindowManager {
         setTimeout(() => {
             windowElement.classList.remove('window-restoring');
             windowObj.isMinimized = false;
+            if (window.desktop && window.desktop.updateTaskbar) {
+                window.desktop.updateTaskbar();
+            }
         }, 550);
     }
 
@@ -2411,6 +2590,10 @@ class WindowManager {
             windowElement.style.setProperty('border-radius', '0', 'important');
             windowElement.style.setProperty('z-index', '20000', 'important');
             windowObj.isMaximized = true;
+        }
+
+        if (window.desktop && window.desktop.updateTaskbar) {
+            window.desktop.updateTaskbar();
         }
 
         setTimeout(() => {

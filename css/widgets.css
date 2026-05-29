@@ -1,0 +1,334 @@
+/* Glassmorphic Desktop Widgets Stylesheet */
+
+.desktop-widgets-container {
+    position: absolute;
+    right: 24px;
+    top: 56px;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 10;
+    pointer-events: none; /* Allows desktop click-through except on individual widgets */
+    user-select: none;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: none; /* Hide standard scrollbars */
+}
+
+.desktop-widgets-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Individual Widget Card */
+.desktop-widget {
+    pointer-events: all;
+    background: rgba(20, 20, 30, 0.45);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                box-shadow 0.3s ease, 
+                border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.desktop-widget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35),
+                inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 1. Clock Widget Styles */
+.widget-clock-large {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    text-align: center;
+    background: linear-gradient(135deg, #ffffff, #d8b4fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.widget-clock-colon {
+    animation: clockBlink 1s infinite;
+}
+
+@keyframes clockBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.widget-date-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* 2. OS Health & Analysis Widget */
+.widget-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 6px;
+}
+
+.health-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.health-status-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #4ade80; /* pulsing green */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.health-status-pulse {
+    width: 8px;
+    height: 8px;
+    background-color: #4ade80;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+    animation: pulseGlow 1.5s infinite;
+}
+
+@keyframes pulseGlow {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+    }
+}
+
+.health-detail-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.health-detail-item span:first-child {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* Diagnostic Scan Block */
+.diag-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.diag-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.diag-scan-container {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.diag-scan-text {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    text-align: left;
+}
+
+.diag-scan-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.diag-scan-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa, #3b82f6);
+    transition: width 0.1s linear;
+}
+
+/* 3. Battery Widget Styles */
+.battery-display-wrap {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.battery-visual-body {
+    position: relative;
+    width: 58px;
+    height: 28px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.battery-visual-body::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.35);
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+.battery-level-fill {
+    height: 100%;
+    width: 94%;
+    background: linear-gradient(90deg, #34d399, #10b981);
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.battery-charging-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.battery-charging-indicator svg {
+    width: 14px;
+    height: 14px;
+    fill: #ffffff;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.battery-stats-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.battery-percent-text {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+.battery-status-text {
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* 4. Storage Widget Styles */
+.storage-stats-numbers {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 4px;
+}
+
+.storage-stats-used {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.storage-stats-total {
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.storage-bar-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+}
+
+.storage-bar-segment {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.storage-segment-system { background-color: #60a5fa; }
+.storage-segment-apps { background-color: #c084fc; }
+.storage-segment-media { background-color: #34d399; }
+.storage-segment-free { background-color: transparent; }
+
+.storage-legend-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.storage-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.legend-color-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}

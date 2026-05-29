@@ -10,6 +10,7 @@ const BrowOSIcons = {
     terminal: 'assets/icons/terminal.svg',
     documents: 'assets/icons/documents.svg',
     brownote: 'assets/icons/brownote.svg',
+    codebrow: 'assets/icons/codebrow.svg',
 
     // Filesystem
     folder: 'assets/icons/folder.svg',
@@ -27,7 +28,10 @@ const BrowOSIcons = {
         monitor: 'assets/icons/apps/monitor.svg',
         weather: 'assets/icons/apps/weather.svg',
         clock: 'assets/icons/apps/clock.svg',
-        camera: 'assets/icons/apps/camera.svg'
+        camera: 'assets/icons/apps/camera.svg',
+        codebrow: 'assets/icons/apps/codebrow.svg',
+        starship: 'assets/icons/apps/starship.svg',
+        racer: 'assets/icons/apps/racer.svg'
     },
 
     // Window chrome & toolbars
@@ -84,12 +88,15 @@ const BrowOSIcons = {
             terminal: this.terminal,
             documents: this.documents,
             brownote: this.brownote,
+            codebrow: this.codebrow,
             calculator: this.apps.calculator,
             camera: this.apps.camera,
             music: this.apps.music,
             photos: this.apps.photos,
             files: this.apps.files,
-            mail: this.apps.mail
+            mail: this.apps.mail,
+            starship: this.apps.starship,
+            browracer: this.apps.racer
         };
         return map[key] || this.file;
     },

@@ -4,6 +4,8 @@ class FileBrow {
         this.currentPath = "/";
         this.history = ["/"];
         this.historyIndex = 0;
+        this.viewMode = localStorage.getItem('filebrow_view_mode') || 'grid';
+        this.searchQuery = '';
         this.init();
     }
 
@@ -41,6 +43,7 @@ class FileBrow {
     }
 
     async navigateTo(path) {
+        this.searchQuery = '';
         if (this.historyIndex < this.history.length - 1) {
             this.history = this.history.slice(0, this.historyIndex + 1);
         }
@@ -52,6 +55,7 @@ class FileBrow {
 
     async navigateBack() {
         if (this.historyIndex > 0) {
+            this.searchQuery = '';
             this.historyIndex--;
             this.currentPath = this.history[this.historyIndex];
             await this.render();
@@ -60,6 +64,7 @@ class FileBrow {
 
     async navigateForward() {
         if (this.historyIndex < this.history.length - 1) {
+            this.searchQuery = '';
             this.historyIndex++;
             this.currentPath = this.history[this.historyIndex];
             await this.render();
@@ -75,6 +80,7 @@ class FileBrow {
     }
 
     async openRoot(path) {
+        this.searchQuery = '';
         this.currentPath = path;
         if (this.history[this.historyIndex] !== path) {
             this.history.push(path);
@@ -129,6 +135,9 @@ class FileBrow {
                 break;
             case 'refresh':
                 await this.render();
+                if (this.currentPath === 'Desktop' || this.currentPath === '/Desktop') {
+                    if (window.desktop) window.desktop.refreshDesktopIcons();
+                }
                 break;
             case 'delete':
                 if (!filesystem.isMounted()) {
@@ -138,7 +147,12 @@ class FileBrow {
                 const confirmed = await window.BrowDialog.confirm('Confirm Delete', `Are you sure you want to permanently delete "${name}"?`, true);
                 if (confirmed) {
                     const success = await window.filesystem.delete(targetPath);
-                    if (success) await this.render();
+                    if (success) {
+                        await this.render();
+                        if (this.currentPath === 'Desktop' || this.currentPath === '/Desktop') {
+                            if (window.desktop) window.desktop.refreshDesktopIcons();
+                        }
+                    }
                     else await window.BrowDialog.alert('Error', 'Failed to delete the item.');
                 }
                 break;
@@ -150,7 +164,12 @@ class FileBrow {
                 const newName = await window.BrowDialog.prompt('Rename', 'Enter a new name:', name);
                 if (newName && newName !== name) {
                     const success = await window.filesystem.rename(targetPath, newName);
-                    if (success) await this.render();
+                    if (success) {
+                        await this.render();
+                        if (this.currentPath === 'Desktop' || this.currentPath === '/Desktop') {
+                            if (window.desktop) window.desktop.refreshDesktopIcons();
+                        }
+                    }
                     else await window.BrowDialog.alert('Error', 'Failed to rename. Browser might not support this feature or the name is invalid.');
                 }
                 break;
@@ -162,7 +181,12 @@ class FileBrow {
                 const folderName = await window.BrowDialog.prompt('New Folder', 'Enter folder name:', 'New Folder');
                 if (folderName) {
                     const success = await window.filesystem.createDirectory(this.currentPath + (this.currentPath.endsWith('/') ? '' : '/') + folderName);
-                    if (success) await this.render();
+                    if (success) {
+                        await this.render();
+                        if (this.currentPath === 'Desktop' || this.currentPath === '/Desktop') {
+                            if (window.desktop) window.desktop.refreshDesktopIcons();
+                        }
+                    }
                     else await window.BrowDialog.alert('Error', 'Failed to create folder.');
                 }
                 break;
@@ -174,7 +198,12 @@ class FileBrow {
                 const fileName = await window.BrowDialog.prompt('New File', 'Enter file name:', 'New File.txt');
                 if (fileName) {
                     const success = await window.filesystem.createFile(this.currentPath + (this.currentPath.endsWith('/') ? '' : '/') + fileName, '');
-                    if (success) await this.render();
+                    if (success) {
+                        await this.render();
+                        if (this.currentPath === 'Desktop' || this.currentPath === '/Desktop') {
+                            if (window.desktop) window.desktop.refreshDesktopIcons();
+                        }
+                    }
                     else await window.BrowDialog.alert('Error', 'Failed to create file.');
                 }
                 break;
@@ -267,6 +296,12 @@ class FileBrow {
             btn.addEventListener("click", () => this.navigateUp());
         });
 
+        root.querySelectorAll('.filebrow-action-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.showContextMenu(e, 'grid');
+            });
+        });
+
         root.querySelectorAll(".filebrow-sidebar-item[data-path]").forEach((item) => {
             item.addEventListener("click", () => this.openRoot(item.dataset.path));
         });
@@ -323,6 +358,7 @@ class FileBrow {
                 const success = await window.filesystem.mount();
                 if (success) {
                     await this.navigateTo("/");
+                    if (window.desktop) window.desktop.refreshDesktopIcons();
                 }
             });
         }
@@ -333,14 +369,109 @@ class FileBrow {
                 e.stopPropagation();
                 await window.filesystem.unmount();
                 await this.navigateTo('/');
+                if (window.desktop) window.desktop.refreshDesktopIcons();
             });
+        }
+
+        // View Layout Toggling
+        root.querySelectorAll(".filebrow-toggle-btn[data-view]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                this.viewMode = btn.dataset.view;
+                localStorage.setItem('filebrow_view_mode', this.viewMode);
+                await this.render();
+            });
+        });
+
+        // Async file size loading inside List View
+        root.querySelectorAll(".filebrow-list-size[data-path]").forEach((sizeEl) => {
+            const path = sizeEl.dataset.path;
+            window.filesystem.getMetadata(path).then((meta) => {
+                if (meta) {
+                    sizeEl.textContent = meta.type === 'directory' ? '--' : window.filesystem.formatBytes(meta.size);
+                } else {
+                    sizeEl.textContent = '--';
+                }
+            }).catch(() => {
+                sizeEl.textContent = '--';
+            });
+        });
+
+        // Real-time live filtering on search input
+        const searchInput = root.querySelector(".filebrow-search-input");
+        if (searchInput) {
+            searchInput.addEventListener("input", (e) => {
+                this.searchQuery = e.target.value;
+                this.applySearchFilter();
+            });
+
+            // Re-focus and position cursor correctly if search is active
+            if (this.searchQuery) {
+                searchInput.focus();
+                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+            }
+        }
+    }
+
+    applySearchFilter() {
+        const root = this.container;
+        if (!root) return;
+
+        const query = (this.searchQuery || '').toLowerCase();
+        
+        // Hide or show elements based on query
+        root.querySelectorAll(".filebrow-entry").forEach((entry) => {
+            const name = entry.dataset.name.toLowerCase();
+            if (name.includes(query)) {
+                entry.style.display = "";
+                // If it's a table row, show it as table-row
+                if (entry.tagName === 'TR') {
+                    entry.style.display = "";
+                }
+            } else {
+                entry.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        // Dynamically update empty state if all results are hidden
+        const visibleEntries = Array.from(root.querySelectorAll(".filebrow-entry")).filter((entry) => {
+            return entry.style.display !== 'none';
+        });
+        
+        const table = root.querySelector(".filebrow-list-table");
+        const defaultEmpty = root.querySelector(".empty-state:not(.search-empty)");
+        
+        let searchEmpty = root.querySelector(".empty-state.search-empty");
+        if (!searchEmpty) {
+            searchEmpty = document.createElement("div");
+            searchEmpty.className = "empty-state search-empty";
+            searchEmpty.style.color = "rgba(255,255,255,0.4)";
+            searchEmpty.style.padding = "40px";
+            searchEmpty.style.textAlign = "center";
+            searchEmpty.style.gridColumn = "1/-1";
+            
+            const container = root.querySelector(".filebrow-grid") || root.querySelector(".filebrow-list");
+            if (container) container.appendChild(searchEmpty);
+        }
+
+        const totalEntries = root.querySelectorAll(".filebrow-entry").length;
+
+        if (visibleEntries.length === 0 && totalEntries > 0 && query !== '') {
+            searchEmpty.style.display = "block";
+            searchEmpty.textContent = "No search results found";
+            if (table) table.style.display = "none";
+            if (defaultEmpty) defaultEmpty.style.display = "none";
+        } else {
+            searchEmpty.style.display = "none";
+            if (table) table.style.display = "";
+            if (defaultEmpty) defaultEmpty.style.display = "";
         }
     }
 
     async render() {
         if (!this.container) return;
 
-        const entries = await window.filesystem.list(this.currentPath);
+        let entries = await window.filesystem.list(this.currentPath);
+
         const mounted = filesystem.isMounted();
         const pathLabel = this.getPathName(this.currentPath);
         const breadcrumb = this.getBreadcrumb(this.currentPath);
@@ -384,7 +515,7 @@ class FileBrow {
                                 <img src="${BrowOSIcons.folder}" class="sidebar-icon" alt="Local">
                                 <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${filesystem.handle.name}</span>
                             </button>
-                            <button id="unmount-local-btn" type="button" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.1em; opacity: 0.6; padding: 5px;" title="Disconnect" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">â</button>
+                            <button id="unmount-local-btn" type="button" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.1em; opacity: 0.6; padding: 5px;" title="Disconnect" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">&#x23CF;</button>
                         </div>
                     ` : `
                         <button class="filebrow-sidebar-item" id="mount-local-btn" type="button">
@@ -407,34 +538,103 @@ class FileBrow {
                             <div class="filebrow-breadcrumb">${breadcrumb}</div>
                         </div>
 
-                        ${BrowOSIcons.toolbarBtn(BrowOSIcons.ui.plus, 'New', 'filebrow-action-btn')}
+                        <div class="filebrow-toolbar-right">
+                            ${BrowOSIcons.toolbarBtn(BrowOSIcons.ui.plus, 'New', 'filebrow-action-btn')}
+                            
+                            <div class="filebrow-toggle-group">
+                                <button type="button" class="filebrow-toggle-btn ${this.viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="Icon View">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </button>
+                                <button type="button" class="filebrow-toggle-btn ${this.viewMode === 'list' ? 'active' : ''}" data-view="list" title="List View">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="filebrow-search-container">
+                                <img src="${BrowOSIcons.ui.search}" class="filebrow-search-icon" alt="Search">
+                                <input type="text" class="filebrow-search-input" placeholder="Search" value="${this.searchQuery || ''}">
+                            </div>
+                        </div>
                     </header>
 
-                    <div class="filebrow-grid filebrow-dark-grid">
-                        ${!mounted ? '<div class="empty-state">Click "Connect Folder" to mount a local directory</div>' : ''}
-                        ${mounted && entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
-                        ${mounted && entries ? entries.map((entry) => {
-                            const ext = '.' + entry.name.split('.').pop().toLowerCase();
-                            const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tiff', '.tif'];
-                            const videoExts = ['.mp4', '.webm', '.ogg', '.ogv', '.mov', '.avi', '.mkv'];
-                            const isImage = entry.type === 'file' && imageExts.includes(ext);
-                            const isVideo = entry.type === 'file' && videoExts.includes(ext);
-                            const iconSrc = entry.type === 'directory' ? BrowOSIcons.folder : (isImage || isVideo ? null : BrowOSIcons.file);
-                            return `
-                                <div class="filebrow-entry ${isImage ? 'filebrow-entry-media filebrow-entry-image' : ''} ${isVideo ? 'filebrow-entry-media filebrow-entry-video' : ''}" data-name="${entry.name}" data-type="${entry.type}" data-ext="${ext}">
-                                    ${iconSrc ? `<img src="${iconSrc}" class="grid-icon" alt="${entry.type}">` : ''}
-                                    ${isImage ? `<div class="filebrow-thumb" data-path="${this.currentPath}${this.currentPath.endsWith('/') ? '' : '/'}${entry.name}"></div>` : ''}
-                                    ${isVideo ? `<div class="filebrow-thumb filebrow-video-thumb"><svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>` : ''}
-                                    <span class="grid-label">${entry.name}</span>
-                                </div>
-                            `;
-                        }).join('') : ''}
-                    </div>
+                    ${this.viewMode === 'list' ? `
+                        <div class="filebrow-list filebrow-dark-list">
+                            ${!mounted ? '<div class="empty-state">Click "Connect Folder" to mount a local directory</div>' : ''}
+                            ${mounted && entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
+                            ${mounted && entries && entries.length > 0 ? `
+                                <table class="filebrow-list-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="filebrow-list-header-name">Name</th>
+                                            <th class="filebrow-list-header-kind">Kind</th>
+                                            <th class="filebrow-list-header-size">Size</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="filebrow-list-body">
+                                        ${entries.map((entry) => {
+                                            const ext = '.' + entry.name.split('.').pop().toLowerCase();
+                                            const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tiff', '.tif'];
+                                            const videoExts = ['.mp4', '.webm', '.ogg', '.ogv', '.mov', '.avi', '.mkv'];
+                                            const isImage = entry.type === 'file' && imageExts.includes(ext);
+                                            const isVideo = entry.type === 'file' && videoExts.includes(ext);
+                                            const iconSrc = entry.type === 'directory' ? BrowOSIcons.folder : (isImage || isVideo ? BrowOSIcons.apps.photos : BrowOSIcons.file);
+                                            const kind = entry.type === 'directory' ? 'Folder' : (ext.substring(1).toUpperCase() + ' File');
+                                            const path = `${this.currentPath}${this.currentPath.endsWith('/') ? '' : '/'}${entry.name}`;
+                                            return `
+                                                <tr class="filebrow-entry filebrow-list-row" data-name="${entry.name}" data-type="${entry.type}" data-ext="${ext}">
+                                                    <td class="filebrow-list-cell-name">
+                                                        <img src="${iconSrc}" class="list-icon" alt="${entry.type}">
+                                                        <span class="list-label">${entry.name}</span>
+                                                    </td>
+                                                    <td class="filebrow-list-cell-kind">${kind}</td>
+                                                    <td class="filebrow-list-cell-size filebrow-list-size" data-path="${path}">Loading...</td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            ` : ''}
+                        </div>
+                    ` : `
+                        <div class="filebrow-grid filebrow-dark-grid">
+                            ${!mounted ? '<div class="empty-state">Click "Connect Folder" to mount a local directory</div>' : ''}
+                            ${mounted && entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
+                            ${mounted && entries ? entries.map((entry) => {
+                                const ext = '.' + entry.name.split('.').pop().toLowerCase();
+                                const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tiff', '.tif'];
+                                const videoExts = ['.mp4', '.webm', '.ogg', '.ogv', '.mov', '.avi', '.mkv'];
+                                const isImage = entry.type === 'file' && imageExts.includes(ext);
+                                const isVideo = entry.type === 'file' && videoExts.includes(ext);
+                                const iconSrc = entry.type === 'directory' ? BrowOSIcons.folder : (isImage || isVideo ? null : BrowOSIcons.file);
+                                return `
+                                    <div class="filebrow-entry ${isImage ? 'filebrow-entry-media filebrow-entry-image' : ''} ${isVideo ? 'filebrow-entry-media filebrow-entry-video' : ''}" data-name="${entry.name}" data-type="${entry.type}" data-ext="${ext}">
+                                        ${iconSrc ? `<img src="${iconSrc}" class="grid-icon" alt="${entry.type}">` : ''}
+                                        ${isImage ? `<div class="filebrow-thumb" data-path="${this.currentPath}${this.currentPath.endsWith('/') ? '' : '/'}${entry.name}"></div>` : ''}
+                                        ${isVideo ? `<div class="filebrow-thumb filebrow-video-thumb"><svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>` : ''}
+                                        <span class="grid-label">${entry.name}</span>
+                                    </div>
+                                `;
+                            }).join('') : ''}
+                        </div>
+                    `}
                 </section>
             </div>
         `;
 
         this.bindEvents();
+        this.applySearchFilter();
     }
 }
 

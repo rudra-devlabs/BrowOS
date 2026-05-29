@@ -8,9 +8,9 @@ class AppsManager {
                 windowTitle: 'FileBrow'
             },
             'safari': {
-                name: 'Safari',
+                name: 'BrowOSer',
                 icon: BrowOSIcons.safari,
-                windowTitle: 'Safari'
+                windowTitle: 'BrowOSer'
             },
             'messages': {
                 name: 'Messages',
@@ -37,6 +37,11 @@ class AppsManager {
                 icon: BrowOSIcons.brownote,
                 windowTitle: 'Brow Note'
             },
+            'codebrow': {
+                name: 'CodeBrow',
+                icon: BrowOSIcons.codebrow,
+                windowTitle: 'CodeBrow'
+            },
             'calculator': {
                 name: 'Calculator',
                 icon: BrowOSIcons.apps.calculator,
@@ -56,6 +61,21 @@ class AppsManager {
                 name: 'Photos',
                 icon: BrowOSIcons.apps.photos,
                 windowTitle: 'Photos'
+            },
+            'snake': {
+                name: 'Snake',
+                icon: BrowOSIcons.apps.monitor,
+                windowTitle: 'Snake Game'
+            },
+            'starship': {
+                name: 'Void Tactics',
+                icon: BrowOSIcons.apps.starship,
+                windowTitle: 'Void Tactics'
+            },
+            'browracer': {
+                name: 'BrowRacer',
+                icon: BrowOSIcons.apps.racer,
+                windowTitle: 'BrowRacer - Sonoma Highway'
             }
         };
     }
@@ -76,6 +96,9 @@ class AppsManager {
             }
             // Bring existing window to front
             window.windowManager.bringToFront(existingWindow.element);
+            if (window.windowManager.ensureWindowPainted) {
+                window.windowManager.ensureWindowPainted(existingWindow);
+            }
             return;
         }
 

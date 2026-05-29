@@ -35,6 +35,11 @@ body {
     padding: 0 10px;
     z-index: 10000;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#menu-bar.hidden-maximized {
+    transform: translateY(-100%);
 }
 
 .apple-menu {
@@ -80,12 +85,148 @@ body {
     display: flex;
     align-items: center;
     z-index: 9999;
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                left 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                transform 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                width 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                border-radius 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                opacity 0.25s ease;
+}
+
+/* ── Taskbar mode (when a window is maximized) ── */
+#dock.taskbar-mode {
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 44px;
+    transform: none;
+    border-radius: 0;
+    background: transparent;
+}
+
+#dock.taskbar-mode .dock-background {
+    border-radius: 0;
+    background: rgba(18, 18, 20, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+}
+
+#dock.taskbar-mode .dock-apps {
+    padding: 0 6px;
+    gap: 2px;
+    height: 100%;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+/* Normal dock-apps: unaffected in pill mode */
+.dock-apps {
+    display: flex;
+    align-items: center;
+}
+
+/* In taskbar mode, normal dock-apps icons stay as icons but smaller */
+#dock.taskbar-mode .dock-app {
+    width: auto;
+    height: 36px;
+    min-width: 36px;
+    max-width: 180px;
+    margin: 0 1px;
+    border-radius: 6px;
+    padding: 0 8px;
+    gap: 6px;
+    justify-content: flex-start;
+    transition: background 0.15s ease, transform 0.15s ease;
+    flex-shrink: 1;
+}
+
+#dock.taskbar-mode .dock-app:hover {
+    width: auto;
+    height: 36px;
+    background: rgba(255,255,255,0.1);
+    transform: none;
+}
+
+#dock.taskbar-mode .dock-app img {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+/* Launchpad button in taskbar mode */
+#dock.taskbar-mode .dock-app[data-app="launchpad"] {
+    min-width: 36px;
+    max-width: 36px;
+    padding: 0;
+    justify-content: center;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    margin-right: 6px;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+#dock.taskbar-mode .dock-app[data-app="launchpad"]:hover {
+    background: rgba(255,255,255,0.12);
+    transform: none;
+}
+
+/* App label text inside taskbar buttons */
+.taskbar-label {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+    letter-spacing: 0.01em;
+    display: none;
+}
+
+#dock.taskbar-mode .dock-app:not([data-app="launchpad"]) .taskbar-label {
+    display: block;
+}
+
+/* Active (focused / foreground) window button */
+#dock.taskbar-mode .dock-app.taskbar-active {
+    background: rgba(255,255,255,0.13);
+    border-bottom: 2px solid #4ea1ff;
+}
+
+#dock.taskbar-mode .dock-app.taskbar-active:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+/* Running indicator dot — show in taskbar mode */
+#dock.taskbar-mode .dock-app .minimized-dot {
+    bottom: 4px;
+}
+
+#dock.taskbar-mode .dock-app.is-open .minimized-dot,
+#dock.taskbar-mode .dock-app.is-minimized .minimized-dot {
+    display: block !important;
+}
+
+/* Taskbar tooltip suppression — we show label inline instead */
+#dock.taskbar-mode .dock-app::after,
+#dock.taskbar-mode .dock-app::before {
+    display: none !important;
 }
 
 #dock.launchpad-hidden {
     opacity: 0;
     transform: translateX(-50%) translateY(20px);
+    pointer-events: none;
+}
+
+#dock.taskbar-mode.launchpad-hidden {
+    opacity: 0;
+    transform: translateY(44px);
     pointer-events: none;
 }
 
@@ -193,6 +334,7 @@ body {
     display: none;
 }
 
+.dock-app.is-open .minimized-dot,
 .dock-app.is-minimized .minimized-dot {
     display: block;
 }
@@ -209,7 +351,9 @@ body {
     left: 0;
     width: 100%;
     height: calc(100% - 24px - 84px);
+    z-index: 1000;
     pointer-events: none;
+    isolation: isolate;
 }
 
 /* Launchpad Overlay */
@@ -1355,6 +1499,16 @@ body {
     cursor: default;
 }
 
+.photos-lightbox.video-active .photos-lightbox-viewer {
+    padding: 0;
+    overflow: hidden;
+}
+
+.photos-lightbox.video-active .photos-lightbox-zoom-container {
+    width: 100%;
+    height: 100%;
+}
+
 .photos-lightbox-zoom-container {
     transform-origin: center center;
     transition: transform 0.15s ease-out;
@@ -1374,10 +1528,76 @@ body {
 }
 
 .photos-lightbox-zoom-container video {
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: 4px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 0;
+    box-shadow: none;
+    background: #000;
+}
+
+.photos-video-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    z-index: 10;
+    transition: opacity 0.3s ease;
+}
+
+.photos-video-play, .photos-video-mute, .photos-video-fullscreen {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.photos-video-play:hover, .photos-video-mute:hover, .photos-video-fullscreen:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.photos-video-time {
+    color: white;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.photos-video-progress-container {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: height 0.2s ease;
+}
+
+.photos-video-progress-container:hover {
+    height: 8px;
+}
+
+.photos-video-progress-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background: #007aff;
+    border-radius: 3px;
+    pointer-events: none;
 }
 
 .photos-lightbox-toolbar {
@@ -1453,6 +1673,10 @@ body {
     align-items: center;
     padding: 12px 20px 20px;
     gap: 4px;
+}
+
+.photos-lightbox.video-active .photos-lightbox-info {
+    display: none;
 }
 
 .photos-lightbox-name {

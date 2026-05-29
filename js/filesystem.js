@@ -171,7 +171,7 @@ class FileSystem {
         try {
             const fileHandle = await parent.getFileHandle(name, { create: true });
             const writable = await fileHandle.createWritable();
-            await writable.write(content);
+            await writable.write(new Blob([content], { type: 'text/plain' }));
             await writable.close();
             return true;
         } catch (e) {
@@ -246,6 +246,57 @@ class FileSystem {
         } catch (e) {
             console.error("Error renaming:", e);
             return false;
+        }
+    }
+
+    async copy(srcPath, destPath) {
+        if (!this.isMounted()) return { ok: false, error: 'Filesystem not mounted' };
+
+        const srcHandle = await this._resolve(srcPath);
+        if (!srcHandle) return { ok: false, error: `cannot stat '${srcPath}': No such file or directory` };
+
+        const srcParentPath = this._dirname(srcPath);
+        const srcName = srcPath.split('/').filter(Boolean).pop();
+
+        const destHandle = await this._resolve(destPath);
+
+        let destParentPath;
+        let destName;
+
+        if (destHandle && destHandle.kind === 'directory') {
+            destParentPath = destPath;
+            destName = srcName;
+        } else {
+            destParentPath = this._dirname(destPath);
+            destName = destPath.split('/').filter(Boolean).pop();
+        }
+
+        const destParent = await this._resolve(destParentPath);
+        if (!destParent || destParent.kind !== 'directory') {
+            return { ok: false, error: `cannot copy: destination directory not found` };
+        }
+
+        const destFullPath = destParentPath === '/' ? `/${destName}` : `${destParentPath}/${destName}`;
+        const existingDest = await this._resolve(destFullPath);
+        if (existingDest) {
+            return { ok: false, error: `cannot copy: '${destFullPath}' already exists` };
+        }
+
+        try {
+            if (srcHandle.kind === 'file') {
+                const file = await srcHandle.getFile();
+                const newFileHandle = await destParent.getFileHandle(destName, { create: true });
+                const writable = await newFileHandle.createWritable();
+                await writable.write(file);
+                await writable.close();
+            } else if (srcHandle.kind === 'directory') {
+                await this._copyDirectory(srcHandle, destParent, destName);
+            }
+            this.handleCache.clear();
+            return { ok: true };
+        } catch (e) {
+            console.error('Copy failed:', e);
+            return { ok: false, error: `cannot copy: ${e.message}` };
         }
     }
 

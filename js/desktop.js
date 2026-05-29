@@ -1,10 +1,13 @@
 // Desktop functionality for BrowOS
 class Desktop {
     constructor() {
+        this.eventsBound = false;
         this.initializeDesktop();
         this.initializeClock();
         this.initializeDock();
-        this.initializeDesktopIcons();
+        this.loadDesktopIcons();
+        this.initializeWidgets();
+        window.desktop = this;
     }
 
     initializeDesktop() {
@@ -30,12 +33,22 @@ class Desktop {
             applyWallpaper(`assets/wallpapers/${savedWallpaper}.svg`);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupEventListeners(), { once: true });
+        } else {
             this.setupEventListeners();
-        });
+        }
     }
 
     setupEventListeners() {
+        if (this.eventsBound) return;
+        this.eventsBound = true;
+
+        document.querySelector('.apple-menu')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showSystemMenu();
+        });
+
         document.querySelectorAll('.menu-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 this.handleMenuClick(e.target.textContent);
@@ -57,13 +70,23 @@ class Desktop {
 
         document.getElementById('desktop').addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            if (e.target.closest('.dock') || e.target.closest('.launchpad-overlay') || e.target.closest('.window')) return;
+            if (e.target.closest('#dock') || e.target.closest('.launchpad-overlay') || e.target.closest('.window') || e.target.closest('.desktop-icon')) return;
             this.showDesktopContextMenu(e.clientX, e.clientY);
         });
 
         document.addEventListener('click', () => this.hideContextMenu());
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.hideContextMenu();
+        });
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (window.filesystem && window.filesystem.isMounted()) {
+                    this.refreshDesktopIcons();
+                }
+            }, 250);
         });
     }
 
@@ -120,7 +143,8 @@ class Desktop {
 
     hideContextMenu() {
         document.querySelector('#desktop-context-menu')?.remove();
-        document.querySelectorAll('.mac-context-menu[data-source="dock"], .mac-context-menu[data-source="launchpad"]').forEach(m => m.remove());
+        document.querySelector('#system-context-menu')?.remove();
+        document.querySelectorAll('.mac-context-menu[data-source="dock"], .mac-context-menu[data-source="launchpad"], .mac-context-menu[data-source="desktop-icon"]').forEach(m => m.remove());
     }
 
     handleDesktopContextAction(action) {
@@ -147,7 +171,6 @@ class Desktop {
     }
 
     initializeClock() {
-        const clockElement = document.getElementById('clock');
         this.updateClock();
         setInterval(() => this.updateClock(), 1000);
     }
@@ -156,7 +179,8 @@ class Desktop {
         const now = new Date();
         const hours = now.getHours().toString().padStart(2, '0');
         const minutes = now.getMinutes().toString().padStart(2, '0');
-        document.getElementById('clock').textContent = `${hours}:${minutes}`;
+        const el = document.getElementById('clock');
+        if (el) el.textContent = `${hours}:${minutes}`;
     }
 
     initializeDock() {
@@ -166,10 +190,168 @@ class Desktop {
             app.addEventListener('mouseenter', this.enlargeDockIcon);
             app.addEventListener('mouseleave', this.shrinkDockIcon);
         });
+        // Ensure taskbar labels exist on all permanent dock items
+        dockApps.forEach(el => this._ensureTaskbarLabel(el));
         this.setupDockDrag();
         this.setupDockContextMenu();
         this.setupLaunchpadListeners();
     }
+
+    // ─── Taskbar helpers ───────────────────────────────────────────────────────
+
+    /** Inject a hidden <span class="taskbar-label"> into a dock-app element if absent. */
+    _ensureTaskbarLabel(el) {
+        if (!el.querySelector('.taskbar-label')) {
+            const label = document.createElement('span');
+            label.className = 'taskbar-label';
+            label.textContent = el.dataset.title || el.querySelector('img')?.alt || '';
+            el.appendChild(label);
+        }
+    }
+
+    /**
+     * Called by WindowManager whenever the maximized / minimized / close state changes.
+     * Morphs the dock between pill (no maximised windows) and flat taskbar (≥1 maximised window).
+     */
+    updateTaskbar() {
+        const dock = document.getElementById('dock');
+        const dockAppsContainer = dock?.querySelector('.dock-apps');
+        if (!dock || !dockAppsContainer) return;
+
+        const wm = window.windowManager;
+        if (!wm) return;
+
+        // Update is-open class for all dock apps based on whether they have any windows open
+        dockAppsContainer.querySelectorAll('.dock-app').forEach(el => {
+            const appKey = el.dataset.app;
+            if (appKey === 'launchpad') return;
+            const isOpen = wm.windows.some(w => w.appName === appKey);
+            el.classList.toggle('is-open', !!isOpen);
+        });
+
+        const maximizedWindows = wm.windows.filter(w => w.isMaximized && !w.isMinimized);
+        const hasMaximized = maximizedWindows.length > 0;
+
+        // Smoothly hide/show upper status menu-bar
+        const menuBar = document.getElementById('menu-bar');
+        if (menuBar) {
+            menuBar.classList.toggle('hidden-maximized', hasMaximized);
+        }
+
+        if (!hasMaximized) {
+            // ── Pill mode ──────────────────────────────────────────────────────
+            dock.classList.remove('taskbar-mode');
+
+            // Remove any ephemeral (non-pinned open-window) taskbar buttons
+            dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => el.remove());
+
+            // Clear active markers
+            dockAppsContainer.querySelectorAll('.dock-app').forEach(el => {
+                el.classList.remove('taskbar-active');
+            });
+            return;
+        }
+
+        // ── Taskbar mode ───────────────────────────────────────────────────────
+        dock.classList.add('taskbar-mode');
+
+        const pinnedApps = new Set(this.getDockApps());
+
+        // Determine the top-most maximized window by z-index
+        let topWindow = null;
+        let topZ = -1;
+        maximizedWindows.forEach(w => {
+            const z = parseInt(w.element.style.zIndex || 0, 10);
+            if (z > topZ) { topZ = z; topWindow = w; }
+        });
+
+        // Remove ephemeral buttons whose window is now closed
+        dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => {
+            const appKey = el.dataset.app;
+            const hasOpenWindow = wm.windows.some(w => w.appName === appKey && !w.isMinimized);
+            if (!hasOpenWindow) el.remove();
+        });
+
+        // Add ephemeral buttons for non-pinned open windows
+        wm.windows.forEach(w => {
+            if (pinnedApps.has(w.appName)) return;   // already has a permanent button
+            if (w.isMinimized) return;                  // don't show minimised windows
+
+            if (!dockAppsContainer.querySelector(`.dock-app[data-app="${w.appName}"]`)) {
+                const appInfo = window.appsManager?.getAppInfo(w.appName);
+                if (!appInfo) return;
+
+                const el = document.createElement('div');
+                el.className = 'dock-app';
+                el.dataset.app = w.appName;
+                el.dataset.title = appInfo.name;
+                el.dataset.taskbarEphemeral = '1';
+                el.innerHTML = `<img src="${appInfo.icon}" alt="${appInfo.name}"><div class="minimized-dot"></div>`;
+                this._ensureTaskbarLabel(el);
+                el.addEventListener('click', () => this._taskbarAppClick(w.appName, el));
+                el.addEventListener('mouseenter', this.enlargeDockIcon);
+                el.addEventListener('mouseleave', this.shrinkDockIcon);
+                dockAppsContainer.appendChild(el);
+            }
+        });
+
+        // Update label text and active state for every button
+        dockAppsContainer.querySelectorAll('.dock-app').forEach(el => {
+            const appKey = el.dataset.app;
+            if (appKey === 'launchpad') return;
+
+            this._ensureTaskbarLabel(el);
+            const label = el.querySelector('.taskbar-label');
+            if (label) label.textContent = el.dataset.title || el.querySelector('img')?.alt || appKey;
+
+            // Wire click once (guard with flag)
+            if (!el.dataset.taskbarClickBound) {
+                el.dataset.taskbarClickBound = '1';
+                el.addEventListener('click', () => this._taskbarAppClick(appKey, el));
+            }
+
+            // Mark the currently-foreground window button as active
+            const isActive = topWindow && topWindow.appName === appKey;
+            el.classList.toggle('taskbar-active', !!isActive);
+        });
+    }
+
+    /**
+     * Click on a taskbar button:
+     * – If window is open → bring to front.
+     * – If minimised → restore.
+     * – If pinned with no window → launch.
+     */
+    _taskbarAppClick(appKey, _buttonEl) {
+        if (appKey === 'launchpad') {
+            const overlay = document.getElementById('launchpad-overlay');
+            this.toggleLaunchpad(!overlay.classList.contains('visible'));
+            return;
+        }
+
+        const wm = window.windowManager;
+        if (!wm) return;
+
+        // Find an open (non-minimised) window for this app
+        const openWin = wm.windows.find(w => w.appName === appKey && !w.isMinimized);
+        if (openWin) {
+            wm.bringToFront(openWin.element);
+            this.updateTaskbar();
+            return;
+        }
+
+        // Find a minimised window and restore it
+        const minWin = wm.windows.find(w => w.appName === appKey && w.isMinimized);
+        if (minWin) {
+            wm.restoreWindow(minWin.element, minWin);
+            return;
+        }
+
+        // No window open — launch (pinned apps only; ephemeral buttons disappear when closed)
+        this.launchApp(appKey);
+    }
+
+    // ─── Dock drag & drop ──────────────────────────────────────────────────────
 
     setupDockDrag() {
         const dockContainer = document.querySelector('.dock-apps');
@@ -230,7 +412,7 @@ class Desktop {
     saveDockOrder() {
         const dockContainer = document.querySelector('.dock-apps');
         if (!dockContainer) return;
-        const order = [...dockContainer.querySelectorAll('.dock-app')].map(el => el.dataset.app);
+        const order = [...dockContainer.querySelectorAll('.dock-app:not([data-taskbar-ephemeral])')].map(el => el.dataset.app);
         this.saveDockApps(order);
     }
 
@@ -256,20 +438,23 @@ class Desktop {
         const existingKeys = new Set();
 
         savedApps.forEach(key => {
-            if (key === 'launchpad' || !allApps[key]) return;
+            if (key !== 'launchpad' && !allApps[key]) return;
             existingKeys.add(key);
-            if (!dockContainer.querySelector(`.dock-app[data-app="${key}"]`)) {
+
+            let el = dockContainer.querySelector(`.dock-app[data-app="${key}"]`);
+            if (!el) {
+                if (key === 'launchpad') return;
                 const app = allApps[key];
-                const el = document.createElement('div');
+                el = document.createElement('div');
                 el.className = 'dock-app';
                 el.dataset.app = key;
                 el.dataset.title = app.name;
                 el.innerHTML = `<img src="${app.icon}" alt="${app.name}"><div class="minimized-dot"></div>`;
-                dockContainer.appendChild(el);
                 el.addEventListener('click', () => this.launchApp(key));
                 el.addEventListener('mouseenter', this.enlargeDockIcon);
                 el.addEventListener('mouseleave', this.shrinkDockIcon);
             }
+            dockContainer.appendChild(el);
         });
 
         dockContainer.querySelectorAll('.dock-app').forEach(el => {
@@ -279,6 +464,8 @@ class Desktop {
             }
         });
     }
+
+    // ─── Dock context menu ─────────────────────────────────────────────────────
 
     setupDockContextMenu() {
         document.querySelectorAll('.dock-app').forEach(app => {
@@ -340,6 +527,8 @@ class Desktop {
         this.setupDockDrag();
         this.setupDockContextMenu();
     }
+
+    // ─── Launchpad ─────────────────────────────────────────────────────────────
 
     setupLaunchpadListeners() {
         const overlay = document.getElementById('launchpad-overlay');
@@ -456,22 +645,89 @@ class Desktop {
         }
     }
 
+    // ─── Dock icon hover animations ────────────────────────────────────────────
+
     enlargeDockIcon(e) {
+        const dock = document.getElementById('dock');
+        if (dock && dock.classList.contains('taskbar-mode')) return; // no bounce in taskbar mode
         e.currentTarget.style.transform = 'scale(1.2)';
     }
 
     shrinkDockIcon(e) {
+        const dock = document.getElementById('dock');
+        if (dock && dock.classList.contains('taskbar-mode')) return;
         e.currentTarget.style.transform = 'scale(1)';
     }
 
-    initializeDesktopIcons() {
-        // Create some sample desktop icons
-        this.createDesktopIcon('FileBrow', BrowOSIcons.filebrow, 50, 50, 'filebrow');
-        this.createDesktopIcon('Safari', BrowOSIcons.safari, 150, 50);
-        this.createDesktopIcon('Documents', BrowOSIcons.documents, 250, 50);
+    // ─── Desktop icons ─────────────────────────────────────────────────────────
+
+    async loadDesktopIcons() {
+        this.clearDesktopIcons();
+
+        if (!window.filesystem || !window.filesystem.isMounted()) {
+            setTimeout(() => this.loadDesktopIcons(), 1000);
+            return;
+        }
+
+        try {
+            const entries = await window.filesystem.list('Desktop');
+            if (!entries || entries.length === 0) return;
+
+            let col = 0;
+            const startX = 50;
+            const startY = 50;
+            const gapX = 100;
+            const gapY = 100;
+            // Reserve 340px on the right for the widgets column to prevent overlap
+            const availableWidth = window.innerWidth - 340;
+            const maxCols = Math.max(1, Math.floor((availableWidth - startX) / gapX));
+
+            for (const entry of entries) {
+                const isDir = entry.kind === 'directory' || entry.type === 'directory';
+                const iconPath = isDir ? BrowOSIcons.folder : this.getIconForFile(entry.name);
+                const x = startX + (col % maxCols) * gapX;
+                const y = startY + Math.floor(col / maxCols) * gapY;
+
+                this.createDesktopIcon(entry.name, iconPath, x, y, isDir ? null : entry.name);
+                col++;
+            }
+        } catch (e) {
+            console.error('Failed to load desktop icons:', e);
+        }
     }
 
-    createDesktopIcon(name, iconPath, x, y, appId = null) {
+    refreshDesktopIcons() {
+        this.loadDesktopIcons();
+    }
+
+    clearDesktopIcons() {
+        document.querySelectorAll('.desktop-icon').forEach(el => el.remove());
+    }
+
+    getIconForFile(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const iconMap = {
+            'txt': BrowOSIcons.file,
+            'md': BrowOSIcons.file,
+            'js': BrowOSIcons.file,
+            'html': BrowOSIcons.file,
+            'css': BrowOSIcons.file,
+            'json': BrowOSIcons.file,
+            'png': BrowOSIcons.apps.photos,
+            'jpg': BrowOSIcons.apps.photos,
+            'jpeg': BrowOSIcons.apps.photos,
+            'gif': BrowOSIcons.apps.photos,
+            'webp': BrowOSIcons.apps.photos,
+            'svg': BrowOSIcons.apps.photos,
+            'mp3': BrowOSIcons.apps.music,
+            'wav': BrowOSIcons.apps.music,
+            'mp4': BrowOSIcons.apps.photos,
+            'webm': BrowOSIcons.apps.photos,
+        };
+        return iconMap[ext] || BrowOSIcons.file;
+    }
+
+    createDesktopIcon(name, iconPath, x, y, filename = null) {
         const icon = document.createElement('div');
         icon.className = 'desktop-icon';
         icon.style.left = `${x}px`;
@@ -480,33 +736,188 @@ class Desktop {
             <img src="${iconPath}" alt="${name}">
             <span>${name}</span>
         `;
-        const launchId = appId || name.toLowerCase();
+
         icon.addEventListener('dblclick', () => {
-            this.launchApp(launchId);
+            if (filename) {
+                this.openDesktopFile(filename);
+            } else {
+                window.windowManager.launchApp('filebrow');
+            }
         });
+
+        icon.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showDesktopIconContextMenu(e.clientX, e.clientY, name, filename);
+        });
+
         document.getElementById('desktop').appendChild(icon);
     }
 
+    async openDesktopFile(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const path = 'Desktop/' + filename;
+        const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'];
+        const textExts = ['txt', 'md'];
+        const codeExts = ['js', 'html', 'css', 'py', 'json', 'ts', 'jsx', 'tsx', 'xml', 'yaml', 'yml', 'sh', 'bash', 'c', 'cpp', 'h', 'hpp', 'java', 'rb', 'go', 'rs', 'php', 'sql'];
+
+        if (imageExts.includes(ext)) {
+            window.windowManager.openFileInPhotos(path, filename);
+        } else if (codeExts.includes(ext)) {
+            window.windowManager.openFileInCodeBrow(path);
+        } else if (textExts.includes(ext)) {
+            window.windowManager.openFileInBrowNote(path);
+        } else {
+            window.windowManager.launchApp('filebrow');
+        }
+    }
+
+    showDesktopIconContextMenu(x, y, name, filename) {
+        this.hideContextMenu();
+
+        const menu = document.createElement('div');
+        menu.className = 'mac-context-menu visible';
+        menu.dataset.source = 'desktop-icon';
+
+        const items = [
+            { label: 'Open', action: 'open' },
+            { divider: true },
+            { label: 'Get Info', action: 'info' },
+            { label: filename ? 'Open in FileBrow' : 'Open in FileBrow', action: 'filebrow' },
+        ];
+
+        if (filename) {
+            items.push({ divider: true });
+            items.push({ label: 'Delete', action: 'delete', danger: true });
+        }
+
+        items.forEach(item => {
+            if (item.divider) {
+                const div = document.createElement('div');
+                div.className = 'mac-context-menu-divider';
+                menu.appendChild(div);
+                return;
+            }
+            const el = document.createElement('div');
+            el.className = 'mac-context-menu-item' + (item.danger ? ' danger' : '');
+            el.textContent = item.label;
+            el.addEventListener('click', () => {
+                this.hideContextMenu();
+                this.handleDesktopIconAction(item.action, name, filename);
+            });
+            menu.appendChild(el);
+        });
+
+        document.body.appendChild(menu);
+
+        let left = x;
+        let top = y;
+        requestAnimationFrame(() => {
+            const rect = menu.getBoundingClientRect();
+            if (left + rect.width > window.innerWidth) left -= rect.width;
+            if (top + rect.height > window.innerHeight) top -= rect.height;
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        });
+    }
+
+    async handleDesktopIconAction(action, name, filename) {
+        switch (action) {
+            case 'open':
+                if (filename) this.openDesktopFile(filename);
+                else window.windowManager.launchApp('filebrow');
+                break;
+            case 'filebrow':
+                window.windowManager.launchApp('filebrow');
+                break;
+            case 'delete':
+                if (filename && window.filesystem && window.filesystem.isMounted()) {
+                    const ok = await window.BrowDialog.confirm('Delete', `Are you sure you want to delete "${name}"?`, true);
+                    if (ok) {
+                        const path = 'Desktop/' + filename;
+                        await window.filesystem.delete(path);
+                        this.loadDesktopIcons();
+                    }
+                }
+                break;
+        }
+    }
+
+    // ─── Menu bar ──────────────────────────────────────────────────────────────
+
     handleMenuClick(menuItem) {
-        console.log(`Menu item clicked: ${menuItem}`);
-        // Handle menu bar interactions
         switch(menuItem) {
             case 'BrowOS':
                 this.showSystemMenu();
                 break;
             case 'File':
-                // Show file menu
                 break;
             case 'Edit':
-                // Show edit menu
                 break;
-            // Add other menu cases
         }
     }
 
     showSystemMenu() {
-        // Show system menu with options like About, Settings, Shutdown, etc.
-        alert('System menu would appear here');
+        this.hideContextMenu();
+
+        const menu = document.createElement('div');
+        menu.id = 'system-context-menu';
+        menu.className = 'mac-context-menu visible';
+        menu.dataset.source = 'system';
+
+        const items = [
+            { label: 'About BrowOS', action: 'about' },
+            { divider: true },
+            { label: 'System Preferences…', action: 'preferences' },
+            { divider: true },
+            { label: 'Shut Down…', action: 'shutdown' },
+            { label: 'Restart…', action: 'restart' },
+        ];
+
+        items.forEach(item => {
+            if (item.divider) {
+                const div = document.createElement('div');
+                div.className = 'mac-context-menu-divider';
+                menu.appendChild(div);
+                return;
+            }
+            const el = document.createElement('div');
+            el.className = 'mac-context-menu-item';
+            el.textContent = item.label;
+            el.addEventListener('click', () => {
+                this.hideContextMenu();
+                this.handleSystemMenuAction(item.action);
+            });
+            menu.appendChild(el);
+        });
+
+        document.body.appendChild(menu);
+
+        const appleMenu = document.querySelector('.apple-menu');
+        if (appleMenu) {
+            const rect = appleMenu.getBoundingClientRect();
+            menu.style.left = rect.left + 'px';
+            menu.style.top = (rect.bottom + 4) + 'px';
+        }
+    }
+
+    handleSystemMenuAction(action) {
+        switch (action) {
+            case 'about':
+                if (window.BrowDialog) {
+                    window.BrowDialog.alert('About BrowOS', 'BrowOS v1.0\nA browser-based operating system simulation.');
+                }
+                break;
+            case 'preferences':
+                window.windowManager.launchApp('settings');
+                break;
+            case 'shutdown':
+                if (window.BrowOS) window.BrowOS.shutdown();
+                break;
+            case 'restart':
+                if (window.BrowOS) window.BrowOS.restart();
+                break;
+        }
     }
 
     launchApp(appName) {
@@ -515,12 +926,271 @@ class Desktop {
             this.toggleLaunchpad(!overlay.classList.contains('visible'));
             return;
         }
-        console.log(`Launching app: ${appName}`);
         if (window.windowManager && window.windowManager.launchApp) {
             window.windowManager.launchApp(appName);
         } else {
             WindowManager.createWindow(appName);
         }
+    }
+
+    initializeWidgets() {
+        const desktopEl = document.getElementById('desktop');
+        if (!desktopEl) return;
+
+        // Create container
+        const widgetsContainer = document.createElement('div');
+        widgetsContainer.className = 'desktop-widgets-container';
+        desktopEl.appendChild(widgetsContainer);
+
+        // Render widget slots (Battery is completely removed to fit cleanly on screen!)
+        widgetsContainer.innerHTML = `
+            <!-- 1. Large Clock Widget -->
+            <div class="desktop-widget widget-clock-card">
+                <div class="widget-clock-large" id="widget-time">12:00<span class="widget-clock-colon">:</span>00</div>
+                <div class="widget-date-label" id="widget-date">MONDAY, MAY 24</div>
+            </div>
+
+            <!-- 2. OS Health & Diagnostics -->
+            <div class="desktop-widget widget-health-card">
+                <div class="widget-title">
+                    <span>🛡️</span> OS Health & Diagnostics
+                </div>
+                <div class="health-status-header">
+                    <div class="health-status-title">
+                        <span class="health-status-pulse"></span>
+                        <span id="health-status-text">System Optimal</span>
+                    </div>
+                </div>
+                <div class="health-detail-item">
+                    <span>Active Tasks</span>
+                    <span id="health-tasks-count">7 background</span>
+                </div>
+                <div class="health-detail-item">
+                    <span>OS Uptime</span>
+                    <span id="health-uptime">00:00:00</span>
+                </div>
+                <button class="diag-btn" id="run-diag-btn">Deep Diagnostics Scan</button>
+                <div class="diag-scan-container" id="diag-scan-wrap">
+                    <div class="diag-scan-text" id="diag-scan-label">Scanning system registry...</div>
+                    <div class="diag-scan-track">
+                        <div class="diag-scan-fill" id="diag-scan-progress"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Storage Usage (Synced dynamically out of 10 GB with Settings / Filesystem) -->
+            <div class="desktop-widget widget-storage-card" style="cursor: pointer;" title="Click to run disk cleanup">
+                <div class="widget-title">
+                    <span>💽</span> Disk Storage
+                </div>
+                <div class="storage-stats-numbers">
+                    <span class="storage-stats-used" id="widget-storage-used">Calculating...</span>
+                    <span class="storage-stats-total">of 10 GB</span>
+                </div>
+                <div class="storage-bar-track">
+                    <div class="storage-bar-segment storage-segment-system" id="widget-storage-system-bar" style="width: 24%;"></div>
+                    <div class="storage-bar-segment storage-segment-apps" id="widget-storage-apps-bar" style="width: 8%;"></div>
+                    <div class="storage-bar-segment storage-segment-media" id="widget-storage-media-bar" style="width: 0%;"></div>
+                </div>
+                <div class="storage-legend-grid">
+                    <div class="storage-legend-item">
+                        <span class="legend-color-dot" style="background-color: #60a5fa;"></span>
+                        <span>System</span>
+                    </div>
+                    <div class="storage-legend-item">
+                        <span class="legend-color-dot" style="background-color: #c084fc;"></span>
+                        <span>Apps</span>
+                    </div>
+                    <div class="storage-legend-item">
+                        <span class="legend-color-dot" style="background-color: #34d399;"></span>
+                        <span>Files</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Initialize Widget Functionalities
+        this._initWidgetClock();
+        this._initWidgetHealth();
+        this._initWidgetStorage();
+    }
+
+    _initWidgetClock() {
+        const timeEl = document.getElementById('widget-time');
+        const dateEl = document.getElementById('widget-date');
+        if (!timeEl || !dateEl) return;
+
+        const update = () => {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0 should be 12
+            
+            timeEl.innerHTML = `${hours}<span class="widget-clock-colon">:</span>${minutes}<span style="font-size: 20px; font-weight: 500; margin-left: 4px;">${ampm}</span>`;
+
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            dateEl.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+        };
+        update();
+        setInterval(update, 1000);
+    }
+
+    _initWidgetHealth() {
+        const uptimeEl = document.getElementById('health-uptime');
+        const tasksEl = document.getElementById('health-tasks-count');
+        const runDiagBtn = document.getElementById('run-diag-btn');
+        const diagScanWrap = document.getElementById('diag-scan-wrap');
+        const diagScanLabel = document.getElementById('diag-scan-label');
+        const diagScanProgress = document.getElementById('diag-scan-progress');
+
+        if (!uptimeEl || !runDiagBtn) return;
+
+        // Uptime counter
+        const startTime = Date.now();
+        const updateUptime = () => {
+            const diff = Date.now() - startTime;
+            const secs = Math.floor((diff / 1000) % 60);
+            const mins = Math.floor((diff / (1000 * 60)) % 60);
+            const hrs = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            uptimeEl.textContent = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            // Also update tasks count
+            const windowCount = window.windowManager ? window.windowManager.windows.length : 0;
+            tasksEl.textContent = `${windowCount} active / ${8 + Math.floor(Math.sin(Date.now() / 10000) * 3)} system`;
+        };
+        updateUptime();
+        setInterval(updateUptime, 1000);
+
+        // Diagnostic Scan Click
+        let scanning = false;
+        runDiagBtn.addEventListener('click', () => {
+            if (scanning) return;
+            scanning = true;
+            runDiagBtn.disabled = true;
+            runDiagBtn.textContent = 'Diagnostic Running...';
+            diagScanWrap.style.display = 'flex';
+            diagScanProgress.style.width = '0%';
+            
+            const steps = [
+                'Verifying system core files...',
+                'Auditing filesystem registry...',
+                'Scanning active thread pool...',
+                'Cleaning application caches...',
+                'Audit Complete! Health: 100%'
+            ];
+            
+            let progress = 0;
+
+            const interval = setInterval(() => {
+                progress += 5;
+                diagScanProgress.style.width = `${progress}%`;
+                
+                // Change text labels periodically
+                const stepIdx = Math.min(steps.length - 1, Math.floor((progress / 100) * steps.length));
+                diagScanLabel.textContent = steps[stepIdx];
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        scanning = false;
+                        runDiagBtn.disabled = false;
+                        runDiagBtn.textContent = 'Run Diagnostic Again';
+                        diagScanWrap.style.display = 'none';
+                        
+                        // Show premium system dialog
+                        if (window.BrowDialog) {
+                            window.BrowDialog.alert(
+                                'System Diagnostics Report',
+                                'Diagnostics Complete!\n\nStatus: OPTIMAL\nHealth Score: 100%\nCaches Cleared: 142 MB\nSystem Files: 0 Corrupt\nAll services running healthy.'
+                            );
+                        } else {
+                            alert('Diagnostics Complete! Status: OPTIMAL (100% Healthy).');
+                        }
+                    }, 500);
+                }
+            }, 100);
+        });
+    }
+
+    _initWidgetStorage() {
+        const usedEl = document.getElementById('widget-storage-used');
+        const systemBar = document.getElementById('widget-storage-system-bar');
+        const appsBar = document.getElementById('widget-storage-apps-bar');
+        const mediaBar = document.getElementById('widget-storage-media-bar');
+        const cardEl = document.querySelector('.widget-storage-card');
+
+        if (!usedEl || !cardEl) return;
+
+        const systemGB = 2.4;
+        const appsGB = 0.8;
+        const totalGB = 10.0;
+
+        const updateStorageUI = async () => {
+            let mediaBytes = 0;
+            if (window.filesystem && typeof window.filesystem.getStorageUsed === 'function') {
+                try {
+                    mediaBytes = await window.filesystem.getStorageUsed();
+                } catch (e) {
+                    console.error('Failed to query storage used:', e);
+                }
+            }
+            
+            const mediaGB = mediaBytes / (1024 * 1024 * 1024);
+            const totalUsedGB = systemGB + appsGB + mediaGB;
+            
+            usedEl.textContent = `${totalUsedGB.toFixed(2)} GB Used`;
+
+            const systemPct = (systemGB / totalGB) * 100;
+            const appsPct = (appsGB / totalGB) * 100;
+            const mediaPct = (mediaGB / totalGB) * 100;
+
+            systemBar.style.width = `${systemPct}%`;
+            appsBar.style.width = `${appsPct}%`;
+            mediaBar.style.width = `${mediaPct}%`;
+        };
+
+        // Real-time synchronization interval
+        updateStorageUI();
+        setInterval(updateStorageUI, 5000);
+
+        // Click to run disk cleanup
+        cardEl.addEventListener('click', async () => {
+            if (window.BrowDialog) {
+                const proceed = await window.BrowDialog.confirm('Disk Analyzer & Cleanup', 'Would you like to run a Deep Disk Audit and clean temporary log files, browser cache, and memory dumps?');
+                if (!proceed) return;
+
+                // Simulate cleaning
+                const cleanupScreen = document.createElement('div');
+                cleanupScreen.className = 'brow-dialog-backdrop';
+                cleanupScreen.innerHTML = `
+                    <div class="brow-dialog">
+                        <div class="brow-dialog-title">Disk Cleanup Running</div>
+                        <div class="brow-dialog-message">Purging cache files and logs...</div>
+                        <div class="diag-scan-track" style="width: 100%; margin-top: 10px;">
+                            <div class="diag-scan-fill" id="cleanup-progress" style="width: 0%; height: 100%;"></div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(cleanupScreen);
+
+                const progressEl = cleanupScreen.querySelector('#cleanup-progress');
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressEl.style.width = `${progress}%`;
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        document.body.removeChild(cleanupScreen);
+
+                        window.BrowDialog.alert('Cleanup Successful', 'Deep Disk Audit Completed!\n\nAll temporary system logs, memory dumps, and duplicate browser caches have been successfully purged.');
+                        updateStorageUI();
+                    }
+                }, 150);
+            }
+        });
     }
 }
 

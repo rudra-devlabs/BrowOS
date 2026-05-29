@@ -1,0 +1,100 @@
+/* css/filepicker.css */
+
+.filepicker-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #2e2e2e;
+    color: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.filepicker-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #444;
+}
+
+.filepicker-nav {
+    background: #555;
+    border: 1px solid #666;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.filepicker-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.filepicker-path {
+    margin-left: 12px;
+    font-weight: bold;
+}
+
+.filepicker-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.filepicker-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.filepicker-item:hover {
+    background-color: #4a4a4a;
+}
+
+.filepicker-item.selected {
+    background-color: #007aff;
+    color: white;
+    border-color: #0056b3;
+}
+
+.filepicker-item img {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+.filepicker-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+    border-top: 1px solid #444;
+    background-color: #3a3a3a;
+}
+
+.filepicker-btn-cancel,
+.filepicker-btn-select {
+    border: 1px solid #555;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.filepicker-btn-cancel {
+    background-color: #555;
+    color: #fff;
+}
+
+.filepicker-btn-select {
+    background-color: #007aff;
+    color: #fff;
+}
+
+.filepicker-btn-select:disabled {
+    background-color: #555;
+    opacity: 0.6;
+    cursor: not-allowed;
+}

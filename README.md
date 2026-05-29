@@ -8,14 +8,14 @@ A browser-based operating system with Apple-like aesthetics, built with HTML, CS
 - Window management system
 - Dock with magnification effect
 - Menu bar with clock
-- Multiple applications (FileBrow, Safari, Messages, Settings)
+- Multiple applications (FileBrow, BrowOSer, Messages, Settings)
 - File system simulation
 - Responsive design
 
 ## Applications
 
 1. **FileBrow** - File manager
-2. **Safari** - Web browser simulation
+2. **BrowOSer** - Web browser simulation
 3. **Messages** - Messaging app simulation
 4. **Settings** - System preferences
 

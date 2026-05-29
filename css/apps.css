@@ -275,6 +275,225 @@
     }
 }
 
+/* FileBrow toolbar right actions layout */
+.filebrow-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+/* Glassmorphism sidebar & toolbar styling */
+.filebrow-layout .filebrow-dark-sidebar {
+    background: rgba(24, 24, 26, 0.6) !important;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.filebrow-layout .filebrow-dark-toolbar {
+    background: rgba(26, 26, 28, 0.65) !important;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* List view & grid scroll container border and backdrop style */
+.filebrow-dark-grid,
+.filebrow-dark-list {
+    background: rgba(16, 16, 18, 0.4) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* FileBrow Layout Toggle Group */
+.filebrow-toggle-group {
+    display: flex;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filebrow-toggle-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.55);
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms ease;
+}
+
+.filebrow-toggle-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.filebrow-toggle-btn.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* FileBrow Search Box */
+.filebrow-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 2px 8px;
+    width: 180px;
+    transition: all 200ms ease;
+}
+
+.filebrow-search-container:focus-within {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    width: 220px;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+
+.filebrow-search-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+    margin-right: 6px;
+    pointer-events: none;
+}
+
+.filebrow-search-input {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    padding: 3px 0;
+}
+
+.filebrow-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* FileBrow List View Tabular Layout */
+.filebrow-dark-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.filebrow-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.filebrow-list-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #171719;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.filebrow-list-table th {
+    padding: 8px 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    user-select: none;
+}
+
+.filebrow-list-table th:first-child {
+    padding-left: 24px;
+}
+
+/* List Table Rows & Cells */
+tr.filebrow-entry {
+    display: table-row;
+}
+.filebrow-list-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    transition: background 100ms ease;
+}
+
+.filebrow-list-row:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    transform: none !important; /* Remove translateY grid animation */
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.filebrow-list-row.active,
+.filebrow-list-row:active {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.filebrow-list-table td {
+    padding: 10px 16px;
+    vertical-align: middle;
+    color: #e3e3e7;
+}
+
+.filebrow-list-table td:first-child {
+    padding-left: 24px;
+}
+
+.filebrow-list-cell-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.list-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.list-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+.filebrow-list-cell-kind {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.filebrow-list-cell-size {
+    color: rgba(255, 255, 255, 0.5);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Responsive Search & Toolbar */
+@media (max-width: 860px) {
+    .filebrow-toolbar-right {
+        width: 100%;
+        justify-content: space-between;
+        order: 4;
+    }
+    .filebrow-search-container {
+        flex: 1;
+        width: auto;
+    }
+    .filebrow-search-container:focus-within {
+        width: auto;
+    }
+}
+
 /* Safari app styles */
 .safari-window {
     display: flex;
@@ -997,3 +1216,1011 @@
     background: rgba(255, 255, 255, 0.1);
     margin: 4px 0;
 }
+
+/* CodeBrow — VS Code-inspired code editor */
+.codebrow-window {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #1e1e1e;
+    color: #cccccc;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.codebrow-container {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+/* ── Activity Bar ── */
+.codebrow-activitybar {
+    width: 48px;
+    background: #2c2c2c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    border-right: 1px solid #1e1e1e;
+    z-index: 10;
+}
+
+.codebrow-activity-top,
+.codebrow-activity-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 0;
+}
+
+.codebrow-activity-btn {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: color 100ms ease, background 100ms ease;
+    position: relative;
+}
+
+.codebrow-activity-btn:hover {
+    color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.codebrow-activity-btn.active {
+    color: #ffffff;
+}
+
+.codebrow-activity-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: #0078d4;
+    border-radius: 1px;
+}
+
+/* ── Sidebar ── */
+.codebrow-sidebar {
+    width: 260px;
+    background: #252526;
+    border-right: 1px solid #1e1e1e;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+.codebrow-sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.codebrow-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #bbbbbb;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #1e1e1e;
+    flex-shrink: 0;
+}
+
+.codebrow-sidebar-header-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.codebrow-sidebar-action {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 15px;
+    transition: color 100ms ease, background 100ms ease;
+}
+
+.codebrow-sidebar-action:hover {
+    color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.codebrow-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.codebrow-sidebar-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.codebrow-sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.codebrow-sidebar-content::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 3px;
+}
+
+.codebrow-sidebar-placeholder {
+    padding: 20px 16px;
+    color: #6e6e6e;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.6;
+}
+
+/* ── File Tree ── */
+.codebrow-tree-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 14px 2px 8px;
+    height: 22px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #cccccc;
+    white-space: nowrap;
+    transition: background 80ms ease;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.codebrow-tree-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.codebrow-tree-item.active {
+    background: rgba(37, 37, 38, 0.8);
+    color: #ffffff;
+}
+
+.codebrow-tree-item .codebrow-tree-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #858585;
+}
+
+.codebrow-tree-item .codebrow-tree-icon.folder {
+    color: #dcb67a;
+    font-size: 15px;
+}
+
+.codebrow-tree-item .codebrow-tree-icon.file {
+    color: #a5a5a5;
+    font-size: 12px;
+}
+
+.codebrow-tree-item .codebrow-tree-icon.file.js { color: #f7df1e; }
+.codebrow-tree-item .codebrow-tree-icon.file.ts { color: #3178c6; }
+.codebrow-tree-item .codebrow-tree-icon.file.html { color: #e44d26; }
+.codebrow-tree-item .codebrow-tree-icon.file.css { color: #264de4; }
+.codebrow-tree-item .codebrow-tree-icon.file.json { color: #a5a5a5; }
+.codebrow-tree-item .codebrow-tree-icon.file.md { color: #42a5f5; }
+.codebrow-tree-item .codebrow-tree-icon.file.py { color: #3572A5; }
+.codebrow-tree-item .codebrow-tree-icon.file.shell { color: #89e051; }
+.codebrow-tree-item .codebrow-tree-icon.file.xml { color: #a5a5a5; }
+.codebrow-tree-item .codebrow-tree-icon.file.yaml { color: #a5a5a5; }
+.codebrow-tree-item .codebrow-tree-icon.file.sql { color: #e38c00; }
+.codebrow-tree-item .codebrow-tree-icon.file.sh { color: #89e051; }
+
+.codebrow-tree-item .codebrow-tree-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.codebrow-tree-item .codebrow-tree-chevron {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: #cccccc;
+    font-size: 10px;
+    transition: transform 120ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.codebrow-tree-item .codebrow-tree-chevron.open {
+    transform: rotate(90deg);
+}
+
+.codebrow-tree-children {
+    overflow: hidden;
+}
+
+.codebrow-tree-folder-wrap {
+    /* wrapper for folder row + children */
+}
+
+/* ── Main Area ── */
+.codebrow-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #1e1e1e;
+    position: relative;
+}
+
+/* ── Tabs Bar ── */
+.codebrow-tabs-bar {
+    display: flex;
+    align-items: center;
+    background: #252526;
+    border-bottom: 1px solid #1e1e1e;
+    flex-shrink: 0;
+    min-height: 35px;
+    overflow: hidden;
+}
+
+.codebrow-tabs {
+    display: flex;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: stretch;
+}
+
+.codebrow-tabs::-webkit-scrollbar {
+    height: 0;
+}
+
+.codebrow-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: #969696;
+    background: #2d2d2d;
+    border-right: 1px solid #252526;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: relative;
+    min-width: 0;
+    transition: background 80ms ease, color 80ms ease;
+    user-select: none;
+}
+
+.codebrow-tab:hover {
+    background: #2a2a2a;
+}
+
+.codebrow-tab.active {
+    color: #e0e0e0;
+    background: #1e1e1e;
+    border-bottom: 1px solid #1e1e1e;
+    margin-bottom: -1px;
+}
+
+.codebrow-tab.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #0078d4;
+}
+
+.codebrow-tab .codebrow-tab-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+
+.codebrow-tab .codebrow-tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.codebrow-tab .codebrow-tab-modified {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    flex-shrink: 0;
+    display: none;
+}
+
+.codebrow-tab .codebrow-tab-modified.show {
+    display: block;
+}
+
+.codebrow-tab .codebrow-tab-close {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: transparent;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: background 80ms ease, color 80ms ease;
+}
+
+.codebrow-tab:hover .codebrow-tab-close {
+    color: #969696;
+}
+
+.codebrow-tab .codebrow-tab-close:hover {
+    color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.codebrow-tabs-actions {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+/* ── Find/Replace ── */
+.codebrow-find-bar {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3c3c3c;
+    flex-shrink: 0;
+}
+
+.codebrow-find-bar.show {
+    display: flex;
+}
+
+.codebrow-find-input,
+.codebrow-replace-input {
+    background: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 3px 8px;
+    color: #e0e0e0;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+}
+
+.codebrow-find-input:focus,
+.codebrow-replace-input:focus {
+    border-color: #0078d4;
+}
+
+.codebrow-find-input {
+    flex: 1;
+    max-width: 220px;
+}
+
+.codebrow-replace-input {
+    flex: 1;
+    max-width: 160px;
+}
+
+.codebrow-find-count {
+    font-size: 11px;
+    color: #6e6e6e;
+    min-width: 50px;
+    white-space: nowrap;
+}
+
+.codebrow-find-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: #858585;
+    cursor: pointer;
+    transition: background 80ms ease, color 80ms ease;
+}
+
+.codebrow-find-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e0e0e0;
+}
+
+.codebrow-find-close {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: #858585;
+    cursor: pointer;
+    transition: background 80ms ease;
+}
+
+.codebrow-find-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.codebrow-toolbar-divider {
+    width: 1px;
+    height: 18px;
+    background: #3c3c3c;
+    flex-shrink: 0;
+}
+
+.codebrow-tool-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #858585;
+    cursor: pointer;
+    transition: background 80ms ease, color 80ms ease;
+}
+
+.codebrow-tool-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e0e0e0;
+}
+
+/* ── Editor Area ── */
+.codebrow-editor-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+.codebrow-gutter {
+    width: 50px;
+    background: #1e1e1e;
+    border-right: 1px solid #2d2d2d;
+    overflow: hidden;
+    flex-shrink: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    user-select: none;
+}
+
+.codebrow-gutter-line {
+    display: block;
+    height: 20px;
+    line-height: 20px;
+    text-align: right;
+    padding-right: 12px;
+    font-size: 12px;
+    color: #858585;
+    font-family: Consolas, 'Courier New', monospace;
+}
+
+.codebrow-gutter-line.active {
+    color: #c6c6c6;
+}
+
+.codebrow-input-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.codebrow-textarea,
+.codebrow-highlight,
+.codebrow-highlight code {
+    font-family: Consolas, 'Courier New', monospace !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    tab-size: 4 !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.codebrow-textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 8px 14px;
+    color: transparent;
+    background: transparent;
+    caret-color: #aeafad;
+    resize: none;
+    outline: none;
+    border: none;
+    z-index: 2;
+    overflow: auto;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Draggable VS Code Sleek Dark Scrollbars */
+.codebrow-textarea::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.codebrow-textarea::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+.codebrow-textarea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0px;
+    transition: background 150ms ease;
+}
+.codebrow-textarea::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+.codebrow-textarea::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.35);
+}
+.codebrow-textarea::-webkit-scrollbar-corner {
+    background: #1e1e1e;
+}
+
+.codebrow-textarea::selection {
+    background: rgba(0, 120, 212, 0.3);
+    -webkit-text-fill-color: transparent;
+}
+
+.codebrow-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 8px 14px;
+    white-space: pre;
+    word-wrap: normal;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+    color: #d4d4d4;
+}
+
+.codebrow-monaco-container {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    position: relative;
+    background: #1e1e1e;
+    overflow: hidden;
+}
+
+/* Syntax highlight colors (VS Code Dark) */
+.codebrow-highlight .hl-comment { color: #6a9955; font-style: italic; }
+.codebrow-highlight .hl-string { color: #ce9178; }
+.codebrow-highlight .hl-number { color: #b5cea8; }
+.codebrow-highlight .hl-keyword { color: #569cd6; }
+.codebrow-highlight .hl-function { color: #dcdcaa; }
+.codebrow-highlight .hl-operator { color: #d4d4d4; }
+.codebrow-highlight .hl-property { color: #9cdcfe; }
+.codebrow-highlight .hl-punctuation { color: #d4d4d4; }
+.codebrow-highlight .hl-tag { color: #569cd6; }
+.codebrow-highlight .hl-attr { color: #9cdcfe; }
+.codebrow-highlight .hl-value { color: #ce9178; }
+.codebrow-highlight .hl-selector { color: #d7ba7d; }
+.codebrow-highlight .hl-builtin { color: #4ec9b0; }
+.codebrow-highlight .hl-param { color: #9cdcfe; }
+.codebrow-highlight .hl-class { color: #4ec9b0; }
+.codebrow-highlight .hl-variable { color: #9cdcfe; }
+
+/* ── Status Bar ── */
+.codebrow-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    background: #007acc;
+    font-size: 12px;
+    color: #ffffff;
+    flex-shrink: 0;
+    min-height: 22px;
+    gap: 14px;
+}
+
+.codebrow-status-left,
+.codebrow-status-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.codebrow-status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    cursor: default;
+    white-space: nowrap;
+}
+
+.codebrow-status-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.codebrow-status-git {
+    gap: 4px;
+}
+
+/* ── Search Panel ── */
+.codebrow-search-input-wrap {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.codebrow-search-input {
+    background: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 4px 8px;
+    color: #e0e0e0;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.codebrow-search-input:focus {
+    border-color: #0078d4;
+}
+
+.codebrow-search-hint {
+    font-size: 11px;
+    color: #6e6e6e;
+    text-align: center;
+}
+
+/* ── Editor Placeholder Landing Page ── */
+.codebrow-editor-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    background: #1e1e1e;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: none;
+    padding: 40px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.codebrow-editor-placeholder .placeholder-logo {
+    margin-bottom: 20px;
+    opacity: 0.6;
+    animation: placeholderPulse 3s infinite ease-in-out;
+}
+
+.codebrow-editor-placeholder h2 {
+    font-size: 20px;
+    font-weight: 400;
+    margin: 0 0 30px;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 1px;
+}
+
+.codebrow-editor-placeholder .placeholder-shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 20px 24px;
+    min-width: 260px;
+}
+
+.codebrow-editor-placeholder .shortcut-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    gap: 24px;
+}
+
+.codebrow-editor-placeholder .shortcut-row .label {
+    color: rgba(255, 255, 255, 0.5);
+    text-align: left;
+}
+
+.codebrow-editor-placeholder .shortcut-row .keys {
+    font-family: Consolas, monospace;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    border-bottom: 1.5px solid rgba(0, 0, 0, 0.2);
+}
+
+.codebrow-textarea,
+.codebrow-highlight {
+    box-sizing: border-box !important;
+}
+
+.codebrow-highlight code {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+@keyframes placeholderPulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.03); opacity: 0.75; }
+}
+
+/* ── Explorer Sidebar Collapsible Accordions ── */
+.codebrow-accordion {
+    border-bottom: 1px solid #1e1e1e;
+    display: flex;
+    flex-direction: column;
+}
+
+.codebrow-accordion-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: #1e1e1e;
+    cursor: pointer;
+    user-select: none;
+    font-size: 11px;
+    font-weight: 700;
+    color: #cccccc;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    gap: 8px;
+    position: relative;
+    height: 28px;
+    box-sizing: border-box;
+}
+
+.codebrow-accordion-header:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+}
+
+.codebrow-accordion-arrow {
+    font-size: 8px;
+    width: 10px;
+    display: inline-block;
+    color: #bbbbbb;
+    transition: transform 100ms ease;
+}
+
+.codebrow-accordion-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.codebrow-accordion-actions {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    position: absolute;
+    right: 8px;
+    top: 3px;
+}
+
+.codebrow-accordion:hover .codebrow-accordion-actions {
+    display: flex;
+}
+
+.codebrow-accordion-content {
+    overflow-y: auto;
+}
+
+.codebrow-accordion.active .codebrow-accordion-content {
+    display: block;
+}
+
+/* ── Dedicated Interactive Welcome Screen ── */
+.codebrow-welcome-screen {
+    display: flex;
+    flex-direction: column;
+    background: #0e0e10;
+    color: #cccccc;
+    flex: 1;
+    height: 100%;
+    overflow-y: auto;
+    padding: 60px 80px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+.welcome-left {
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.welcome-header {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.welcome-title {
+    font-size: 38px;
+    font-weight: 300;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.welcome-subtitle {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
+}
+
+.welcome-section h2 {
+    font-size: 16px;
+    font-weight: 500;
+    color: #e0e0e0;
+    margin: 0 0 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.welcome-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.welcome-link-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: transparent;
+    border: none;
+    color: #0098ff;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    width: fit-content;
+    transition: background 150ms ease, color 150ms ease;
+}
+
+.welcome-link-btn:hover {
+    background: rgba(0, 152, 255, 0.1);
+    color: #33b3ff;
+    text-decoration: none;
+}
+
+.welcome-link-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* --- Void Tactics (Starship Game) --- */
+.starship-window {
+    width: 100%;
+    height: 100%;
+    background-color: #0c0e14;
+    color: #4A90E2;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+}
+.starship-ui {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+}
+.starship-tactical {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #1a2a3a;
+    background: #05070a;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: inset 0 0 20px rgba(74, 144, 226, 0.05);
+}
+.entity-status {
+    padding: 10px;
+    background: rgba(74, 144, 226, 0.05);
+    border: 1px solid rgba(74, 144, 226, 0.2);
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+.enemy-status { border-color: rgba(229, 62, 62, 0.3); background: rgba(229, 62, 62, 0.05); color: #E53E3E; }
+.entity-name { font-weight: bold; margin-bottom: 5px; font-size: 14px; letter-spacing: 1px; }
+.bar-container { height: 8px; background: #1a1c23; border-radius: 4px; overflow: hidden; margin-bottom: 5px; border: 1px solid #333; }
+.bar-fill { height: 100%; transition: width 0.3s ease; }
+.hp-bar { background: #E53E3E; }
+.shield-bar { background: #63B3ED; }
+.player-status .hp-bar { background: #48BB78; }
+.battle-log-container { flex: 1; overflow-y: auto; padding: 10px; border: 1px solid #1a2a3a; background: #000; border-radius: 4px; margin-bottom: 10px; font-size: 12px; line-height: 1.5; color: #A0AEC0; }
+.battle-log { display: flex; flex-direction: column; gap: 4px; }
+.battle-log div.log-player { color: #63B3ED; }
+.battle-log div.log-enemy { color: #FC8181; }
+.battle-log div.log-system { color: #A0AEC0; }
+.starship-controls { background: #0f131a; padding: 15px; border-radius: 6px; border: 1px solid #1a2a3a; }
+.power-status { font-weight: bold; margin-bottom: 10px; color: #F6E05E; font-size: 14px; text-shadow: 0 0 5px rgba(246, 224, 94, 0.3); }
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.action-btn { background: #1a202c; border: 1px solid #2d3748; color: #E2E8F0; padding: 12px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-family: monospace; transition: all 0.2s; }
+.action-btn:hover:not(:disabled) { background: #2d3748; border-color: #4A90E2; }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-title { font-weight: bold; }
+.btn-cost { color: #F6E05E; font-size: 12px; }
+.end-turn-btn { width: 100%; background: #2B6CB0; color: white; border: none; font-weight: bold; text-align: center; justify-content: center; border: 1px solid #4A90E2; }
+.end-turn-btn:hover:not(:disabled) { background: #3182CE; box-shadow: 0 0 10px rgba(66, 153, 225, 0.5); }
+.attack-btn { border-left: 3px solid #E53E3E; }
+.heavy-btn { border-left: 3px solid #D69E2E; }
+.defend-btn { border-left: 3px solid #4299E1; }
+.evasive-btn { border-left: 3px solid #48BB78; }
+
+/* --- BrowRacer (Retro Arcade Game) --- */
+#racer-start-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 51, 102, 0.6), 0 0 15px rgba(139, 92, 246, 0.4);
+    filter: brightness(1.1);
+}
+#racer-start-btn:active {
+    transform: scale(0.98);
+}
+

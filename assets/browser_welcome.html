@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to BrowOSer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d12;
+            --card-bg: rgba(22, 22, 33, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --glow-color: rgba(139, 92, 246, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.08), transparent 40%),
+                        var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 720px;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-wrap {
+            margin-bottom: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .logo-glow {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            filter: blur(25px);
+            opacity: 0.6;
+            z-index: 1;
+            border-radius: 50%;
+        }
+
+        .logo-icon {
+            font-size: 54px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            z-index: 2;
+            letter-spacing: -2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Search Card */
+        .search-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 32px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .search-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .search-input-wrap {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 18px;
+            padding-left: 48px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 12px var(--glow-color);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .search-icon-svg {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: var(--text-muted);
+            pointer-events: none;
+            transition: fill 0.3s;
+        }
+
+        .search-input:focus + .search-icon-svg {
+            fill: var(--accent-primary);
+        }
+
+        .btn-go {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-go:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+            filter: brightness(1.1);
+        }
+
+        .search-engines {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .engine-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .engine-label:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .engine-label input {
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        /* Shortcuts grid */
+        .grid-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 14px;
+            text-align: left;
+            padding-left: 8px;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .shortcut-tile {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 16px 12px;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+        }
+
+        .shortcut-tile:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s;
+        }
+
+        .shortcut-tile:hover .tile-icon {
+            transform: scale(1.08);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+        }
+
+        .tile-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Diagnostic Warning Info */
+        .info-card {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+            text-align: left;
+            backdrop-filter: blur(12px);
+        }
+
+        .info-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #f87171;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .info-header svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .info-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .info-desc strong {
+            color: var(--text-main);
+        }
+
+        .info-desc ul {
+            margin-left: 18px;
+            margin-top: 6px;
+            margin-bottom: 8px;
+        }
+
+        .btn-external {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 6px;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-external:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 36px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header Logo -->
+    <div class="logo-wrap">
+        <div class="logo-glow"></div>
+        <div class="logo-icon">
+            <span>🌐</span> BrowOSer
+        </div>
+    </div>
+    <div class="logo-subtitle" style="margin-top: -16px; margin-bottom: 32px;">Web Navigator</div>
+
+    <!-- Search Engine Card -->
+    <div class="search-card">
+        <div class="search-title">Where to next?</div>
+        <form class="search-form" id="search-form">
+            <div class="search-input-wrap">
+                <input type="text" class="search-input" id="search-input" placeholder="Search the web or enter site address..." autocomplete="off" autofocus>
+                <svg class="search-icon-svg" viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </div>
+            <button type="submit" class="btn-go">Go</button>
+        </form>
+
+        <div class="search-engines">
+            <label class="engine-label">
+                <input type="radio" name="engine" value="google" checked> Google (External)
+            </label>
+            <label class="engine-label">
+                <input type="radio" name="engine" value="bing"> Bing
+            </label>
+            <label class="engine-label">
+                <input type="radio" name="engine" value="duckduckgo"> DuckDuckGo
+            </label>
+        </div>
+    </div>
+
+    <!-- Frame-Friendly Shortcuts -->
+    <div class="grid-title">Frame-Friendly Links</div>
+    <div class="shortcuts-grid">
+        <a class="shortcut-tile" data-url="https://en.m.wikipedia.org">
+            <div class="tile-icon" style="background: #2e303f;">W</div>
+            <div class="tile-name">Wikipedia</div>
+        </a>
+        <a class="shortcut-tile" data-url="https://archive.org">
+            <div class="tile-icon" style="background: #1e3a8a;">IA</div>
+            <div class="tile-name">Internet Archive</div>
+        </a>
+        <a class="shortcut-tile" data-url="https://mathjs.org">
+            <div class="tile-icon" style="background: #065f46;">M</div>
+            <div class="tile-name">MathJS</div>
+        </a>
+        <a class="shortcut-tile" data-url="https://threejs.org">
+            <div class="tile-icon" style="background: #111;">3J</div>
+            <div class="tile-name">ThreeJS</div>
+        </a>
+    </div>
+
+    <!-- Diagnostic Panel -->
+    <div class="info-card">
+        <div class="info-header">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            <span>Why do some websites refuse to connect?</span>
+        </div>
+        <div class="info-desc">
+            For security, many large websites (like Google, GitHub, YouTube, or Facebook) send headers such as <strong>X-Frame-Options: SAMEORIGIN</strong> to block themselves from being embedded inside frames on other web pages.
+            <br><br>
+            If you encounter a <strong>"refused to connect"</strong> screen, click below to open the page in a new browser tab directly:
+            <br>
+            <span class="btn-external" id="btn-open-new-tab">🌐 Open current search in a new browser tab &rarr;</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        BrowOSer Simulator &bull; Running Sandboxed
+    </div>
+</div>
+
+<script>
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const btnOpenNewTab = document.getElementById('btn-open-new-tab');
+
+    // Trigger parent navigation using clean frameElement Event Dispatching
+    const navigateParent = (url) => {
+        const frame = window.frameElement;
+        if (frame) {
+            const event = new CustomEvent('safari-iframe-navigate', { 
+                detail: { url: url } 
+            });
+            frame.dispatchEvent(event);
+        } else {
+            // Fallback if accessed directly in normal browser window
+            window.location.href = url;
+        }
+    };
+
+    searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        const selectedEngine = document.querySelector('input[name="engine"]:checked').value;
+
+        if (/^https?:\/\//i.test(query) || (query.includes('.') && !query.includes(' '))) {
+            // It's a URL
+            let targetUrl = query;
+            if (!/^https?:\/\//i.test(targetUrl)) {
+                targetUrl = 'https://' + targetUrl;
+            }
+            navigateParent(targetUrl);
+        } else {
+            // It's a search query
+            if (selectedEngine === 'google') {
+                // Google blocks iframes! Open directly in new tab and let the user search there
+                window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
+            } else if (selectedEngine === 'bing') {
+                // Bing works in some settings or provides results, let's load in iframe
+                navigateParent('https://www.bing.com/search?q=' + encodeURIComponent(query));
+            } else {
+                // DuckDuckGo
+                navigateParent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query));
+            }
+        }
+    });
+
+    // Wire up the grid tiles
+    document.querySelectorAll('.shortcut-tile').forEach(tile => {
+        tile.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = tile.getAttribute('data-url');
+            if (url) {
+                navigateParent(url);
+            }
+        });
+    });
+
+    // Wire up the open in new tab helper
+    btnOpenNewTab.addEventListener('click', () => {
+        const query = searchInput.value.trim() || "https://www.google.com";
+        if (/^https?:\/\//i.test(query) || (query.includes('.') && !query.includes(' '))) {
+            let targetUrl = query;
+            if (!/^https?:\/\//i.test(targetUrl)) {
+                targetUrl = 'https://' + targetUrl;
+            }
+            window.open(targetUrl, '_blank');
+        } else {
+            window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
+        }
+    });
+</script>
+</body>
+</html>

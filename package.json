@@ -1,0 +1,14 @@
+{
+  "name": "browos",
+  "version": "1.0.0",
+  "description": "A browser-based operating system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx serve ."
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "express": "^4.18.2"
+  }
+}

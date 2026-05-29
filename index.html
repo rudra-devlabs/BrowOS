@@ -4,17 +4,293 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BrowOS</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/desktop.css">
-    <link rel="stylesheet" href="css/window.css">
-    <link rel="stylesheet" href="css/apps.css">
+    <link rel="stylesheet" href="css/style.css?v=20260524-2">
+    <link rel="stylesheet" href="css/desktop.css?v=20260518-2">
+    <link rel="stylesheet" href="css/window.css?v=20260524-2">
+    <link rel="stylesheet" href="css/widgets.css?v=20260524-1">
+    <link rel="stylesheet" href="css/apps.css?v=20260518-2">
+    <link rel="stylesheet" href="css/filepicker.css?v=20260520-1">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
-    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/terminal.css?v=20260518-2">
     <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <style>
+        #boot-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+            transition: opacity 0.5s ease;
+        }
+        #boot-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #boot-logo {
+            width: 120px;
+            height: 120px;
+            animation: boot-spin 2s linear infinite;
+            margin-bottom: 40px;
+        }
+        @keyframes boot-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        #boot-progress-track {
+            width: 200px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #boot-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        #crash-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100001;
+        }
+        #crash-screen.visible {
+            display: flex;
+        }
+        .crash-window {
+            background: #2a2a2c;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            width: 420px;
+            overflow: hidden;
+            animation: crash-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+        @keyframes crash-pop {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .crash-header {
+            height: 32px;
+            background: #3a3a3c;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+        }
+        .crash-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .crash-dot.red { background: #ff5f57; }
+        .crash-dot.yellow { background: #febc2e; }
+        .crash-dot.green { background: #28c840; }
+        .crash-title {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: #d1d1d6;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .crash-body {
+            padding: 24px;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .crash-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            color: #ff3b30;
+        }
+        .crash-body h2 {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px;
+        }
+        .crash-body p {
+            color: #a1a1a6;
+            font-size: 13px;
+            margin: 0 0 16px;
+            line-height: 1.4;
+        }
+        .crash-error {
+            background: #1a1a1c;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .crash-error code {
+            color: #ff6b6b;
+            font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+            font-size: 11px;
+            word-break: break-all;
+            display: block;
+            line-height: 1.5;
+        }
+        .crash-btn {
+            background: #007aff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 24px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            transition: background 0.15s;
+        }
+        .crash-btn:hover {
+            background: #0066d6;
+        }
+        .crash-btn.danger {
+            background: #ff3b30;
+        }
+        .crash-btn.danger:hover {
+            background: #d63027;
+        }
+        .crash-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        #shutdown-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100002;
+            flex-direction: column;
+        }
+        #shutdown-overlay.visible {
+            display: flex;
+        }
+        #shutdown-overlay.fade-in {
+            animation: shutdown-fade 1.5s ease forwards;
+        }
+        @keyframes shutdown-fade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #shutdown-text {
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 16px;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+        #powered-off-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100003;
+        }
+        #powered-off-screen.visible {
+            display: flex;
+        }
+        #powered-off-logo {
+            width: 80px;
+            height: 80px;
+            opacity: 0.3;
+            margin-bottom: 24px;
+        }
+        #start-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 24px;
+            padding: 12px 32px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #start-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+        }
+        #start-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+    </style>
 </head>
 <body>
+    <!-- Boot Screen -->
+    <div id="boot-screen">
+        <img id="boot-logo" src="assets/icons/logo.svg" alt="BrowOS">
+        <div id="boot-progress-track">
+            <div id="boot-progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Crash Screen -->
+    <div id="crash-screen">
+        <div class="crash-window">
+            <div class="crash-header">
+                <div class="crash-dot red"></div>
+                <div class="crash-dot yellow"></div>
+                <div class="crash-dot green"></div>
+                <div class="crash-title">System Error</div>
+            </div>
+            <div class="crash-body">
+                <svg class="crash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <h2>BrowOS Failed to Start</h2>
+                <p>A critical system component failed to load.</p>
+                <div class="crash-error">
+                    <code id="crash-error-text">Unknown error</code>
+                </div>
+                <div class="crash-buttons">
+                    <button class="crash-btn danger" onclick="BrowOS.shutdown()">Shut Down</button>
+                    <button class="crash-btn" onclick="BrowOS.restart()">Restart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shutdown Overlay -->
+    <div id="shutdown-overlay">
+        <img src="assets/icons/logo.svg" alt="BrowOS" style="width:60px;height:60px;opacity:0.5;">
+        <div id="shutdown-text">Shutting down...</div>
+    </div>
+
+    <!-- Powered Off Screen -->
+    <div id="powered-off-screen">
+        <img id="powered-off-logo" src="assets/icons/logo.svg" alt="BrowOS">
+        <button id="start-btn" onclick="BrowOS.start()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start BrowOS
+        </button>
+    </div>
+
     <!-- Desktop Environment -->
-    <div id="desktop">
+    <div id="desktop" style="display:none;">
         <div class="wallpaper" aria-hidden="true">
             <div class="wallpaper-blob wallpaper-blob--1"></div>
             <div class="wallpaper-blob wallpaper-blob--2"></div>
@@ -43,7 +319,7 @@
                     <div class="minimized-dot"></div>
                 </div>
                 <div class="dock-app" data-app="safari" data-title="BrowOSer">
-                    <img src="assets/icons/safari.svg" alt="Safari">
+                    <img src="assets/icons/safari.svg" alt="BrowOSer">
                     <div class="minimized-dot"></div>
                 </div>
                 <div class="dock-app" data-app="messages" data-title="Messages">
@@ -64,6 +340,19 @@
                 </div>
                 <div class="dock-app" data-app="brownote" data-title="Brow Note">
                     <img src="assets/icons/brownote.svg" alt="Brow Note">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="codebrow" data-title="CodeBrow">
+                    <img src="assets/icons/codebrow.svg" alt="CodeBrow">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="starship" data-title="Void Tactics">
+                    <img src="assets/icons/apps/starship.svg" alt="Void Tactics">
+                    <div class="minimized-dot"></div>
+                </div>
+            </div>
+                <div class="dock-app" data-app="codebrow" data-title="CodeBrow">
+                    <img src="assets/icons/codebrow.svg" alt="CodeBrow">
                     <div class="minimized-dot"></div>
                 </div>
                 <div class="dock-app" data-app="music" data-title="Brow Music">
@@ -89,12 +378,167 @@
     </div>
 
     <!-- Core System Scripts -->
-    <script src="js/icons.js"></script>
-    <script src="js/apps.js"></script>
-    <script src="js/desktop.js"></script>
-    <script src="js/window.js"></script>
-    <script src="js/filebrow.js"></script>
-    <script src="js/filesystem.js"></script>
-    <script src="js/shell.js" type="module"></script>
+    <script>
+        window.BrowOS = {
+            shutdown: function() {
+                const crashScreen = document.getElementById('crash-screen');
+                const shutdownOverlay = document.getElementById('shutdown-overlay');
+                const poweredOffScreen = document.getElementById('powered-off-screen');
+
+                crashScreen.style.display = 'none';
+                shutdownOverlay.classList.add('visible', 'fade-in');
+
+                setTimeout(() => {
+                    shutdownOverlay.classList.remove('visible', 'fade-in');
+                    poweredOffScreen.classList.add('visible');
+                }, 2000);
+            },
+
+            restart: function() {
+                // Close all windows
+                if (window.windowManager && window.windowManager.windows) {
+                    window.windowManager.windows.forEach(w => {
+                        if (w.element && w.element.parentNode) {
+                            w.element.remove();
+                        }
+                    });
+                    window.windowManager.windows = [];
+                }
+
+                // Reset terminal
+                if (window.BrowShell && window.BrowShell.instance) {
+                    const shell = window.BrowShell.instance;
+                    if (shell.term) {
+                        shell.term.clear();
+                        shell.term.reset();
+                    }
+                    if (shell._resizeObserver) {
+                        shell._resizeObserver.disconnect();
+                    }
+                    shell.inputBuffer = [];
+                    shell.commandHistory = [];
+                    shell.historyIndex = -1;
+                    shell.currentInput = '';
+                    shell.cursorPos = 0;
+                    shell.isProcessing = false;
+                    window.BrowShell.instance = null;
+                }
+
+                // Reload page
+                location.reload();
+            },
+
+            start: function() {
+                const poweredOffScreen = document.getElementById('powered-off-screen');
+                poweredOffScreen.classList.remove('visible');
+                location.reload();
+            }
+        };
+    </script>
+    <script>
+        (function() {
+            const BOOT_STEPS = [
+                { id: 'icons', label: 'icons.js' },
+                { id: 'apps', label: 'apps.js' },
+                { id: 'desktop', label: 'desktop.js' },
+                { id: 'window', label: 'window.js' },
+                { id: 'filebrow', label: 'filebrow.js' },
+                { id: 'filesystem', label: 'filesystem.js' },
+                { id: 'shell', label: 'shell.js' },
+                { id: 'xterm', label: 'xterm.js' },
+                { id: 'wallpapers', label: 'wallpapers' },
+                { id: 'dock-icons', label: 'dock icons' },
+                { id: 'starship', label: 'starship.js' },
+                { id: 'racer', label: 'racer.js' },
+            ];
+
+            const progressFill = document.getElementById('boot-progress-fill');
+            const bootScreen = document.getElementById('boot-screen');
+            const crashScreen = document.getElementById('crash-screen');
+            const crashErrorText = document.getElementById('crash-error-text');
+            const desktop = document.getElementById('desktop');
+
+            let completed = 0;
+            const total = BOOT_STEPS.length;
+            const failed = [];
+
+            function updateProgress() {
+                const pct = Math.round((completed / total) * 100);
+                progressFill.style.width = pct + '%';
+            }
+
+            function markStep(id, success, error) {
+                completed++;
+                if (!success) {
+                    failed.push({ id, error: error || 'Unknown' });
+                }
+                updateProgress();
+
+                if (completed >= total) {
+                    setTimeout(() => {
+                        if (failed.length > 0) {
+                            showCrash(failed);
+                        } else {
+                            bootComplete();
+                        }
+                    }, 400);
+                }
+            }
+
+            function showCrash(failures) {
+                const msgs = failures.map(f => `[${f.id}] ${f.error}`).join('\n');
+                crashErrorText.textContent = msgs;
+                bootScreen.style.display = 'none';
+                crashScreen.classList.add('visible');
+            }
+
+            function bootComplete() {
+                bootScreen.classList.add('fade-out');
+                desktop.style.display = '';
+                setTimeout(() => {
+                    bootScreen.style.display = 'none';
+                }, 500);
+            }
+
+            window._bootStep = markStep;
+            window._bootFail = function(id, err) { markStep(id, false, err); };
+        })();
+    </script>
+    <script src="js/icons.js?v=20260518-2" onload="window._bootStep('icons', true)" onerror="window._bootFail('icons', 'Failed to load icons.js')"></script>
+    <script src="js/apps.js?v=20260520-1" onload="window._bootStep('apps', true)" onerror="window._bootFail('apps', 'Failed to load apps.js')"></script>
+    <script src="js/desktop.js?v=20260524-4" onload="window._bootStep('desktop', true)" onerror="window._bootFail('desktop', 'Failed to load desktop.js')"></script>
+    <script src="js/window.js?v=20260524-2" onload="window._bootStep('window', true)" onerror="window._bootFail('window', 'Failed to load window.js')"></script>
+    <script src="js/filepicker.js?v=20260520-1" onload="window._bootStep('filepicker', true)" onerror="window._bootFail('filepicker', 'Failed to load filepicker.js')"></script>
+    <script src="js/filebrow.js?v=20260518-2" onload="window._bootStep('filebrow', true)" onerror="window._bootFail('filebrow', 'Failed to load filebrow.js')"></script>
+    <script src="js/filesystem.js?v=20260518-2" onload="window._bootStep('filesystem', true)" onerror="window._bootFail('filesystem', 'Failed to load filesystem.js')"></script>
+    <script src="js/starship.js" onload="window._bootStep('starship', true)" onerror="window._bootFail('starship', 'Failed to load starship.js')"></script>
+    <script src="js/racer.js?v=20260524-1" onload="window._bootStep('racer', true)" onerror="window._bootFail('racer', 'Failed to load racer.js')"></script>
+    <script src="js/shell.js?v=20260518-2" type="module" onload="window._bootStep('shell', true)" onerror="window._bootFail('shell', 'Failed to load shell.js')"></script>
+    <script>
+        (function() {
+            if (typeof Terminal !== 'undefined') {
+                window._bootStep('xterm', true);
+            } else {
+                window._bootFail('xterm', 'xterm.js not loaded');
+            }
+        })();
+    </script>
+    <script>
+        (function() {
+            const testImgs = ['assets/wallpapers/sonoma.svg', 'assets/icons/filebrow.svg', 'assets/icons/safari.svg'];
+            let loaded = 0;
+            testImgs.forEach(src => {
+                const img = new Image();
+                img.onload = img.onerror = function() {
+                    loaded++;
+                    if (loaded >= testImgs.length) {
+                        window._bootStep('wallpapers', true);
+                        window._bootStep('dock-icons', true);
+                    }
+                };
+                img.src = src;
+            });
+        })();
+    </script>
 </body>
 </html>

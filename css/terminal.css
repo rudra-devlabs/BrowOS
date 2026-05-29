@@ -1,6 +1,8 @@
 .terminal-shell-container {
     height: 100% !important;
     width: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
     background: #000000 !important;
     position: relative !important;
     overflow: hidden !important;
@@ -9,6 +11,7 @@
 .terminal-shell {
     height: 100% !important;
     width: 100% !important;
+    min-height: 0 !important;
     background: #000000 !important;
     position: relative !important;
     overflow: hidden !important;
@@ -19,6 +22,12 @@
 #xterm-container .xterm {
     width: 100% !important;
     height: 100% !important;
+    min-height: 0 !important;
+}
+
+#xterm-container {
+    position: absolute !important;
+    inset: 0 !important;
 }
 
 #xterm-container .xterm {
@@ -28,6 +37,22 @@
     font-kerning: none !important;
     font-variant-ligatures: none !important;
     text-rendering: optimizeSpeed !important;
+    overflow: hidden !important;
+}
+
+#xterm-container .xterm-viewport {
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+#xterm-container .xterm-viewport::-webkit-scrollbar {
+    display: none !important;
+}
+
+#xterm-container .xterm-screen {
+    overflow: hidden !important;
 }
 
 #xterm-container .xterm-rows,
@@ -36,7 +61,7 @@
 #xterm-container .xterm-char-measure-element {
     letter-spacing: 0 !important;
     word-spacing: 0 !important;
-    font-family: "Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "SF Mono", "DejaVu Sans Mono", monospace !important;
+    font-family: "Ubuntu Mono", "Cascadia Mono", Consolas, "Lucida Console", "SF Mono", "DejaVu Sans Mono", monospace !important;
     font-kerning: none !important;
     font-variant-ligatures: none !important;
     font-feature-settings: "liga" 0, "calt" 0 !important;
@@ -73,6 +98,8 @@
     background: #1a1a1c !important;
     color: #f5f5f7 !important;
     border: none !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
 }
 
 .window.terminal-window .terminal-shell-container,

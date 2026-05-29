@@ -11,6 +11,10 @@
     min-width: 300px;
     min-height: 200px;
     resize: both;
+    opacity: 1;
+    visibility: visible;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 .window-header {
@@ -140,6 +144,7 @@
 /* Window animations */
 .window-opening {
     animation: windowFadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+    will-change: transform, opacity;
 }
 
 .window-minimizing {
@@ -156,12 +161,12 @@
 @keyframes genieMinimize {
     0% {
         clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-        transform: translate(0px, 0px) scaleY(1) scaleX(1);
+        transform: translate(0px, 0px) scaleY(1) scaleX(1) translateZ(0);
         opacity: 1;
     }
     100% {
         clip-path: polygon(48% 0%, 52% 0%, 50% 100%, 50% 100%);
-        transform: translate(var(--dash-x, 0px), var(--dash-y, 0px)) scaleY(0.01) scaleX(0.01);
+        transform: translate(var(--dash-x, 0px), var(--dash-y, 0px)) scaleY(0.01) scaleX(0.01) translateZ(0);
         opacity: 0;
     }
 }
@@ -169,12 +174,12 @@
 @keyframes genieRestore {
     0% {
         clip-path: polygon(48% 0%, 52% 0%, 50% 100%, 50% 100%);
-        transform: translate(var(--dash-x, 0px), var(--dash-y, 0px)) scaleY(0.01) scaleX(0.01);
+        transform: translate(var(--dash-x, 0px), var(--dash-y, 0px)) scaleY(0.01) scaleX(0.01) translateZ(0);
         opacity: 0;
     }
     100% {
         clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-        transform: translate(0px, 0px) scaleY(1) scaleX(1);
+        transform: translate(0px, 0px) scaleY(1) scaleX(1) translateZ(0);
         opacity: 1;
     }
 }
@@ -182,26 +187,28 @@
 @keyframes windowFadeIn {
     from {
         opacity: 0;
-        transform: scale(0.8);
+        transform: scale(0.8) translateZ(0);
     }
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: scale(1) translateZ(0);
     }
 }
 
 .window-closing {
-    animation: windowFadeOut 0.15s ease-in;
+    animation: windowFadeOut 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+    pointer-events: none !important;
+    will-change: transform, opacity;
 }
 
 @keyframes windowFadeOut {
     from {
         opacity: 1;
-        transform: scale(1);
+        transform: scale(1) translateZ(0);
     }
     to {
         opacity: 0;
-        transform: scale(0.8);
+        transform: scale(0.9) translateZ(0);
     }
 }
 
@@ -319,3 +326,33 @@
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
+
+/* Window Snapping Preview Guide Overlay */
+#snap-preview {
+    position: fixed;
+    background: rgba(59, 130, 246, 0.18);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2px dashed rgba(59, 130, 246, 0.5);
+    border-radius: 12px;
+    z-index: 99999;
+    pointer-events: none;
+    transition: top 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                left 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                width 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                height 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                opacity 0.2s ease;
+    opacity: 0;
+    box-sizing: border-box;
+}
+
+#snap-preview.visible {
+    opacity: 1;
+}
+
+/* Snapped state helpers */
+.window.snapped {
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+

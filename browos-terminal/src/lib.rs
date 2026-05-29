@@ -13,6 +13,9 @@ extern "C" {
     
     #[wasm_bindgen(js_namespace = window)]
     fn browos_fs_mkdir(path: &str) -> Promise;
+
+    #[wasm_bindgen(js_namespace = window)]
+    fn browos_fs_mkdir_p(path: &str) -> Promise;
     
     #[wasm_bindgen(js_namespace = window)]
     fn browos_fs_rm(path: &str) -> Promise;
@@ -28,6 +31,9 @@ extern "C" {
     
     #[wasm_bindgen(js_namespace = window)]
     fn browos_fs_move(src: &str, dest: &str) -> Promise;
+
+    #[wasm_bindgen(js_namespace = window)]
+    fn browos_fs_copy(src: &str, dest: &str) -> Promise;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -66,6 +72,39 @@ pub struct Shell {
     env: std::collections::HashMap<String, String>,
 }
 
+fn parse_args(input: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut current_arg = String::new();
+    let mut in_quotes = false;
+    let mut quote_char = ' ';
+
+    for c in input.chars() {
+        if in_quotes {
+            if c == quote_char {
+                in_quotes = false;
+            } else {
+                current_arg.push(c);
+            }
+        } else {
+            if c == '"' || c == '\'' {
+                in_quotes = true;
+                quote_char = c;
+            } else if c.is_whitespace() {
+                if !current_arg.is_empty() {
+                    args.push(current_arg.clone());
+                    current_arg.clear();
+                }
+            } else {
+                current_arg.push(c);
+            }
+        }
+    }
+    if !current_arg.is_empty() {
+        args.push(current_arg);
+    }
+    args
+}
+
 impl Shell {
     pub fn new() -> Self {
         let mut env = std::collections::HashMap::new();
@@ -90,9 +129,14 @@ impl Shell {
             self.history.remove(0);
         }
 
-        let parts: Vec<&str> = trimmed.split_whitespace().collect();
-        let cmd = parts[0];
-        let args = &parts[1..];
+        let parts = parse_args(trimmed);
+        if parts.is_empty() {
+            return String::new();
+        }
+        
+        let cmd = parts[0].as_str();
+        let args: Vec<&str> = parts[1..].iter().map(|s| s.as_str()).collect();
+        let args = args.as_slice();
 
         match cmd {
             "help" => self.cmd_help(),
@@ -104,6 +148,8 @@ impl Shell {
             "cat" => self.cmd_cat(args).await,
             "mkdir" => self.cmd_mkdir(args).await,
             "rm" => self.cmd_rm(args).await,
+            "cp" => self.cmd_cp(args).await,
+            "touch" => self.cmd_touch(args).await,
             "history" => self.cmd_history(),
             "whoami" => self.env.get("USER").unwrap_or(&"unknown".to_string()).clone(),
             "hostname" => self.env.get("HOSTNAME").unwrap_or(&"browos".to_string()).clone(),
@@ -127,8 +173,10 @@ impl Shell {
             "  \x1b[36mcd [path]\x1b[0m   Change directory",
             "  \x1b[36mls [path]\x1b[0m   List directory contents",
             "  \x1b[36mcat [file]\x1b[0m  Display file contents",
-            "  \x1b[36mmkdir [dir]\x1b[0m Create a directory",
-            "  \x1b[36mrm [file]\x1b[0m   Remove a file or directory",
+            "  \x1b[36mmkdir [-p] [dir]\x1b[0m Create a directory",
+            "  \x1b[36mrm [-r] [file]\x1b[0m Remove a file or directory",
+            "  \x1b[36mcp [src] [dest]\x1b[0m Copy files or directories",
+            "  \x1b[36mtouch [file]\x1b[0m Create an empty file",
             "  \x1b[36mgrep [pat] [file]\x1b[0m Search for pattern in file",
             "  \x1b[36mgetnet [url]\x1b[0m Download file from URL",
             "  \x1b[36mmv [src] [dest]\x1b[0m Move or rename files",
@@ -233,45 +281,183 @@ impl Shell {
     }
 
     async fn cmd_mkdir(&self, args: &[&str]) -> String {
-        if args.is_empty() {
+        let mut create_parents = false;
+        let mut targets = Vec::new();
+
+        for arg in args {
+            match *arg {
+                "-p" | "--parents" => create_parents = true,
+                _ => targets.push(*arg),
+            }
+        }
+
+        if targets.is_empty() {
             return "\x1b[31mmkdir: missing directory operand\x1b[0m".to_string();
         }
 
-        let path = if args[0].starts_with('/') {
-            args[0].to_string()
-        } else {
-            if self.cwd == "/" {
-                format!("/{}", args[0])
-            } else {
-                format!("{}/{}", self.cwd, args[0])
-            }
-        };
+        let mut results = Vec::new();
 
-        match JsFuture::from(browos_fs_mkdir(&path)).await {
-            Ok(_) => String::new(),
-            Err(_) => format!("\x1b[31mmkdir: cannot create directory '{}'\x1b[0m", args[0]),
+        for target in targets {
+            let path = if target.starts_with('/') {
+                target.to_string()
+            } else {
+                if self.cwd == "/" {
+                    format!("/{}", target)
+                } else {
+                    format!("{}/{}", self.cwd, target)
+                }
+            };
+
+            let promise = if create_parents {
+                browos_fs_mkdir_p(&path)
+            } else {
+                browos_fs_mkdir(&path)
+            };
+
+            match JsFuture::from(promise).await {
+                Ok(_) => {}
+                Err(_) => results.push(format!("\x1b[31mmkdir: cannot create directory '{}'\x1b[0m", target)),
+            }
         }
+
+        results.join("\n")
     }
 
     async fn cmd_rm(&self, args: &[&str]) -> String {
-        if args.is_empty() {
-            return "\x1b[31mrm: missing file operand\x1b[0m".to_string();
+        let mut recursive = false;
+        let mut targets = Vec::new();
+        
+        for arg in args {
+            match *arg {
+                "-r" | "-R" | "--recursive" => recursive = true,
+                _ => targets.push(*arg),
+            }
         }
 
-        let path = if args[0].starts_with('/') {
-            args[0].to_string()
-        } else {
-            if self.cwd == "/" {
-                format!("/{}", args[0])
+        if targets.is_empty() {
+            return "\x1b[31mrm: missing operand\x1b[0m".to_string();
+        }
+
+        let mut results = Vec::new();
+
+        for target in targets {
+            let path = if target.starts_with('/') {
+                target.to_string()
             } else {
-                format!("{}/{}", self.cwd, args[0])
+                if self.cwd == "/" {
+                    format!("/{}", target)
+                } else {
+                    format!("{}/{}", self.cwd, target)
+                }
+            };
+            
+            if !recursive {
+                if let Ok(_) = JsFuture::from(browos_fs_list(&path)).await {
+                    results.push(format!("\x1b[31mrm: cannot remove '{}': Is a directory\x1b[0m", target));
+                    continue;
+                }
             }
+
+            match JsFuture::from(browos_fs_rm(&path)).await {
+                Ok(_) => {}
+                Err(_) => results.push(format!("\x1b[31mrm: cannot remove '{}'\x1b[0m", target)),
+            }
+        }
+        
+        results.join("\n")
+    }
+
+    async fn cmd_cp(&self, args: &[&str]) -> String {
+        if args.len() < 2 {
+            return "\x1b[31mcp: missing file operand\x1b[0m".to_string();
+        }
+
+        let mut sources = Vec::new();
+        let mut dest_str = None;
+
+        for arg in args {
+            if dest_str.is_some() {
+                return format!("\x1b[31mcp: extra operand '{}'\x1b[0m", arg);
+            }
+            sources.push(*arg);
+        }
+        dest_str = Some(sources.pop().unwrap());
+
+        let dest_path = match dest_str {
+            Some(d) => {
+                if d.starts_with('/') {
+                    self.normalize_path(&d)
+                } else {
+                    self.normalize_path(&format!("{}/{}", self.cwd, d))
+                }
+            }
+            None => return "\x1b[31mcp: missing destination\x1b[0m".to_string(),
         };
 
-        match JsFuture::from(browos_fs_rm(&path)).await {
-            Ok(_) => String::new(),
-            Err(_) => format!("\x1b[31mrm: cannot remove '{}'\x1b[0m", args[0]),
+        let dest_handle = match JsFuture::from(browos_fs_list(&dest_path)).await {
+            Ok(_) => Some(dest_path.clone()),
+            Err(_) => None,
+        };
+
+        let mut results = Vec::new();
+
+        for src in sources {
+            let src_path = if src.starts_with('/') {
+                self.normalize_path(src)
+            } else {
+                self.normalize_path(&format!("{}/{}", self.cwd, src))
+            };
+
+            let full_dest = if let Some(ref dest_dir) = dest_handle {
+                let src_name = src.split('/').filter(|s| !s.is_empty()).last().unwrap_or(src);
+                if dest_dir.ends_with('/') {
+                    format!("{}{}", dest_dir, src_name)
+                } else {
+                    format!("{}/{}", dest_dir, src_name)
+                }
+            } else {
+                dest_path.clone()
+            };
+
+            match JsFuture::from(browos_fs_copy(&src_path, &full_dest)).await {
+                Ok(_) => {}
+                Err(e) => {
+                    let err_msg = e.as_string().unwrap_or_else(|| "unknown error".to_string());
+                    results.push(format!("\x1b[31mcp: cannot copy '{}' to '{}': {}\x1b[0m", src, full_dest, err_msg));
+                }
+            }
         }
+
+        results.join("\n")
+    }
+
+    async fn cmd_touch(&self, args: &[&str]) -> String {
+        if args.is_empty() {
+            return "\x1b[31mtouch: missing file operand\x1b[0m".to_string();
+        }
+
+        let mut results = Vec::new();
+
+        for target in args {
+            let path = if target.starts_with('/') {
+                target.to_string()
+            } else {
+                if self.cwd == "/" {
+                    format!("/{}", target)
+                } else {
+                    format!("{}/{}", self.cwd, target)
+                }
+            };
+
+            if let Err(_) = JsFuture::from(browos_fs_read(&path)).await {
+                match JsFuture::from(browos_fs_write(&path, "")).await {
+                    Ok(_) => {}
+                    Err(_) => results.push(format!("\x1b[31mtouch: cannot touch '{}'\x1b[0m", target)),
+                }
+            }
+        }
+        
+        results.join("\n")
     }
 
     fn cmd_history(&self) -> String {
@@ -472,7 +658,7 @@ impl Shell {
 
     async fn cmd_mv(&self, args: &[&str]) -> String {
         if args.len() < 2 {
-            return "\x1b[31mmv: missing operand\x1b[0m\n\x1b[1mUsage:\x1b[0m mv [OPTION]... SOURCE DEST\n  \x1b[36m-i\x1b[0m  Prompt before overwrite\n  \x1b[36m-n\x1b[0m  Never overwrite\n  \x1b[36m-v\x1b[0m  Verbose output".to_string();
+            return "\x1b[31mmv: missing operand\x1b[0m\n\x1b[1mUsage:\x1b[0m mv [OPTION]... SOURCE DEST\n  \x1b[36m-n\x1b[0m  Never overwrite\n  \x1b[36m-v\x1b[0m  Verbose output".to_string();
         }
 
         let mut no_clobber = false;
@@ -483,7 +669,6 @@ impl Shell {
         let mut i = 0;
         while i < args.len() {
             match args[i] {
-                "-i" => { i += 1; }
                 "-n" => { no_clobber = true; i += 1; }
                 "-v" => { verbose = true; i += 1; }
                 arg if !arg.starts_with('-') => {
