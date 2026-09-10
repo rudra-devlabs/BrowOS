@@ -39,12 +39,82 @@
         return loadingPromises[src];
     }
 
+    // Robust Three.js Loader with AMD bypass & CDN fallback
+    function ensureThree() {
+        if (typeof window.THREE !== 'undefined' && window.THREE.WebGLRenderer) {
+            return Promise.resolve(window.THREE);
+        }
+        if (window._threeLoadingPromise) {
+            return window._threeLoadingPromise;
+        }
+
+        const loadScriptDirect = (src) => new Promise((resolve, reject) => {
+            const _prevDefine = window.define;
+            // Prevent AMD hijack: UMD Three.js checks define.amd and skips setting window.THREE if present
+            if (window.define && window.define.amd) {
+                window.define = undefined;
+            }
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = false;
+            script.onload = () => {
+                if (_prevDefine) window.define = _prevDefine;
+                resolve();
+            };
+            script.onerror = (err) => {
+                if (_prevDefine) window.define = _prevDefine;
+                reject(err);
+            };
+            document.head.appendChild(script);
+        });
+
+        window._threeLoadingPromise = (async () => {
+            // 1. Try local Three.js
+            try {
+                await loadScriptDirect('assets/vendor/three.min.js?v=r134');
+            } catch (e) {
+                console.warn('[ThreeLoader] Local three.min.js unreachable, attempting CDN fallback...', e);
+            }
+
+            // 2. Fallback to CDN if THREE is not defined
+            if (typeof window.THREE === 'undefined' || !window.THREE.WebGLRenderer) {
+                console.warn('[ThreeLoader] Fetching Three.js r134 from CDN...');
+                try {
+                    await loadScriptDirect('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
+                } catch (cdnErr) {
+                    await loadScriptDirect('https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js');
+                }
+            }
+
+            if (typeof window.THREE === 'undefined') {
+                throw new Error('Three.js failed to initialize from both local and CDN sources.');
+            }
+
+            // 3. Ensure GLTFLoader is loaded for 3D vehicles & world models
+            if (!window.THREE.GLTFLoader) {
+                try {
+                    await loadScriptDirect('assets/vendor/GLTFLoader.js?v=r134');
+                } catch (e) {
+                    try {
+                        await loadScriptDirect('https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js');
+                    } catch (e2) {
+                        console.warn('[ThreeLoader] GLTFLoader CDN failed:', e2);
+                    }
+                }
+            }
+
+            return window.THREE;
+        })();
+
+        return window._threeLoadingPromise;
+    }
+
     // Lazy load configurations for games to eliminate 5.7 MB from boot
     const GAME_CONFIGS = {
         starship: {
             title: 'Void Tactics 3D',
+            needsThree: true,
             scripts: [
-                'assets/vendor/three.min.js?v=r134',
                 'assets/vendor/three-mesh-bvh.umd.js?v=0.7.8',
                 'assets/vendor/three/CopyShader.js?v=r134',
                 'assets/vendor/three/LuminosityHighPassShader.js?v=r134',
@@ -52,10 +122,9 @@
                 'assets/vendor/three/RenderPass.js?v=r134',
                 'assets/vendor/three/ShaderPass.js?v=r134',
                 'assets/vendor/three/UnrealBloomPass.js?v=r134',
-                'assets/vendor/GLTFLoader.js?v=r134',
                 'js/starship.js?v=20260903-3d'
             ],
-            isReady: () => typeof window.initStarshipGame === 'function',
+            isReady: () => typeof window.THREE !== 'undefined' && typeof window.initStarshipGame === 'function',
             mount: (el) => window.initStarshipGame && window.initStarshipGame(el)
         },
         browrio: {
@@ -68,21 +137,21 @@
         },
         gta: {
             title: 'Brow City (GTA)',
+            needsThree: true,
             scripts: [
-                'assets/vendor/three.min.js?v=r134',
                 'js/wasm_physics.js?v=20260904-1',
                 'js/gta.js?v=20260909-44'
             ],
-            isReady: () => typeof window.initGtaGame === 'function',
+            isReady: () => typeof window.THREE !== 'undefined' && typeof window.initGtaGame === 'function',
             mount: (el) => window.initGtaGame && window.initGtaGame(el)
         },
         snake: {
             title: 'Snake 3D Arcade',
+            needsThree: true,
             scripts: [
-                'assets/vendor/three.min.js?v=r134',
                 'js/snake.js?v=20260904-3d'
             ],
-            isReady: () => typeof window.initSnake3DGame === 'function',
+            isReady: () => typeof window.THREE !== 'undefined' && typeof window.initSnake3DGame === 'function',
             mount: (el) => window.initSnake3DGame && window.initSnake3DGame(el)
         },
         terrario: {
@@ -111,12 +180,15 @@
         loader.innerHTML = `
             <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.15);border-top-color:#0a84ff;border-radius:50%;animation:boot-spin 0.75s linear infinite;margin-bottom:14px;"></div>
             <div style="font-size:14px;font-weight:600;letter-spacing:0.2px;">Launching ${cfg.title}...</div>
-            <div style="font-size:11px;color:#8e8e93;margin-top:4px;">Loading game engine & assets on demand</div>
+            <div style="font-size:11px;color:#8e8e93;margin-top:4px;">Loading 3D engine & assets on demand</div>
         `;
         contentArea.appendChild(loader);
 
         (async () => {
             try {
+                if (cfg.needsThree) {
+                    await ensureThree();
+                }
                 for (const src of cfg.scripts) {
                     await loadScript(src);
                 }
