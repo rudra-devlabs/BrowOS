@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brow City — Estate & Mountain Hills 3D Inspector</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔️</text></svg>">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #10141d;
+    --panel: rgba(16, 22, 34, 0.92);
+    --panel-border: rgba(255, 255, 255, 0.12);
+    --text: #f0f4f8;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.35);
+    --emerald: #10b981;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+  }
+
+  #canvas-container {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1;
+    cursor: grab;
+  }
+  #canvas-container:active {
+    cursor: grabbing;
+  }
+  body.fly-mode #canvas-container {
+    cursor: move;
+  }
+  body.pointer-locked #canvas-container {
+    cursor: none;
+  }
+
+  .top-bar {
+    position: absolute;
+    top: 16px; left: 16px; right: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .brand {
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .brand h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #fff;
+  }
+
+  .brand span {
+    font-size: 11px;
+    text-transform: uppercase;
+    background: rgba(56, 189, 248, 0.18);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  button {
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+
+  button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  button.active {
+    background: var(--accent);
+    color: #04101d;
+    border-color: var(--accent);
+    box-shadow: 0 0 15px var(--accent-glow);
+  }
+
+  button.success {
+    background: var(--emerald);
+    color: #022c22;
+    border-color: var(--emerald);
+  }
+
+  .floating-panel {
+    position: absolute;
+    bottom: 20px; left: 20px;
+    width: 340px;
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 16px;
+    z-index: 10;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .control-label {
+    font-size: 11.5px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .stats-badge {
+    position: absolute;
+    top: 76px; right: 20px;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    z-index: 10;
+    line-height: 1.6;
+    color: var(--muted);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .stats-badge strong {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  #fly-banner {
+    position: absolute;
+    top: 80px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(14, 165, 233, 0.95);
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-size: 12.5px;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  #fly-banner.active {
+    display: flex;
+  }
+  #fly-banner kbd {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+
+  #crosshair {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 12px; height: 12px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 40;
+    display: none;
+  }
+  #crosshair::before, #crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.85);
+  }
+  #crosshair::before { top: 5px; left: 0; width: 12px; height: 2px; }
+  #crosshair::after { top: 0; left: 5px; width: 2px; height: 12px; }
+  body.pointer-locked #crosshair {
+    display: block;
+  }
+
+  .move-hud {
+    position: absolute;
+    bottom: 24px; right: 24px;
+    background: var(--panel);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: 20;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  }
+  .dpad-row {
+    display: flex;
+    gap: 6px;
+  }
+  .dpad-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  #toast {
+    position: absolute;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: rgba(16, 185, 129, 0.95);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .help-tips {
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(0,0,0,0.3);
+    padding: 8px 10px;
+    border-radius: 8px;
+    line-height: 1.5;
+  }
+  .help-tips kbd {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+<div id="crosshair"></div>
+
+<div class="top-bar">
+  <div class="brand">
+    <h1 id="brandTitle">Brow City — 3D Asset Inspector</h1>
+    <span id="badgeMode">Orbit View</span>
+  </div>
+
+  <div class="top-actions">
+    <button id="btnSceneVilla" onclick="switchScene('villa')">
+      🏡 Villa & Hills
+    </button>
+    <button id="btnScenePolice" class="active" onclick="switchScene('police')">
+      🚔 Police HQ & Prison
+    </button>
+    <button id="btnModeOrbit" class="active" onclick="setCameraMode('orbit')">
+      🔭 Orbit View
+    </button>
+    <button id="btnModeFly" onclick="setCameraMode('fly')">
+      🚶 Free Walk & Fly (WASD)
+    </button>
+    <button id="btnReload" class="success" title="Reload GLBs from disk">
+      🔄 Reload
+    </button>
+    <button id="btnResetCam" title="Reset camera view">
+      🎯 Overview
+    </button>
+  </div>
+</div>
+
+<div id="fly-banner">
+  🎮 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move · Drag Mouse to Look · <kbd>Space</kbd> Fly Up · <kbd>C</kbd> Down · <kbd>Shift</kbd> Sprint · Click to Lock Look
+</div>
+
+<div class="stats-badge" id="statsBadge">
+  <div id="badgeModelName">Model: <strong>police_headquarters.glb</strong> (6.1 MB)</div>
+  <div>Vertices: <strong id="valVerts">Loading...</strong></div>
+  <div>Triangles: <strong id="valTris">Loading...</strong></div>
+  <div>Status: <strong id="valStatus" style="color:var(--emerald);">Ready</strong></div>
+  <div>Camera: <strong id="valCamMode" style="color:var(--accent);">Orbit</strong></div>
+</div>
+
+<div class="floating-panel">
+  <div class="panel-title">Camera Mode</div>
+  <div class="grid-2">
+    <button id="btnPanelOrbit" class="active" onclick="setCameraMode('orbit')">🔭 Orbit Mode</button>
+    <button id="btnPanelFly" onclick="setCameraMode('fly')">🚶 Free Walk (WASD)</button>
+  </div>
+
+  <div class="control-row">
+    <div class="control-label">
+      <span>Movement Speed</span>
+      <span id="txtSpeed">14 m/s</span>
+    </div>
+    <input type="range" id="sliderSpeed" min="2" max="40" step="1" value="14">
+  </div>
+
+  <div class="panel-title">Teleport Bookmarks</div>
+  <div class="grid-2" id="bookmarksGrid">
+  </div>
+
+  <div class="panel-title">Lighting Rig</div>
+  <div class="grid-3">
+    <button id="lightDay" class="active" onclick="setLightPreset('day')">☀️ Daylight</button>
+    <button id="lightStudio" onclick="setLightPreset('studio')">💡 Studio</button>
+    <button id="lightNight" onclick="setLightPreset('night')">🌙 Dusk</button>
+  </div>
+
+  <div class="control-row">
+    <div class="control-label">
+      <span>Sun Light (Directional)</span>
+      <span id="txtSun">1.2x</span>
+    </div>
+    <input type="range" id="sliderSun" min="0" max="3.0" step="0.1" value="1.2">
+  </div>
+
+  <div class="control-row">
+    <div class="control-label">
+      <span>Ambient Fill Light</span>
+      <span id="txtAmbient">0.8x</span>
+    </div>
+    <input type="range" id="sliderAmbient" min="0.1" max="2.5" step="0.1" value="0.8">
+  </div>
+
+  <div class="panel-title">Inspection Tools</div>
+  <div class="grid-2">
+    <button id="btnHills" style="display:none;" onclick="toggleHills()">⛰️ Toggle Hills</button>
+    <button id="btnColliders" onclick="toggleColliders()">🛡️ Show Colliders</button>
+    <button id="btnWireframe" onclick="toggleWireframe()">🕸️ Wireframe</button>
+    <button id="btnRoof" onclick="toggleRoof()">🏠 Hide Ceilings</button>
+    <button id="btnGlass" onclick="toggleGlass()">🪟 Hide Glass</button>
+    <button id="btnAutoRotate" style="grid-column: span 2;" onclick="toggleAutoRotate()">🌀 360° Rotate</button>
+  </div>
+
+  <div class="help-tips">
+    <strong>Controls:</strong><br>
+    • Click & drag mouse anywhere to look around<br>
+    • Click viewport to lock mouse pointer (press <kbd>ESC</kbd> to unlock)<br>
+    • <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk / Drive<br>
+    • <kbd>Space</kbd> Fly up &nbsp;|&nbsp; <kbd>C</kbd> Fly down<br>
+    • <kbd>Shift</kbd> Sprint faster
+  </div>
+</div>
+
+<div class="move-hud" id="moveHud" style="display:none;">
+  <div class="dpad-row">
+    <button class="dpad-btn" onmousedown="keys.w=true" onmouseup="keys.w=false" onmouseleave="keys.w=false">⬆️</button>
+  </div>
+  <div class="dpad-row">
+    <button class="dpad-btn" onmousedown="keys.a=true" onmouseup="keys.a=false" onmouseleave="keys.a=false">⬅️</button>
+    <button class="dpad-btn" onmousedown="keys.s=true" onmouseup="keys.s=false" onmouseleave="keys.s=false">⬇️</button>
+    <button class="dpad-btn" onmousedown="keys.d=true" onmouseup="keys.d=false" onmouseleave="keys.d=false">➡️</button>
+  </div>
+  <div class="dpad-row">
+    <button class="dpad-btn" style="width:58px; font-size:11px;" onmousedown="keys.space=true" onmouseup="keys.space=false" onmouseleave="keys.space=false">Up 🔺</button>
+    <button class="dpad-btn" style="width:58px; font-size:11px;" onmousedown="keys.c=true" onmouseup="keys.c=false" onmouseleave="keys.c=false">Down 🔻</button>
+  </div>
+</div>
+
+<div id="toast">Models Loaded!</div>
+
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/OrbitControls.js"></script>
+<script src="assets/vendor/GLTFLoader.js"></script>
+
+<script>
+(() => {
+  'use strict';
+
+  const container = document.getElementById('canvas-container');
+  const toast = document.getElementById('toast');
+  const flyBanner = document.getElementById('fly-banner');
+  const moveHud = document.getElementById('moveHud');
+  const VILLA_PATH = 'assets/models/custom/villa_estate.glb';
+  const HILLS_PATH = 'assets/models/custom/san_andreas_hills.glb';
+  const POLICE_PATH = 'assets/models/custom/police_headquarters.glb';
+  let currentScene = (new URLSearchParams(window.location.search).get('scene')) || 'police';
+  let showColliders = false;
+  const colliderMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, wireframe: true });
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x131924);
+
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+  camera.position.set(0, 42, -55);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  container.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.06;
+  controls.target.set(0, 28, 15);
+  controls.maxDistance = 600;
+  controls.minDistance = 0.5;
+  controls.update();
+
+  const grid = new THREE.GridHelper(400, 80, 0x38bdf8, 0x223044);
+  grid.position.y = -0.01;
+  scene.add(grid);
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+  scene.add(ambientLight);
+
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x556677, 0.35);
+  scene.add(hemiLight);
+
+  const sunLight = new THREE.DirectionalLight(0xfff6ee, 0.85);
+  sunLight.position.set(80, 120, -100);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.width = 2048;
+  sunLight.shadow.mapSize.height = 2048;
+  sunLight.shadow.bias = -0.0003;
+  sunLight.shadow.camera.near = 10;
+  sunLight.shadow.camera.far = 400;
+  sunLight.shadow.camera.left = -150;
+  sunLight.shadow.camera.right = 150;
+  sunLight.shadow.camera.top = 150;
+  sunLight.shadow.camera.bottom = -150;
+  scene.add(sunLight);
+
+  const backFill = new THREE.DirectionalLight(0xaaccff, 0.6);
+  backFill.position.set(-80, 60, 100);
+  scene.add(backFill);
+
+  // State
+  let compoundGroup = new THREE.Group();
+  scene.add(compoundGroup);
+
+  let villaMesh = null;
+  let hillsMesh = null;
+  let showHills = true;
+  let isWireframe = false;
+  let hideRoof = false;
+  let hideGlass = false;
+  let cameraMode = 'orbit';
+  let moveSpeed = 14;
+  let isPointerLocked = false;
+  let isMouseDown = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  window.keys = {
+    w: false, a: false, s: false, d: false,
+    space: false, c: false, q: false, e: false,
+    shift: false
+  };
+
+  const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const PI_2 = Math.PI / 2;
+
+  window.setCameraMode = (mode) => {
+    cameraMode = mode;
+    document.body.classList.toggle('fly-mode', mode === 'fly');
+    document.getElementById('btnModeOrbit').classList.toggle('active', mode === 'orbit');
+    document.getElementById('btnModeFly').classList.toggle('active', mode === 'fly');
+    document.getElementById('btnPanelOrbit').classList.toggle('active', mode === 'orbit');
+    document.getElementById('btnPanelFly').classList.toggle('active', mode === 'fly');
+    document.getElementById('badgeMode').textContent = mode === 'fly' ? 'Walk & Fly (WASD)' : 'Orbit View';
+    document.getElementById('valCamMode').textContent = mode === 'fly' ? 'Walk/Fly' : 'Orbit';
+    document.getElementById('valCamMode').style.color = mode === 'fly' ? '#10b981' : 'var(--accent)';
+    moveHud.style.display = (mode === 'fly') ? 'flex' : 'none';
+
+    if (mode === 'fly') {
+      controls.enabled = false;
+      flyBanner.classList.add('active');
+      camera.lookAt(controls.target);
+      euler.setFromQuaternion(camera.quaternion);
+      showToast('Fly Mode: WASD to move, drag mouse to look');
+    } else {
+      controls.enabled = true;
+      flyBanner.classList.remove('active');
+      if (document.pointerLockElement) document.exitPointerLock();
+      const dir = new THREE.Vector3();
+      camera.getWorldDirection(dir);
+      controls.target.copy(camera.position).addScaledVector(dir, 15);
+      showToast('Orbit Mode: Click and drag to orbit');
+    }
+  };
+
+  container.addEventListener('click', () => {
+    if (cameraMode === 'fly' && !isPointerLocked) {
+      container.requestPointerLock();
+    }
+  });
+
+  document.addEventListener('pointerlockchange', () => {
+    isPointerLocked = (document.pointerLockElement === container);
+    document.body.classList.toggle('pointer-locked', isPointerLocked);
+  });
+
+  container.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+  window.addEventListener('mousemove', (e) => {
+    if (cameraMode !== 'fly') return;
+
+    if (isPointerLocked) {
+      const dx = e.movementX || 0;
+      const dy = e.movementY || 0;
+      euler.y -= dx * 0.0024;
+      euler.x -= dy * 0.0024;
+      euler.x = Math.max(-PI_2 + 0.02, Math.min(PI_2 - 0.02, euler.x));
+      camera.quaternion.setFromEuler(euler);
+    } else if (isMouseDown) {
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      euler.y -= dx * 0.003;
+      euler.x -= dy * 0.003;
+      euler.x = Math.max(-PI_2 + 0.02, Math.min(PI_2 - 0.02, euler.x));
+      camera.quaternion.setFromEuler(euler);
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'w') keys.w = true;
+    if (k === 'a') keys.a = true;
+    if (k === 's') keys.s = true;
+    if (k === 'd') keys.d = true;
+    if (k === ' ') { keys.space = true; e.preventDefault(); }
+    if (k === 'c') keys.c = true;
+    if (k === 'e') keys.e = true;
+    if (k === 'q') keys.q = true;
+    if (e.shiftKey) keys.shift = true;
+
+    if (k === 'f' && !e.ctrlKey && !e.altKey && document.activeElement.tagName !== 'INPUT') {
+      setCameraMode(cameraMode === 'fly' ? 'orbit' : 'fly');
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'w') keys.w = false;
+    if (k === 'a') keys.a = false;
+    if (k === 's') keys.s = false;
+    if (k === 'd') keys.d = false;
+    if (k === ' ') keys.space = false;
+    if (k === 'c') keys.c = false;
+    if (k === 'e') keys.e = false;
+    if (k === 'q') keys.q = false;
+    if (!e.shiftKey) keys.shift = false;
+  });
+
+  document.getElementById('sliderSpeed').addEventListener('input', (e) => {
+    moveSpeed = parseFloat(e.target.value);
+    document.getElementById('txtSpeed').textContent = moveSpeed + ' m/s';
+  });
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2400);
+  }
+
+  const loader = new THREE.GLTFLoader();
+
+  const BOOKMARKS = {
+    police: [
+      { id: 'pol_overview', name: '🏛️ Compound Overview', pos: [0, 80, -105], target: [0, 8, 0] },
+      { id: 'pol_gate', name: '🚪 Security Gate & Barrier', pos: [42, 3.5, -60], target: [42, 2.0, -35] },
+      { id: 'pol_hq', name: '🏢 4-Tier Main HQ', pos: [-21, 14, -48], target: [-21, 8, -5] },
+      { id: 'pol_helipad', name: '🚁 SWAT Helipad', pos: [-21, 32, -8], target: [-21, 20.5, 10] },
+      { id: 'pol_prison', name: '🔒 Penitentiary Block', pos: [29, 9, -20], target: [29, 5, 12] },
+      { id: 'pol_sallyport', name: '🚛 Sally Port Bay', pos: [8.85, 3.5, -6], target: [8.85, 3.0, 16] },
+      { id: 'pol_yard', name: '🏀 Prison Rec Yard', pos: [-21, 5.5, 12], target: [-21, 2.5, 32] },
+      { id: 'pol_parking', name: '🅿️ Fleet Motor Pool', pos: [30, 9, -48], target: [30, 1.5, -20] },
+      { id: 'pol_tower', name: '🗼 Guard Tower Catwalk', pos: [-48, 12.0, -28], target: [-54, 9.0, -39] },
+      { id: 'pol_desk', name: '👮 Entrance & Front Desk', pos: [-21, 2.2, -22], target: [-21, 1.4, -11] },
+    ],
+    villa: [
+      { id: 'summit', name: '🏔️ Mountain Summit', pos: [0, 42, -50], target: [0, 29, 15] },
+      { id: 'road', name: '🛣️ Winding Road', pos: [25, 18, -90], target: [0, 12, -30] },
+      { id: 'viewpoint', name: '🌄 Scenic Viewpoint', pos: [40, 20, -45], target: [-5, 15, -10] },
+      { id: 'gate', name: '🚪 Estate Front Gate', pos: [0, 30.5, -14], target: [0, 29.0, 8] },
+      { id: 'living', name: '🛋️ Inside Living', pos: [-3.5, 29.8, 24], target: [-3.5, 29.8, 32] },
+      { id: 'master', name: '🛏️ Inside Master', pos: [-3.0, 33.6, 24], target: [-3.0, 33.6, 32] },
+      { id: 'garage', name: '🚗 4-Car Garage', pos: [19, 30.2, 32], target: [13, 30.0, 32] },
+      { id: 'pool', name: '🏊 Pool & Deck', pos: [0, 30.2, 14], target: [0, 29.0, 24] },
+      { id: 'firepit', name: '🔥 Fire Pit Lounge', pos: [-10, 30.6, 14], target: [-10, 29.2, 22] },
+      { id: 'overview', name: '📐 Full Overview', pos: [140, 110, -140], target: [0, 20, 0] },
+    ]
+  };
+
+  function updateBookmarksUI() {
+    const grid = document.getElementById('bookmarksGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const list = BOOKMARKS[currentScene] || [];
+    for (const b of list) {
+      const btn = document.createElement('button');
+      btn.textContent = b.name;
+      btn.onclick = () => gotoBookmark(b.id);
+      grid.appendChild(btn);
+    }
+  }
+
+  function loadAllModels() {
+    document.getElementById('valStatus').textContent = 'Loading...';
+    document.getElementById('valStatus').style.color = '#f59e0b';
+
+    let totalVerts = 0;
+    let totalTris = 0;
+
+    while (compoundGroup.children.length) compoundGroup.remove(compoundGroup.children[0]);
+
+    if (currentScene === 'police') {
+      document.getElementById('badgeModelName').innerHTML = 'Model: <strong>police_headquarters.glb</strong> (6.1 MB)';
+      document.getElementById('btnSceneVilla').classList.remove('active');
+      document.getElementById('btnScenePolice').classList.add('active');
+      document.getElementById('btnHills').style.display = 'none';
+
+      loader.load(POLICE_PATH + '?t=' + Date.now(), gltf => {
+        const hqMesh = gltf.scene;
+        hqMesh.position.set(0, 0, 0);
+        hqMesh.traverse(c => {
+          if (c.isLight) {
+            c.visible = false;
+            return;
+          }
+          if (c.isMesh) {
+            if (/^collider/i.test(c.name)) {
+              c.visible = showColliders;
+              c._origMat = c.material;
+              if (showColliders) c.material = colliderMat;
+            } else {
+              c.castShadow = true;
+              c.receiveShadow = true;
+            }
+            if (c.geometry) {
+              if (c.geometry.attributes.position) totalVerts += c.geometry.attributes.position.count;
+              totalTris += (c.geometry.index ? c.geometry.index.count / 3 : c.geometry.attributes.position.count / 3);
+            }
+          }
+        });
+        compoundGroup.add(hqMesh);
+        document.getElementById('valVerts').textContent = totalVerts.toLocaleString();
+        document.getElementById('valTris').textContent = Math.round(totalTris).toLocaleString();
+        document.getElementById('valStatus').textContent = 'Loaded';
+        document.getElementById('valStatus').style.color = '#10b981';
+        showToast('Metro Police HQ & Penitentiary Loaded!');
+        gotoBookmark('pol_overview');
+      }, undefined, (err) => {
+        console.error('Failed to load Police HQ GLB', err);
+        document.getElementById('valStatus').textContent = 'Load Error';
+        document.getElementById('valStatus').style.color = '#ef4444';
+      });
+    } else {
+      document.getElementById('badgeModelName').innerHTML = 'Model: <strong>villa_estate.glb + hills</strong>';
+      document.getElementById('btnSceneVilla').classList.add('active');
+      document.getElementById('btnScenePolice').classList.remove('active');
+      document.getElementById('btnHills').style.display = 'block';
+
+      const p1 = new Promise(resolve => {
+        loader.load(HILLS_PATH + '?t=' + Date.now(), gltf => {
+          hillsMesh = gltf.scene;
+          hillsMesh.position.set(0, 0, 0);
+          hillsMesh.traverse(c => {
+            if (c.isMesh) {
+              if (/^collider/i.test(c.name)) {
+                c.visible = showColliders;
+                c._origMat = c.material;
+                if (showColliders) c.material = colliderMat;
+              } else {
+                c.castShadow = true;
+                c.receiveShadow = true;
+              }
+              if (c.geometry) {
+                if (c.geometry.attributes.position) totalVerts += c.geometry.attributes.position.count;
+                totalTris += (c.geometry.index ? c.geometry.index.count / 3 : c.geometry.attributes.position.count / 3);
+              }
+            }
+          });
+          compoundGroup.add(hillsMesh);
+          resolve();
+        }, undefined, () => resolve());
+      });
+
+      const p2 = new Promise(resolve => {
+        loader.load(VILLA_PATH + '?t=' + Date.now(), gltf => {
+          villaMesh = gltf.scene;
+          villaMesh.position.set(0, 28.0, 0);
+          villaMesh.traverse(c => {
+            if (c.isMesh) {
+              if (/^collider/i.test(c.name)) {
+                c.visible = showColliders;
+                c._origMat = c.material;
+                if (showColliders) c.material = colliderMat;
+              } else {
+                c.castShadow = true;
+                c.receiveShadow = true;
+              }
+              if (c.material) {
+                if (Array.isArray(c.material)) c.material.forEach(m => m.side = THREE.DoubleSide);
+                else c.material.side = THREE.DoubleSide;
+              }
+              if (c.geometry) {
+                if (c.geometry.attributes.position) totalVerts += c.geometry.attributes.position.count;
+                totalTris += (c.geometry.index ? c.geometry.index.count / 3 : c.geometry.attributes.position.count / 3);
+              }
+            }
+          });
+          compoundGroup.add(villaMesh);
+          resolve();
+        }, undefined, () => resolve());
+      });
+
+      Promise.all([p1, p2]).then(() => {
+        document.getElementById('valVerts').textContent = totalVerts.toLocaleString();
+        document.getElementById('valTris').textContent = Math.round(totalTris).toLocaleString();
+        document.getElementById('valStatus').textContent = 'Loaded';
+        document.getElementById('valStatus').style.color = '#10b981';
+        showToast('Estate & Mountain Hills Loaded!');
+        gotoBookmark('summit');
+      });
+    }
+  }
+
+  window.switchScene = (sceneName) => {
+    currentScene = sceneName;
+    updateBookmarksUI();
+    loadAllModels();
+  };
+
+  updateBookmarksUI();
+  loadAllModels();
+
+  document.getElementById('btnReload').addEventListener('click', loadAllModels);
+  document.getElementById('btnResetCam').addEventListener('click', () => {
+    if (currentScene === 'police') gotoBookmark('pol_overview');
+    else gotoBookmark('summit');
+  });
+
+  window.toggleHills = () => {
+    showHills = !showHills;
+    document.getElementById('btnHills').classList.toggle('active', showHills);
+    if (hillsMesh) hillsMesh.visible = showHills;
+  };
+
+  window.toggleColliders = () => {
+    showColliders = !showColliders;
+    document.getElementById('btnColliders').classList.toggle('active', showColliders);
+    compoundGroup.traverse(c => {
+      if (c.isMesh && /^collider/i.test(c.name)) {
+        c.visible = showColliders;
+        if (showColliders) {
+          if (!c._origMat) c._origMat = c.material;
+          c.material = colliderMat;
+        } else if (c._origMat) {
+          c.material = c._origMat;
+        }
+      }
+    });
+    showToast(showColliders ? 'Colliders Visible (Green Wireframe)' : 'Colliders Hidden');
+  };
+
+  window.toggleAutoRotate = () => {
+    controls.autoRotate = !controls.autoRotate;
+    controls.autoRotateSpeed = 1.2;
+    document.getElementById('btnAutoRotate').classList.toggle('active', controls.autoRotate);
+  };
+
+  window.gotoBookmark = (name) => {
+    const list = BOOKMARKS[currentScene] || [];
+    const b = list.find(x => x.id === name);
+    if (b) {
+      animateCamera(b.pos[0], b.pos[1], b.pos[2], b.target[0], b.target[1], b.target[2]);
+    }
+  };
+
+  function animateCamera(cx, cy, cz, tx, ty, tz) {
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const endPos = new THREE.Vector3(cx, cy, cz);
+    const endTarget = new THREE.Vector3(tx, ty, tz);
+
+    let progress = 0;
+    const duration = 26;
+    function step() {
+      progress++;
+      const f = progress / duration;
+      const ease = f < 0.5 ? 2 * f * f : -1 + (4 - 2 * f) * f;
+      camera.position.lerpVectors(startPos, endPos, ease);
+      controls.target.lerpVectors(startTarget, endTarget, ease);
+      camera.lookAt(controls.target);
+      if (cameraMode === 'fly') {
+        euler.setFromQuaternion(camera.quaternion);
+      }
+      if (progress < duration) {
+        requestAnimationFrame(step);
+      }
+    }
+    step();
+  }
+
+  // Lighting
+  window.setLightPreset = (mode) => {
+    document.querySelectorAll('.grid-3 button').forEach(b => b.classList.remove('active'));
+    if (mode === 'day') {
+      document.getElementById('lightDay').classList.add('active');
+      ambientLight.intensity = 0.45;
+      sunLight.intensity = 0.85;
+      hemiLight.intensity = 0.35;
+      scene.background.set(0x131924);
+    } else if (mode === 'studio') {
+      document.getElementById('lightStudio').classList.add('active');
+      ambientLight.intensity = 0.55;
+      sunLight.intensity = 0.65;
+      hemiLight.intensity = 0.35;
+      scene.background.set(0x222733);
+    } else if (mode === 'night') {
+      document.getElementById('lightNight').classList.add('active');
+      ambientLight.intensity = 0.15;
+      sunLight.intensity = 0.08;
+      hemiLight.intensity = 0.12;
+      scene.background.set(0x060910);
+    }
+    document.getElementById('sliderAmbient').value = ambientLight.intensity;
+    document.getElementById('txtAmbient').textContent = ambientLight.intensity.toFixed(1) + 'x';
+    document.getElementById('sliderSun').value = sunLight.intensity;
+    document.getElementById('txtSun').textContent = sunLight.intensity.toFixed(1) + 'x';
+  };
+
+  document.getElementById('sliderAmbient').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    ambientLight.intensity = val;
+    document.getElementById('txtAmbient').textContent = val.toFixed(1) + 'x';
+  });
+
+  document.getElementById('sliderSun').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    sunLight.intensity = val;
+    document.getElementById('txtSun').textContent = val.toFixed(1) + 'x';
+  });
+
+  window.toggleWireframe = () => {
+    isWireframe = !isWireframe;
+    document.getElementById('btnWireframe').classList.toggle('active', isWireframe);
+    compoundGroup.traverse((c) => {
+      if (c.isMesh && c.material) {
+        if (Array.isArray(c.material)) c.material.forEach(m => m.wireframe = isWireframe);
+        else c.material.wireframe = isWireframe;
+      }
+    });
+  };
+
+  window.toggleRoof = () => {
+    hideRoof = !hideRoof;
+    document.getElementById('btnRoof').classList.toggle('active', hideRoof);
+    if (villaMesh) {
+      villaMesh.traverse((c) => {
+        if (c.isMesh) {
+          const name = (c.name || '').toLowerCase();
+          if (name.includes('roof') || name.includes('ceiling') || c.position.y > 6.5) {
+            c.visible = !hideRoof;
+          }
+        }
+      });
+    }
+  };
+
+  window.toggleGlass = () => {
+    hideGlass = !hideGlass;
+    document.getElementById('btnGlass').classList.toggle('active', hideGlass);
+    if (villaMesh) {
+      villaMesh.traverse((c) => {
+        if (c.isMesh) {
+          const name = (c.name || '').toLowerCase();
+          const mat = c.material;
+          const isGlass = name.includes('glass') || name.includes('window') || (mat && (mat.transparent || mat.opacity < 0.9));
+          if (isGlass) c.visible = !hideGlass;
+        }
+      });
+    }
+  };
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  let prevTime = performance.now();
+  const forward = new THREE.Vector3();
+  const right = new THREE.Vector3();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const time = performance.now();
+    const delta = Math.min((time - prevTime) / 1000, 0.1);
+    prevTime = time;
+
+    if (cameraMode === 'fly') {
+      const actualSpeed = moveSpeed * (keys.shift ? 2.5 : 1.0) * delta;
+
+      camera.getWorldDirection(forward);
+      right.crossVectors(forward, camera.up).normalize();
+
+      if (keys.w) camera.position.addScaledVector(forward, actualSpeed);
+      if (keys.s) camera.position.addScaledVector(forward, -actualSpeed);
+      if (keys.d) camera.position.addScaledVector(right, actualSpeed);
+      if (keys.a) camera.position.addScaledVector(right, -actualSpeed);
+      if (keys.space || keys.e) camera.position.y += actualSpeed;
+      if (keys.c || keys.q) camera.position.y -= actualSpeed;
+    } else {
+      controls.update();
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+})();
+</script>
+</body>
+</html>

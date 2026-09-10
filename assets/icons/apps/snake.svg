@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="128" height="128">
+  <defs>
+    <linearGradient id="skBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f24"/>
+      <stop offset="100%" stop-color="#020511"/>
+    </linearGradient>
+    <filter id="skGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feComposite in="b" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="skHardGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feComposite in="b" in2="SourceGraphic" operator="over"/>
+      <feGaussianBlur stdDeviation="2" result="b2"/>
+      <feMerge><feMergeNode in="b2"/><feMergeNode in="b"/></feMerge>
+    </filter>
+    <linearGradient id="hGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe"/>
+      <stop offset="50%" stop-color="#00c6ff"/>
+      <stop offset="100%" stop-color="#38ef7d"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#skBg)" stroke="url(#skBg)" stroke-width="2"/>
+  <!-- Background hexagonal web -->
+  <g stroke="#00f2fe" stroke-width="0.5" opacity="0.15">
+    <circle cx="50" cy="50" r="38"/>
+    <circle cx="50" cy="50" r="28"/>
+    <circle cx="50" cy="50" r="18"/>
+  </g>
+  <g stroke="#00f2fe" stroke-width="0.5" opacity="0.1">
+    <path d="M12 50 L88 50 M50 12 L50 88 M24 24 L76 76 M76 24 L24 76"/>
+    <path d="M34 50 L66 50 M50 34 L50 66"/>
+  </g>
+  <!-- Isometric grid floor -->
+  <g stroke="#0072ff" stroke-width="0.6" opacity="0.18" fill="none">
+    <path d="M20 68 L50 82 L80 68 M26 64 L50 76 L74 64 M50 58 L20 70 L50 82 M50 58 L80 70"/>
+  </g>
+  <!-- Snake body segments (isometric diamonds) -->
+  <g fill="none">
+    <polygon points="62,62 58,60 54,62 58,64" fill="#0052d4" opacity="0.6"/>
+    <polygon points="58,60 54,58 50,60 54,62" fill="#0062ff" opacity="0.72"/>
+    <polygon points="54,58 50,56 46,58 50,60" fill="#0072ff" opacity="0.82"/>
+    <polygon points="50,56 46,54 42,56 46,58" fill="#0082ff" opacity="0.88"/>
+    <polygon points="46,54 42,52 38,54 42,56" fill="#0092ff" opacity="0.92"/>
+    <polygon points="42,52 38,50 34,52 38,54" fill="#00a2ff" opacity="0.95"/>
+  </g>
+  <!-- Neon glow behind body -->
+  <path d="M62 62 L58 60 L54 62 L50 60 L46 58 L42 56 L38 54 L34 52"
+    fill="none" stroke="#00f2fe" stroke-width="3" opacity="0.35" filter="url(#skGlow)"/>
+  <!-- Body outline/hard glow -->
+  <path d="M62 62 L58 60 L54 62 L50 60 L46 58 L42 56 L38 54 L34 52"
+    fill="none" stroke="#00f2fe" stroke-width="1.2" opacity="0.9" filter="url(#skHardGlow)"/>
+  <!-- Head (hex cockpit) -->
+  <polygon points="34,52 30,50 26,52 28,56 32,58 36,56"
+    fill="url(#hGrad)" stroke="#38ef7d" stroke-width="1" opacity="0.95"/>
+  <!-- Eye -->
+  <circle cx="29" cy="52" r="3.5" fill="#ff0844" filter="url(#skHardGlow)"/>
+  <circle cx="29" cy="52" r="1.2" fill="#ffd100"/>
+  <!-- Fangs -->
+  <polygon points="30,55 31,56 32,55 31.5,56.5"/>
+  <polygon points="27,55 28,56 29,55 28.5,56.5"/>
+  <!-- Thrust vent on neck -->
+  <path d="M26 54 Q22 55 18 53" fill="none" stroke="#38ef7d" stroke-width="1.4" opacity="0.6"/>
+  <!-- Cyber Apple (food orb) -->
+  <g filter="url(#skHardGlow)">
+    <circle cx="72" cy="26" r="7" fill="#ff0844" opacity="0.9"/>
+    <circle cx="72" cy="26" r="3" fill="#ffd100"/>
+  </g>
+  <path d="M72 19 Q75 16 78 17" fill="none" stroke="#38ef7d" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+  <!-- Particle sparkles -->
+  <circle cx="68" cy="34" r="0.8" fill="#00f2fe" opacity="0.6"/>
+  <circle cx="78" cy="22" r="0.7" fill="#00f2fe" opacity="0.5"/>
+  <circle cx="75" cy="16" r="0.6" fill="#38ef7d" opacity="0.7"/>
+</svg>

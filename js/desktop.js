@@ -25,10 +25,19 @@ class Desktop {
         if (localWallpaper) {
             applyWallpaper(localWallpaper);
         } else if (customUrl) {
-            const img = new Image();
-            img.onload = () => applyWallpaper(customUrl);
-            img.onerror = () => applyWallpaper(`assets/wallpapers/${savedWallpaper}.svg`);
-            img.src = customUrl;
+            const proxyUrl = (customUrl.startsWith('http') && !customUrl.includes('__proxy__/'))
+                ? ('/__proxy__/' + encodeURIComponent(customUrl))
+                : customUrl;
+            applyWallpaper(proxyUrl);
+            fetch(proxyUrl).then(r => r.blob()).then(blob => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    localStorage.setItem('browos_local_wallpaper', e.target.result);
+                    localStorage.setItem('browos_custom_wallpaper_url', customUrl);
+                    localStorage.removeItem('browos_custom_wallpaper');
+                };
+                reader.readAsDataURL(blob);
+            }).catch(() => {});
         } else {
             applyWallpaper(`assets/wallpapers/${savedWallpaper}.svg`);
         }
@@ -83,6 +92,7 @@ class Desktop {
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
+                this.updateDesktopSafeArea();
                 if (window.filesystem && window.filesystem.isMounted()) {
                     this.refreshDesktopIcons();
                 }
@@ -90,43 +100,102 @@ class Desktop {
         });
     }
 
+    // ─── Desktop preferences (persisted) ────────────────────────────────────
+    _desktopPrefs() {
+        return {
+            stacks: localStorage.getItem('browos_desktop_stacks') === 'true',
+            sortBy: localStorage.getItem('browos_desktop_sort') || 'none',
+            iconSize: Number(localStorage.getItem('browos_desktop_icon_size')) || 48,
+        };
+    }
+
+    _fsReady() {
+        return !!(window.filesystem && typeof window.filesystem.isMounted === 'function' && window.filesystem.isMounted());
+    }
+
+    _alert(title, message) {
+        if (window.BrowDialog && typeof window.BrowDialog.alert === 'function') {
+            return window.BrowDialog.alert(title, message);
+        }
+        alert(`${title}\n\n${message}`);
+        return Promise.resolve();
+    }
+
     showDesktopContextMenu(x, y) {
         this.hideContextMenu();
 
+        const prefs = this._desktopPrefs();
         const menu = document.createElement('div');
         menu.id = 'desktop-context-menu';
         menu.className = 'mac-context-menu visible';
         menu.dataset.source = 'desktop';
 
-        const items = [
-            { label: 'New Folder', action: 'new-folder' },
-            { label: 'Get Info', action: 'get-info' },
-            { divider: true },
-            { label: 'Change Desktop Background…', action: 'change-wallpaper' },
-            { label: 'Use Stacks', action: 'stacks' },
-            { label: 'Sort By', action: 'sort-by' },
-            { label: 'Clean Up', action: 'clean-up' },
-            { label: 'Clean Up By', action: 'clean-up-by' },
-            { divider: true },
-            { label: 'Show View Options', action: 'view-options' },
-        ];
+        const addDivider = () => {
+            const div = document.createElement('div');
+            div.className = 'mac-context-menu-divider';
+            menu.appendChild(div);
+        };
 
-        items.forEach(item => {
-            if (item.divider) {
-                const div = document.createElement('div');
-                div.className = 'mac-context-menu-divider';
-                menu.appendChild(div);
-                return;
-            }
+        const addItem = (label, action, opts = {}) => {
             const el = document.createElement('div');
             el.className = 'mac-context-menu-item';
-            el.textContent = item.label;
-            el.addEventListener('click', () => {
-                this.hideContextMenu();
-                this.handleDesktopContextAction(item.action);
-            });
+            const check = opts.checked ? '✓ ' : opts.uncheckedPad ? '　 ' : '';
+            el.innerHTML = `<span>${check}${label}</span>${opts.arrow ? '<span class="submenu-arrow">▸</span>' : ''}`;
+            if (opts.disabled) {
+                el.style.opacity = '0.5';
+                el.style.pointerEvents = 'none';
+            }
+            if (!opts.submenu) {
+                el.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    this.hideContextMenu();
+                    this.handleDesktopContextAction(action);
+                });
+            }
+            if (opts.submenu) {
+                const sub = document.createElement('div');
+                sub.className = 'mac-context-submenu';
+                opts.submenu.forEach(subItem => {
+                    const s = document.createElement('div');
+                    s.className = 'mac-context-menu-item';
+                    s.innerHTML = `<span>${subItem.checked ? '✓ ' : ''}${subItem.label}</span>`;
+                    s.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        this.hideContextMenu();
+                        this.handleDesktopContextAction(subItem.action);
+                    });
+                    sub.appendChild(s);
+                });
+                el.appendChild(sub);
+            }
             menu.appendChild(el);
+            return el;
+        };
+
+        addItem('New Folder', 'new-folder');
+        addItem('Get Info', 'get-info');
+        addDivider();
+        addItem('Change Desktop Background…', 'change-wallpaper');
+        addItem('Use Stacks', 'stacks', { checked: prefs.stacks });
+        addItem('Sort By', 'sort-by', {
+            arrow: true,
+            submenu: [
+                { label: 'None', action: 'sort-none', checked: prefs.sortBy === 'none' },
+                { label: 'Name', action: 'sort-name', checked: prefs.sortBy === 'name' },
+                { label: 'Kind', action: 'sort-kind', checked: prefs.sortBy === 'kind' },
+            ],
         });
+        addItem('Clean Up', 'clean-up');
+        addItem('Clean Up By', 'clean-up-by', {
+            arrow: true,
+            submenu: [
+                { label: 'Name', action: 'cleanup-name' },
+                { label: 'Kind', action: 'cleanup-kind' },
+            ],
+        });
+        addDivider();
+        addItem('Edit Widgets', 'edit-widgets');
+        addItem('Show View Options', 'view-options');
 
         document.body.appendChild(menu);
 
@@ -144,33 +213,190 @@ class Desktop {
     hideContextMenu() {
         document.querySelector('#desktop-context-menu')?.remove();
         document.querySelector('#system-context-menu')?.remove();
-        document.querySelectorAll('.mac-context-menu[data-source="dock"], .mac-context-menu[data-source="launchpad"], .mac-context-menu[data-source="desktop-icon"]').forEach(m => m.remove());
+        document.querySelectorAll('.mac-context-menu[data-source="dock"], .mac-context-menu[data-source="launchpad"], .mac-context-menu[data-source="desktop-icon"], .mac-context-menu[data-source="window"]').forEach(m => m.remove());
     }
 
-    handleDesktopContextAction(action) {
+    async handleDesktopContextAction(action) {
         switch (action) {
-            case 'new-folder':
-                window.windowManager.launchApp('filebrow');
+            case 'new-folder': {
+                if (!this._fsReady()) {
+                    await this._alert('New Folder', 'Mount a folder in FileBrow first, then create folders on the Desktop.');
+                    if (window.windowManager) window.windowManager.launchApp('filebrow');
+                    break;
+                }
+                const name = window.BrowDialog
+                    ? await window.BrowDialog.prompt('New Folder', 'Enter folder name:', 'Untitled Folder')
+                    : prompt('Enter folder name:', 'Untitled Folder');
+                if (!name || !name.trim()) break;
+                const clean = name.trim();
+                if (/[\/\\:*?"<>|]/.test(clean)) {
+                    await this._alert('Invalid Name', 'Folder names cannot contain / \\ : * ? " < > |');
+                    break;
+                }
+                try {
+                    let finalName = clean;
+                    let n = 2;
+                    while (await window.filesystem.exists(`Desktop/${finalName}`)) {
+                        finalName = `${clean} ${n++}`;
+                    }
+                    const ok = await window.filesystem.createDirectory(`Desktop/${finalName}`);
+                    if (ok) this.refreshDesktopIcons();
+                    else await this._alert('Error', 'Failed to create folder.');
+                } catch (e) {
+                    await this._alert('Error', `Failed to create folder: ${e.message || e}`);
+                }
                 break;
-            case 'get-info':
+            }
+            case 'get-info': {
+                let count = 0;
+                let used = '';
+                try {
+                    if (this._fsReady()) {
+                        const entries = await window.filesystem.list('Desktop');
+                        count = (entries || []).length;
+                        if (typeof window.filesystem.getStorageUsed === 'function') {
+                            const bytes = await window.filesystem.getStorageUsed();
+                            used = window.filesystem.formatBytes
+                                ? window.filesystem.formatBytes(bytes)
+                                : `${Math.round(bytes / 1024)} KB`;
+                        }
+                    }
+                } catch {}
+                const prefs = this._desktopPrefs();
+                const wallpaper = localStorage.getItem('browos_wallpaper') || 'sonoma';
+                await this._alert(
+                    'Desktop Info',
+                    `Desktop — ${count} item${count === 1 ? '' : 's'}\nStorage used: ${used || 'unknown'}\nWallpaper: ${wallpaper}\nSort by: ${prefs.sortBy}\nStacks: ${prefs.stacks ? 'On' : 'Off'}`
+                );
                 break;
-            case 'change-wallpaper':
-                window.windowManager.launchApp('settings');
+            }
+            case 'change-wallpaper': {
+                if (!window.windowManager) break;
+                const win = window.windowManager.launchApp('settings');
                 setTimeout(() => {
-                    const settingsSection = document.querySelector('[data-section="appearance"]');
-                    if (settingsSection) settingsSection.click();
-                }, 300);
+                    const scope = (win && win.element) || document;
+                    const section = scope.querySelector('[data-section="appearance"]');
+                    if (section) section.click();
+                    else document.querySelector('.window[data-app="settings"] [data-section="appearance"]')?.click();
+                }, 350);
                 break;
-            case 'stacks':
-            case 'sort-by':
+            }
+            case 'stacks': {
+                const on = localStorage.getItem('browos_desktop_stacks') === 'true';
+                localStorage.setItem('browos_desktop_stacks', on ? 'false' : 'true');
+                this.refreshDesktopIcons();
+                break;
+            }
+            case 'sort-none':
+            case 'sort-name':
+            case 'sort-kind': {
+                localStorage.setItem('browos_desktop_sort', action.replace('sort-', ''));
+                this.refreshDesktopIcons();
+                break;
+            }
             case 'clean-up':
-            case 'clean-up-by':
+                this.refreshDesktopIcons();
+                break;
+            case 'edit-widgets':
+                if (window.BrowWidgets) window.BrowWidgets.openGallery(true);
+                break;
+            case 'cleanup-name':
+                localStorage.setItem('browos_desktop_sort', 'name');
+                this.refreshDesktopIcons();
+                break;
+            case 'cleanup-kind':
+                localStorage.setItem('browos_desktop_sort', 'kind');
+                this.refreshDesktopIcons();
+                break;
             case 'view-options':
+                this.showDesktopViewOptions();
                 break;
         }
     }
 
+    showDesktopViewOptions() {
+        document.querySelector('.desktop-view-options')?.remove();
+        const prefs = this._desktopPrefs();
+        const panel = document.createElement('div');
+        panel.className = 'desktop-view-options';
+        panel.innerHTML = `
+            <div class="desktop-view-title">Desktop View Options</div>
+            <label><b>Icon size: <span id="desktop-icon-size-val">${prefs.iconSize}px</span></b>
+                <input type="range" id="desktop-icon-size" min="32" max="72" step="2" value="${prefs.iconSize}">
+            </label>
+            <label class="desktop-view-check"><input type="checkbox" id="desktop-stacks-check" ${prefs.stacks ? 'checked' : ''}> Use Stacks</label>
+            <label><b>Sort by</b>
+                <select id="desktop-sort-select" style="background:#1c1c1e;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px;">
+                    <option value="none"${prefs.sortBy === 'none' ? ' selected' : ''}>None</option>
+                    <option value="name"${prefs.sortBy === 'name' ? ' selected' : ''}>Name</option>
+                    <option value="kind"${prefs.sortBy === 'kind' ? ' selected' : ''}>Kind</option>
+                </select>
+            </label>
+            <button class="desktop-view-close">Close</button>
+        `;
+        document.body.appendChild(panel);
+        const sizeInput = panel.querySelector('#desktop-icon-size');
+        const sizeVal = panel.querySelector('#desktop-icon-size-val');
+        sizeInput.addEventListener('input', () => {
+            sizeVal.textContent = `${sizeInput.value}px`;
+            localStorage.setItem('browos_desktop_icon_size', sizeInput.value);
+            this._applyDesktopIconSize(Number(sizeInput.value));
+        });
+        panel.querySelector('#desktop-stacks-check').addEventListener('change', (e) => {
+            localStorage.setItem('browos_desktop_stacks', e.target.checked ? 'true' : 'false');
+            this.refreshDesktopIcons();
+        });
+        panel.querySelector('#desktop-sort-select').addEventListener('change', (e) => {
+            localStorage.setItem('browos_desktop_sort', e.target.value);
+            this.refreshDesktopIcons();
+        });
+        panel.querySelector('.desktop-view-close').addEventListener('click', () => panel.remove());
+        setTimeout(() => {
+            const dismiss = (e) => {
+                if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('mousedown', dismiss); }
+            };
+            document.addEventListener('mousedown', dismiss);
+        }, 50);
+    }
+
+    _applyDesktopIconSize(px) {
+        document.querySelectorAll('.desktop-icon img').forEach(img => {
+            img.style.width = `${px}px`;
+            img.style.height = `${px}px`;
+        });
+    }
+
+    _sortDesktopEntries(entries) {
+        const mode = localStorage.getItem('browos_desktop_sort') || 'none';
+        const arr = [...(entries || [])];
+        const isDir = (e) => e.kind === 'directory' || e.type === 'directory';
+        const extOf = (n) => (n.includes('.') ? n.split('.').pop().toLowerCase() : '');
+        if (mode === 'name') arr.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        else if (mode === 'kind') arr.sort((a, b) => {
+            const ad = isDir(a) ? 0 : 1, bd = isDir(b) ? 0 : 1;
+            if (ad !== bd) return ad - bd;
+            const ae = extOf(a.name), be = extOf(b.name);
+            if (ae !== be) return ae.localeCompare(be);
+            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        });
+        return arr;
+    }
+
+    _stackGroupFor(entry) {
+        const isDir = entry.kind === 'directory' || entry.type === 'directory';
+        if (isDir) return 'Folders';
+        const ext = entry.name.split('.').pop().toLowerCase();
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'mp4', 'webm'].includes(ext)) return 'Images';
+        if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return 'Music';
+        if (['txt', 'md', 'pdf', 'doc', 'docx'].includes(ext)) return 'Documents';
+        return 'Other';
+    }
+
     initializeClock() {
+        if (window.BrowClock) {
+            window.BrowClock.init();
+            return;
+        }
         this.updateClock();
         setInterval(() => this.updateClock(), 1000);
     }
@@ -185,19 +411,370 @@ class Desktop {
 
     initializeDock() {
         this.syncDockFromStorage();
-        const dockApps = document.querySelectorAll('.dock-app');
-        dockApps.forEach(app => {
-            app.addEventListener('mouseenter', this.enlargeDockIcon);
-            app.addEventListener('mouseleave', this.shrinkDockIcon);
-        });
+        const dock = document.getElementById('dock');
+        const dockApps = dock?.querySelector('.dock-apps');
+        if (dock && dockApps) {
+            this.setDockPosition(localStorage.getItem('browos_dock_position') || 'bottom', false);
+            this.setupDockMagnification(dock, dockApps);
+        }
+        this.setupDockAutoHide(dock);
+        this.setupDockPositionDrag(dock);
+        const dockItems = document.querySelectorAll('.dock-app');
         // Ensure taskbar labels exist on all permanent dock items
-        dockApps.forEach(el => this._ensureTaskbarLabel(el));
+        dockItems.forEach(el => this._ensureTaskbarLabel(el));
         this.setupDockDrag();
         this.setupDockContextMenu();
         this.setupLaunchpadListeners();
+        this.updateDesktopSafeArea();
     }
 
-    // ─── Taskbar helpers ───────────────────────────────────────────────────────
+    getDockPosition() {
+        const position = localStorage.getItem('browos_dock_position');
+        return ['bottom', 'left', 'right'].includes(position) ? position : 'bottom';
+    }
+
+    setDockPosition(position = 'bottom', persist = true) {
+        const dock = document.getElementById('dock');
+        if (!dock) return;
+        const next = ['bottom', 'left', 'right'].includes(position) ? position : 'bottom';
+        dock.classList.remove('dock-bottom', 'dock-left', 'dock-right');
+        dock.classList.add(`dock-${next}`);
+        dock.dataset.position = next;
+        if (persist) localStorage.setItem('browos_dock_position', next);
+        this.dockFit?.();
+        this.updateDesktopSafeArea();
+    }
+
+    // ─── Desktop safe area (keeps icons/widgets clear of side docks) ──────────
+
+    /** True when the dock is slid off-screen (auto-hide / fullscreen hide). */
+    _dockIsHidden(dock) {
+        return dock.classList.contains('dock-auto-hidden')
+            || dock.classList.contains('hidden-maximized');
+    }
+
+    /**
+     * Horizontal space (px) the dock currently occupies on each side.
+     * Zero when docked at the bottom or when hidden off-screen (a peeking
+     * auto-hide dock briefly overlays content, like native macOS).
+     */
+    getDockReserves() {
+        const dock = document.getElementById('dock');
+        if (!dock) return { left: 0, right: 0 };
+        const pos = dock.dataset.position || this.getDockPosition() || 'bottom';
+        if (pos !== 'left' && pos !== 'right') return { left: 0, right: 0 };
+        if (this._dockIsHidden(dock)) return { left: 0, right: 0 };
+        // 16px screen-edge offset + 8px breathing room next to the dock pill.
+        const reserve = Math.ceil((dock.offsetWidth || 76) + 24);
+        return pos === 'left' ? { left: reserve, right: 0 } : { left: 0, right: reserve };
+    }
+
+    /**
+     * Publish reserves as CSS vars on #desktop (drives the widgets column)
+     * and re-layout icons when the occupied space actually changed.
+     */
+    updateDesktopSafeArea() {
+        const desktopEl = document.getElementById('desktop');
+        const dock = document.getElementById('dock');
+        if (!desktopEl || !dock) return;
+        const { left, right } = this.getDockReserves();
+        desktopEl.style.setProperty('--dock-reserve-left', `${left}px`);
+        desktopEl.style.setProperty('--dock-reserve-right', `${right}px`);
+        const key = `${dock.dataset.position || 'bottom'}:${left}:${right}`;
+        if (this._lastDockSafeKey !== key) {
+            this._lastDockSafeKey = key;
+            // Icons read the reserves when they lay out; skip the extra pass
+            // before the filesystem is mounted (initial load covers it).
+            if (this._fsReady()) this.refreshDesktopIcons();
+        }
+    }
+
+    setupDockPositionDrag(dock) {
+        if (!dock || dock.dataset.positionDragBound === 'true') return;
+        dock.dataset.positionDragBound = 'true';
+
+        let pointerId = null;
+        let startX = 0;
+        let startY = 0;
+        let dragging = false;
+        let mouseActive = false;
+        let mouseDragging = false;
+
+        const snapToEdge = (clientX) => {
+            const edge = clientX < window.innerWidth * 0.25
+                ? 'left'
+                : clientX > window.innerWidth * 0.75
+                    ? 'right'
+                    : 'bottom';
+            this.setDockPosition(edge);
+        };
+
+        dock.addEventListener('pointerdown', (event) => {
+            if (event.pointerType === 'touch' || event.button !== 0 || event.target.closest('.dock-app')) return;
+            pointerId = event.pointerId;
+            startX = event.clientX;
+            startY = event.clientY;
+            dragging = false;
+            dock.setPointerCapture?.(pointerId);
+        });
+
+        dock.addEventListener('pointermove', (event) => {
+            if (event.pointerId !== pointerId) return;
+            const distance = Math.hypot(event.clientX - startX, event.clientY - startY);
+            if (!dragging && distance < 8) return;
+            dragging = true;
+            dock.classList.add('dock-position-dragging');
+            event.preventDefault();
+        });
+
+        const finish = (event) => {
+            if (event.pointerId !== pointerId) return;
+            if (dragging) {
+                snapToEdge(event.clientX);
+            }
+            dock.classList.remove('dock-position-dragging');
+            dock.releasePointerCapture?.(pointerId);
+            pointerId = null;
+            dragging = false;
+        };
+
+        dock.addEventListener('pointerup', finish);
+        dock.addEventListener('pointercancel', finish);
+
+        // Mouse fallback keeps dock repositioning reliable in browsers that do
+        // not expose pointer events for a captured glass surface.
+        dock.addEventListener('mousedown', (event) => {
+            if (event.button !== 0 || event.target.closest('.dock-app')) return;
+            mouseActive = true;
+            mouseDragging = false;
+            startX = event.clientX;
+            startY = event.clientY;
+        });
+        window.addEventListener('mousemove', (event) => {
+            if (!mouseActive) return;
+            const distance = Math.hypot(event.clientX - startX, event.clientY - startY);
+            if (!mouseDragging && distance < 8) return;
+            mouseDragging = true;
+            dock.classList.add('dock-position-dragging');
+            event.preventDefault();
+        });
+        window.addEventListener('mouseup', (event) => {
+            if (!mouseActive) return;
+            if (mouseDragging) snapToEdge(event.clientX);
+            mouseActive = false;
+            mouseDragging = false;
+            dock.classList.remove('dock-position-dragging');
+        });
+    }
+
+    setupDockAutoHide(dock) {
+        if (!dock || dock.dataset.autoHideBound === 'true') return;
+        dock.dataset.autoHideBound = 'true';
+
+        let hideTimer = null;
+        let peekTimer = null;
+        let pointerInsideDock = false;
+
+        const isEnabled = () => localStorage.getItem('browos_dock_autohide') === 'true';
+        const hasMaximizedWindow = () => Boolean(
+            window.windowManager?.windows?.some(w => w.isMaximized && !w.isMinimized && !(w.element && w.element.classList.contains('space-hidden')))
+        );
+        const canAutoHide = () => isEnabled() && hasMaximizedWindow();
+        const clearTimers = () => {
+            if (hideTimer) clearTimeout(hideTimer);
+            if (peekTimer) clearTimeout(peekTimer);
+            hideTimer = null;
+            peekTimer = null;
+        };
+        const hide = () => {
+            clearTimers();
+            if (!canAutoHide() || pointerInsideDock) return;
+            dock.classList.remove('dock-peek');
+            dock.classList.add('dock-auto-hidden');
+            this.updateDesktopSafeArea();
+        };
+        const scheduleHide = (delay = 420) => {
+            clearTimers();
+            if (!canAutoHide() || pointerInsideDock) return;
+            hideTimer = setTimeout(hide, delay);
+        };
+        const show = () => {
+            clearTimers();
+            dock.classList.remove('dock-auto-hidden');
+            dock.classList.add('dock-peek');
+            // Transient peek overlays content (native macOS behavior) — no relayout.
+            peekTimer = setTimeout(() => dock.classList.remove('dock-peek'), 320);
+        };
+        const sync = () => {
+            clearTimers();
+            if (canAutoHide()) scheduleHide(180);
+            else dock.classList.remove('dock-auto-hidden', 'dock-peek');
+            this.updateDesktopSafeArea();
+        };
+
+        dock.addEventListener('pointerenter', () => {
+            pointerInsideDock = true;
+            if (canAutoHide()) show();
+        });
+        dock.addEventListener('pointerleave', () => {
+            pointerInsideDock = false;
+            scheduleHide();
+        });
+        document.addEventListener('pointermove', (event) => {
+            if (!canAutoHide() || event.pointerType === 'touch') return;
+            const edgeThreshold = Math.max(8, Math.min(24, window.innerHeight * 0.025));
+            const position = dock.dataset.position || 'bottom';
+            const atRevealEdge = position === 'left'
+                ? event.clientX <= edgeThreshold
+                : position === 'right'
+                    ? event.clientX >= window.innerWidth - edgeThreshold
+                    : event.clientY >= window.innerHeight - edgeThreshold;
+            if (atRevealEdge) show();
+            else if (!pointerInsideDock && !dock.matches(':hover')) scheduleHide(520);
+        }, { passive: true });
+        window.addEventListener('resize', sync, { passive: true });
+        this.dockAutoHideSync = sync;
+        sync();
+    }
+
+    setupDockMagnification(dock, dockApps) {
+        if (dock.dataset.magnificationBound === 'true') return;
+        dock.dataset.magnificationBound = 'true';
+
+        const states = new Map();
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let pointerX = null;
+        let pointerY = null;
+        let frame = null;
+
+        const getState = (item) => {
+            if (!states.has(item)) states.set(item, { scale: 1, x: 0, y: 0, scaleVelocity: 0, xVelocity: 0, yVelocity: 0 });
+            return states.get(item);
+        };
+
+        const fitDock = () => {
+            const count = dockApps.querySelectorAll('.dock-app:not(.dock-placeholder)').length || 1;
+            const position = dock.dataset.position || 'bottom';
+            const vertical = position !== 'bottom';
+            const compact = (vertical ? window.innerHeight : window.innerWidth) <= 600;
+            const gap = compact ? 3 : 6;
+            const padding = compact ? 16 : 24;
+            const available = Math.max(220, (vertical ? window.innerHeight : window.innerWidth) - 24);
+            const preferredSize = Number(localStorage.getItem('browos_dock_size')) || 50;
+            const maxIcon = Math.max(30, Math.min(80, preferredSize));
+            const minIcon = 30;
+            const fitted = Math.floor((available - padding - gap * (count - 1)) / count);
+            const iconSize = Math.max(minIcon, Math.min(maxIcon, fitted));
+            const overflow = count * iconSize + gap * Math.max(0, count - 1) + padding > available;
+            dock.style.setProperty('--dock-icon-size', `${iconSize}px`);
+            dock.style.setProperty('--dock-gap', `${gap}px`);
+            if (vertical) {
+                dockApps.style.maxHeight = `${Math.max(180, available)}px`;
+                dockApps.style.maxWidth = '';
+                dockApps.style.overflowY = overflow ? 'auto' : 'visible';
+                dockApps.style.overflowX = 'visible';
+            } else {
+                dockApps.style.maxWidth = `${Math.max(220, available)}px`;
+                dockApps.style.maxHeight = '';
+                dockApps.style.overflowX = overflow ? 'auto' : 'visible';
+                dockApps.style.overflowY = 'visible';
+            }
+            this.updateDesktopSafeArea();
+        };
+        this.dockFit = fitDock;
+
+        const targets = () => {
+            if (window.BrowSettings && !window.BrowSettings.get('dockMagnification')) {
+                return [...dockApps.querySelectorAll('.dock-app:not(.dock-placeholder)')]
+                    .map(item => ({ item, scale: 1, x: 0, y: 0 }));
+            }
+            const items = [...dockApps.querySelectorAll('.dock-app:not(.dock-placeholder)')];
+            const containerRect = dockApps.getBoundingClientRect();
+            const iconSize = parseFloat(getComputedStyle(dock).getPropertyValue('--dock-icon-size')) || 50;
+            const influence = iconSize * 2.35;
+            const vertical = (dock.dataset.position || 'bottom') !== 'bottom';
+            const pointerCoord = vertical ? pointerY : pointerX;
+            return items.map(item => {
+                if (pointerCoord === null || this.isDraggingDockItem) {
+                    return { item, scale: 1, x: 0, y: 0 };
+                }
+                const center = vertical
+                    ? containerRect.top + item.offsetTop + item.offsetHeight / 2
+                    : containerRect.left + item.offsetLeft + item.offsetWidth / 2;
+                const signedDistance = center - pointerCoord;
+                const distance = Math.abs(signedDistance);
+                const wave = distance >= influence ? 0 : (1 + Math.cos(Math.PI * distance / influence)) / 2;
+                const scale = 1 + 0.52 * wave;
+                const direction = signedDistance === 0 ? 0 : Math.sign(signedDistance);
+                const offset = direction * iconSize * 0.22 * wave;
+                return { item, scale, x: vertical ? 0 : offset, y: vertical ? offset : 0 };
+            });
+        };
+
+        const animate = () => {
+            frame = null;
+            let moving = false;
+            targets().forEach(({ item, scale: targetScale, x: targetX, y: targetY }) => {
+                const state = getState(item);
+                if (reducedMotion.matches) {
+                    state.scale = targetScale;
+                    state.x = targetX;
+                    state.y = targetY;
+                    state.scaleVelocity = 0;
+                    state.xVelocity = 0;
+                    state.yVelocity = 0;
+                } else {
+                    state.scaleVelocity = (state.scaleVelocity + (targetScale - state.scale) * 0.2) * 0.7;
+                    state.xVelocity = (state.xVelocity + (targetX - state.x) * 0.2) * 0.7;
+                    state.yVelocity = (state.yVelocity + (targetY - state.y) * 0.2) * 0.7;
+                    state.scale += state.scaleVelocity;
+                    state.x += state.xVelocity;
+                    state.y += state.yVelocity;
+                }
+                if (Math.abs(targetScale - state.scale) < 0.001 && Math.abs(state.scaleVelocity) < 0.001) {
+                    state.scale = targetScale;
+                    state.scaleVelocity = 0;
+                } else moving = true;
+                if (Math.abs(targetX - state.x) < 0.05 && Math.abs(state.xVelocity) < 0.05) {
+                    state.x = targetX;
+                    state.xVelocity = 0;
+                } else moving = true;
+                if (Math.abs(targetY - state.y) < 0.05 && Math.abs(state.yVelocity) < 0.05) {
+                    state.y = targetY;
+                    state.yVelocity = 0;
+                } else moving = true;
+                item.style.transform = `translate3d(${state.x.toFixed(2)}px, ${state.y.toFixed(2)}px, 0) scale(${state.scale.toFixed(4)})`;
+            });
+            if (moving) frame = requestAnimationFrame(animate);
+        };
+
+        const tick = () => { if (frame === null) frame = requestAnimationFrame(animate); };
+        const tickIfEnabled = () => {
+            if (window.BrowSettings && !window.BrowSettings.get('dockMagnification')) return;
+            tick();
+        };
+
+        dock.addEventListener('pointermove', event => {
+            if (event.pointerType === 'touch') return;
+            pointerX = event.clientX;
+            pointerY = event.clientY;
+            tickIfEnabled();
+        });
+        dock.addEventListener('pointerleave', () => {
+            pointerX = null;
+            pointerY = null;
+            tick();
+        });
+        window.addEventListener('resize', fitDock, { passive: true });
+        new MutationObserver(() => {
+            states.forEach((_, item) => { if (!item.isConnected) states.delete(item); });
+            fitDock();
+            tick();
+        }).observe(dockApps, { childList: true });
+        fitDock();
+    }
+
+    // ─── Dock helpers ──────────────────────────────────────────────────────────
 
     /** Inject a hidden <span class="taskbar-label"> into a dock-app element if absent. */
     _ensureTaskbarLabel(el) {
@@ -211,7 +788,7 @@ class Desktop {
 
     /**
      * Called by WindowManager whenever the maximized / minimized / close state changes.
-     * Morphs the dock between pill (no maximised windows) and flat taskbar (≥1 maximised window).
+     * Keeps the floating dock stable while updating running indicators and menu-bar state.
      */
     updateTaskbar() {
         const dock = document.getElementById('dock');
@@ -229,7 +806,7 @@ class Desktop {
             el.classList.toggle('is-open', !!isOpen);
         });
 
-        const maximizedWindows = wm.windows.filter(w => w.isMaximized && !w.isMinimized);
+        const maximizedWindows = wm.windows.filter(w => w.isMaximized && !w.isMinimized && !(w.element && w.element.classList.contains('space-hidden')));
         const hasMaximized = maximizedWindows.length > 0;
 
         // Smoothly hide/show upper status menu-bar
@@ -238,82 +815,14 @@ class Desktop {
             menuBar.classList.toggle('hidden-maximized', hasMaximized);
         }
 
-        if (!hasMaximized) {
-            // ── Pill mode ──────────────────────────────────────────────────────
-            dock.classList.remove('taskbar-mode');
-
-            // Remove any ephemeral (non-pinned open-window) taskbar buttons
-            dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => el.remove());
-
-            // Clear active markers
-            dockAppsContainer.querySelectorAll('.dock-app').forEach(el => {
-                el.classList.remove('taskbar-active');
-            });
-            return;
-        }
-
-        // ── Taskbar mode ───────────────────────────────────────────────────────
-        dock.classList.add('taskbar-mode');
-
-        const pinnedApps = new Set(this.getDockApps());
-
-        // Determine the top-most maximized window by z-index
-        let topWindow = null;
-        let topZ = -1;
-        maximizedWindows.forEach(w => {
-            const z = parseInt(w.element.style.zIndex || 0, 10);
-            if (z > topZ) { topZ = z; topWindow = w; }
-        });
-
-        // Remove ephemeral buttons whose window is now closed
-        dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => {
-            const appKey = el.dataset.app;
-            const hasOpenWindow = wm.windows.some(w => w.appName === appKey && !w.isMinimized);
-            if (!hasOpenWindow) el.remove();
-        });
-
-        // Add ephemeral buttons for non-pinned open windows
-        wm.windows.forEach(w => {
-            if (pinnedApps.has(w.appName)) return;   // already has a permanent button
-            if (w.isMinimized) return;                  // don't show minimised windows
-
-            if (!dockAppsContainer.querySelector(`.dock-app[data-app="${w.appName}"]`)) {
-                const appInfo = window.appsManager?.getAppInfo(w.appName);
-                if (!appInfo) return;
-
-                const el = document.createElement('div');
-                el.className = 'dock-app';
-                el.dataset.app = w.appName;
-                el.dataset.title = appInfo.name;
-                el.dataset.taskbarEphemeral = '1';
-                el.innerHTML = `<img src="${appInfo.icon}" alt="${appInfo.name}"><div class="minimized-dot"></div>`;
-                this._ensureTaskbarLabel(el);
-                el.addEventListener('click', () => this._taskbarAppClick(w.appName, el));
-                el.addEventListener('mouseenter', this.enlargeDockIcon);
-                el.addEventListener('mouseleave', this.shrinkDockIcon);
-                dockAppsContainer.appendChild(el);
-            }
-        });
-
-        // Update label text and active state for every button
+        // Maximizing a window no longer morphs the dock into a taskbar. Keep the
+        // pinned floating dock intact and only update its open-state indicators.
         dockAppsContainer.querySelectorAll('.dock-app').forEach(el => {
-            const appKey = el.dataset.app;
-            if (appKey === 'launchpad') return;
-
-            this._ensureTaskbarLabel(el);
-            const label = el.querySelector('.taskbar-label');
-            if (label) label.textContent = el.dataset.title || el.querySelector('img')?.alt || appKey;
-
-            // Wire click once (guard with flag)
-            if (!el.dataset.taskbarClickBound) {
-                el.dataset.taskbarClickBound = '1';
-                el.addEventListener('click', () => this._taskbarAppClick(appKey, el));
-            }
-
-            // Mark the currently-foreground window button as active
-            const isActive = topWindow && topWindow.appName === appKey;
-            el.classList.toggle('taskbar-active', !!isActive);
+            el.classList.remove('taskbar-active');
         });
+        dock.classList.remove('taskbar-mode');
+        dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => el.remove());
+        if (this.dockAutoHideSync) this.dockAutoHideSync();
     }
 
     /**
@@ -335,7 +844,9 @@ class Desktop {
         // Find an open (non-minimised) window for this app
         const openWin = wm.windows.find(w => w.appName === appKey && !w.isMinimized);
         if (openWin) {
-            wm.bringToFront(openWin.element);
+            // focusWindow jumps to the window's desktop when needed.
+            if (window.BrowSpaces) window.BrowSpaces.focusWindow(openWin);
+            else wm.bringToFront(openWin.element);
             this.updateTaskbar();
             return;
         }
@@ -343,7 +854,8 @@ class Desktop {
         // Find a minimised window and restore it
         const minWin = wm.windows.find(w => w.appName === appKey && w.isMinimized);
         if (minWin) {
-            wm.restoreWindow(minWin.element, minWin);
+            if (window.BrowSpaces) window.BrowSpaces.focusWindow(minWin);
+            else wm.restoreWindow(minWin.element, minWin);
             return;
         }
 
@@ -356,57 +868,178 @@ class Desktop {
     setupDockDrag() {
         const dockContainer = document.querySelector('.dock-apps');
         if (!dockContainer) return;
+        this.setupPointerReorder(dockContainer, '.dock-app', () => this.saveDockOrder(), true);
+    }
 
-        let draggedEl = null;
+    /**
+     * Reorders items with pointer events so the dragged item stays attached to
+     * the pointer and never hands control to the browser's native drag ghost.
+     * The same interaction is used by the dock and Launchpad grid.
+     */
+    setupPointerReorder(container, selector, onDrop, isDock = false) {
+        if (!container || container.dataset.pointerReorderBound === 'true') return;
+        container.dataset.pointerReorderBound = 'true';
 
-        dockContainer.querySelectorAll('.dock-app').forEach(app => {
-            if (app.dataset.dragBound === 'true') return;
-            app.dataset.dragBound = 'true';
-            app.setAttribute('draggable', 'true');
+        let session = null;
+        let frame = null;
+        let suppressClickUntil = 0;
 
-            app.addEventListener('dragstart', (e) => {
-                draggedEl = app;
-                app.style.opacity = '0.4';
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', app.dataset.app);
-            });
+        const getItem = (target) => target?.closest(selector);
+        const getItems = () => [...container.querySelectorAll(selector)]
+            .filter(item => item !== session?.item && !item.classList.contains('hidden'));
 
-            app.addEventListener('dragend', () => {
-                app.style.opacity = '1';
-                draggedEl = null;
-                dockContainer.querySelectorAll('.dock-app').forEach(a => a.classList.remove('drag-over'));
-                this.saveDockOrder();
-            });
+        const scheduleMove = () => {
+            if (frame !== null) return;
+            frame = requestAnimationFrame(() => {
+                frame = null;
+                if (!session?.dragging) return;
 
-            app.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (draggedEl && draggedEl !== app) {
-                    dockContainer.querySelectorAll('.dock-app').forEach(a => a.classList.remove('drag-over'));
-                    app.classList.add('drag-over');
-                }
-            });
+                const { item, placeholder, pointerX, pointerY } = session;
+                item.style.setProperty('transform', `translate3d(${pointerX - session.startX}px, ${pointerY - session.startY}px, 0)`, 'important');
 
-            app.addEventListener('dragleave', () => {
-                app.classList.remove('drag-over');
-            });
+                const items = getItems();
+                let target = null;
+                let insertBefore = true;
+                const verticalDock = isDock && (document.getElementById('dock')?.dataset.position || 'bottom') !== 'bottom';
 
-            app.addEventListener('drop', (e) => {
-                e.preventDefault();
-                app.classList.remove('drag-over');
-                if (draggedEl && draggedEl !== app) {
-                    const allApps = [...dockContainer.querySelectorAll('.dock-app')];
-                    const draggedIdx = allApps.indexOf(draggedEl);
-                    const targetIdx = allApps.indexOf(app);
-
-                    if (draggedIdx < targetIdx) {
-                        app.after(draggedEl);
+                for (const candidate of items) {
+                    const rect = candidate.getBoundingClientRect();
+                    if (isDock) {
+                        const center = verticalDock
+                            ? rect.top + rect.height / 2
+                            : rect.left + rect.width / 2;
+                        const coordinate = verticalDock ? pointerY : pointerX;
+                        if (coordinate < center) {
+                            target = candidate;
+                            insertBefore = true;
+                            break;
+                        }
                     } else {
-                        app.before(draggedEl);
+                        const rowCenter = rect.top + rect.height / 2;
+                        if (pointerY < rowCenter || (pointerY <= rect.bottom && pointerX < rect.left + rect.width / 2)) {
+                            target = candidate;
+                            insertBefore = true;
+                            break;
+                        }
                     }
                 }
+
+                if (!target && items.length) {
+                    target = items[items.length - 1];
+                    insertBefore = false;
+                }
+
+                if (target) {
+                    const nextSibling = insertBefore ? target : target.nextSibling;
+                    if (placeholder !== nextSibling && placeholder !== target) {
+                        if (insertBefore) target.before(placeholder);
+                        else target.after(placeholder);
+                    }
+                } else if (placeholder !== container.lastElementChild) {
+                    container.appendChild(placeholder);
+                }
             });
+        };
+
+        const finish = (event, cancelled = false) => {
+            if (!session || event.pointerId !== session.pointerId) return;
+            if (frame !== null) {
+                cancelAnimationFrame(frame);
+                frame = null;
+            }
+
+            const { item, placeholder, originalClassName, originalStyle } = session;
+            if (session.dragging) {
+                if (!cancelled && placeholder.parentNode === container) {
+                    placeholder.before(item);
+                } else if (placeholder.parentNode === container) {
+                    placeholder.replaceWith(item);
+                }
+                placeholder.remove();
+                item.className = originalClassName;
+                item.style.cssText = originalStyle;
+                suppressClickUntil = performance.now() + 280;
+                onDrop?.();
+            }
+
+            item.releasePointerCapture?.(session.pointerId);
+            session = null;
+            if (isDock) {
+                this.isDraggingDockItem = false;
+                this.dockFit?.();
+            }
+        };
+
+        container.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0 || !event.isPrimary) return;
+            const item = getItem(event.target);
+            if (!item || !container.contains(item) || item.classList.contains('hidden')) return;
+
+            const rect = item.getBoundingClientRect();
+            session = {
+                item,
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                pointerX: event.clientX,
+                pointerY: event.clientY,
+                offsetX: event.clientX - rect.left,
+                offsetY: event.clientY - rect.top,
+                rect,
+                dragging: false,
+            };
+            item.setPointerCapture?.(event.pointerId);
         });
+
+        const handleMove = (event) => {
+            if (!session || event.pointerId !== session.pointerId) return;
+            session.pointerX = event.clientX;
+            session.pointerY = event.clientY;
+            const distance = Math.hypot(event.clientX - session.startX, event.clientY - session.startY);
+
+            if (!session.dragging && distance < 7) return;
+            if (!session.dragging) {
+                session.dragging = true;
+                session.originalClassName = session.item.className;
+                session.originalStyle = session.item.style.cssText;
+                session.placeholder = session.item.cloneNode(true);
+                session.placeholder.classList.add('pointer-drag-placeholder');
+                session.placeholder.setAttribute('aria-hidden', 'true');
+                session.placeholder.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+                session.placeholder.style.cssText = '';
+                session.item.classList.add('is-pointer-dragging');
+                session.item.style.width = `${session.rect.width}px`;
+                session.item.style.height = `${session.rect.height}px`;
+                session.item.style.left = `${session.rect.left}px`;
+                session.item.style.top = `${session.rect.top}px`;
+                session.item.style.setProperty('transform', 'translate3d(0, 0, 0)', 'important');
+                session.item.style.setProperty('position', 'fixed', 'important');
+                session.item.style.setProperty('z-index', '100001', 'important');
+                session.item.style.setProperty('pointer-events', 'none', 'important');
+                session.item.style.setProperty('transition', 'none', 'important');
+                session.item.style.setProperty('opacity', '0.96', 'important');
+                session.item.before(session.placeholder);
+                document.body.appendChild(session.item);
+                if (isDock) this.isDraggingDockItem = true;
+            }
+            event.preventDefault();
+            scheduleMove();
+        };
+
+        container.addEventListener('pointermove', handleMove, { passive: false });
+        window.addEventListener('pointermove', handleMove, { passive: false });
+
+        container.addEventListener('pointerup', event => finish(event));
+        container.addEventListener('pointercancel', event => finish(event, true));
+        container.addEventListener('click', event => {
+            if (suppressClickUntil > performance.now() && getItem(event.target)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
+        window.addEventListener('pointerup', event => finish(event));
+        window.addEventListener('pointercancel', event => finish(event, true));
     }
 
     saveDockOrder() {
@@ -423,7 +1056,7 @@ class Desktop {
                 return JSON.parse(saved).map((key) => (key === 'finder' ? 'filebrow' : key));
             }
         } catch (e) {}
-        return ['filebrow', 'safari', 'messages', 'launchpad', 'settings', 'terminal', 'brownote'];
+        return ['filebrow', 'messages', 'launchpad', 'settings', 'terminal', 'brownote'];
     }
 
     saveDockApps(apps) {
@@ -451,8 +1084,6 @@ class Desktop {
                 el.dataset.title = app.name;
                 el.innerHTML = `<img src="${app.icon}" alt="${app.name}"><div class="minimized-dot"></div>`;
                 el.addEventListener('click', () => this.launchApp(key));
-                el.addEventListener('mouseenter', this.enlargeDockIcon);
-                el.addEventListener('mouseleave', this.shrinkDockIcon);
             }
             dockContainer.appendChild(el);
         });
@@ -468,15 +1099,19 @@ class Desktop {
     // ─── Dock context menu ─────────────────────────────────────────────────────
 
     setupDockContextMenu() {
-        document.querySelectorAll('.dock-app').forEach(app => {
-            app.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const appName = app.dataset.app;
-                if (appName === 'launchpad') return;
-                this.hideContextMenu();
-                this.showDockContextMenu(e.clientX, e.clientY, appName, app);
-            });
+        // Delegated: works for pinned + dynamically added icons without duplicates.
+        const container = document.querySelector('.dock-apps') || document.getElementById('dock');
+        if (!container || container.dataset.ctxBound === 'true') return;
+        container.dataset.ctxBound = 'true';
+        container.addEventListener('contextmenu', (e) => {
+            const app = e.target.closest('.dock-app');
+            if (!app || !container.contains(app)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const appName = app.dataset.app;
+            if (!appName || appName === 'launchpad') return;
+            this.hideContextMenu();
+            this.showDockContextMenu(e.clientX, e.clientY, appName, app);
         });
     }
 
@@ -485,14 +1120,38 @@ class Desktop {
         menu.className = 'mac-context-menu visible';
         menu.dataset.source = 'dock';
 
-        const removeItem = document.createElement('div');
-        removeItem.className = 'mac-context-menu-item';
-        removeItem.textContent = 'Remove from Dock';
-        removeItem.addEventListener('click', () => {
-            this.hideContextMenu();
-            this.removeFromDock(appName, appEl);
-        });
-        menu.appendChild(removeItem);
+        const isOpen = !!(window.windowManager && window.windowManager.windows.some(w => w.appName === appName));
+        const mk = (label, fn, disabled = false) => {
+            const el = document.createElement('div');
+            el.className = 'mac-context-menu-item';
+            el.textContent = label;
+            if (disabled) { el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; }
+            else el.addEventListener('click', () => { this.hideContextMenu(); fn(); });
+            menu.appendChild(el);
+        };
+        const div = () => {
+            const d = document.createElement('div');
+            d.className = 'mac-context-menu-divider';
+            menu.appendChild(d);
+        };
+
+        mk('Open', () => this._taskbarAppClick(appName, appEl));
+        mk('Quit', () => {
+            if (!window.windowManager) return;
+            // closeWindow() removes the window + updates the taskbar itself (async).
+            window.windowManager.windows
+                .filter(w => w.appName === appName)
+                .forEach(w => {
+                    try {
+                        if (typeof window.windowManager.closeWindow === 'function') window.windowManager.closeWindow(w.element, w);
+                        else w.element.remove();
+                    } catch {}
+                });
+            this.updateTaskbar();
+        }, !isOpen);
+        div();
+        mk('Show in Launchpad', () => this.toggleLaunchpad(true));
+        mk('Remove from Dock', () => this.removeFromDock(appName, appEl));
 
         document.body.appendChild(menu);
 
@@ -512,10 +1171,11 @@ class Desktop {
             appEl.style.transition = 'all 0.2s ease';
             appEl.style.transform = 'scale(0)';
             appEl.style.opacity = '0';
-            setTimeout(() => appEl.remove(), 200);
+            setTimeout(() => { appEl.remove(); this.updateDesktopSafeArea(); }, 200);
         }
         const apps = this.getDockApps().filter(a => a !== appName);
         this.saveDockApps(apps);
+        this.updateDesktopSafeArea();
     }
 
     addToDock(appName) {
@@ -526,6 +1186,7 @@ class Desktop {
         this.syncDockFromStorage();
         this.setupDockDrag();
         this.setupDockContextMenu();
+        this.updateDesktopSafeArea();
     }
 
     // ─── Launchpad ─────────────────────────────────────────────────────────────
@@ -534,6 +1195,10 @@ class Desktop {
         const overlay = document.getElementById('launchpad-overlay');
         const searchInput = document.getElementById('launchpad-search-input');
         if (!overlay) return;
+
+        this.setupPointerReorder(document.getElementById('launchpad-grid'), '.launchpad-item', () => {
+            this.saveLaunchpadOrder();
+        });
 
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) this.toggleLaunchpad(false);
@@ -560,12 +1225,16 @@ class Desktop {
 
     populateLaunchpadGrid() {
         const grid = document.getElementById('launchpad-grid');
-        if (!grid || !window.appsManager || grid.children.length > 0) return;
+        if (!grid || !window.appsManager) return;
+        // Rebuild so newly installed apps + dock changes are always reflected.
+        grid.innerHTML = '';
 
         const apps = window.appsManager.getAllApps();
-        const dockApps = this.getDockApps();
+        const orderedKeys = this.getLaunchpadApps(apps);
 
-        for (const [key, app] of Object.entries(apps)) {
+        for (const key of orderedKeys) {
+            const app = apps[key];
+            if (!app) continue;
             if (key === 'launchpad') continue;
             const item = document.createElement('div');
             item.className = 'launchpad-item';
@@ -583,10 +1252,30 @@ class Desktop {
                 e.preventDefault();
                 e.stopPropagation();
                 this.hideContextMenu();
-                this.showLaunchpadContextMenu(e.clientX, e.clientY, key, dockApps.includes(key));
+                this.showLaunchpadContextMenu(e.clientX, e.clientY, key, this.getDockApps().includes(key));
             });
             grid.appendChild(item);
         }
+    }
+
+    getLaunchpadApps(apps = (window.appsManager ? window.appsManager.getAllApps() : {})) {
+        const available = Object.keys(apps).filter(key => key !== 'launchpad');
+        try {
+            const saved = JSON.parse(localStorage.getItem('browos_launchpad_apps') || 'null');
+            if (Array.isArray(saved)) {
+                const savedSet = new Set(saved);
+                return [...saved.filter(key => available.includes(key)), ...available.filter(key => !savedSet.has(key))];
+            }
+        } catch (e) {}
+        return available;
+    }
+
+    saveLaunchpadOrder() {
+        const grid = document.getElementById('launchpad-grid');
+        if (!grid) return;
+        localStorage.setItem('browos_launchpad_apps', JSON.stringify(
+            [...grid.querySelectorAll('.launchpad-item')].map(item => item.dataset.appKey)
+        ));
     }
 
     showLaunchpadContextMenu(x, y, appKey, isInDock) {
@@ -594,22 +1283,26 @@ class Desktop {
         menu.className = 'mac-context-menu visible';
         menu.dataset.source = 'launchpad';
 
+        const mk = (label, fn, disabled = false) => {
+            const el = document.createElement('div');
+            el.className = 'mac-context-menu-item';
+            el.textContent = label;
+            if (disabled) { el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; }
+            else el.addEventListener('click', () => { this.hideContextMenu(); fn(); });
+            menu.appendChild(el);
+        };
+        const appName = (window.appsManager && window.appsManager.getAllApps()[appKey]?.name) || appKey;
+        mk(`Open ${appName}`, () => {
+            this.toggleLaunchpad(false);
+            setTimeout(() => window.windowManager.launchApp(appKey), 60);
+        });
         if (!isInDock) {
-            const addItem = document.createElement('div');
-            addItem.className = 'mac-context-menu-item';
-            addItem.textContent = 'Add to Dock';
-            addItem.addEventListener('click', () => {
-                this.hideContextMenu();
-                this.addToDock(appKey);
-            });
-            menu.appendChild(addItem);
+            mk('Add to Dock', () => this.addToDock(appKey));
         } else {
-            const infoItem = document.createElement('div');
-            infoItem.className = 'mac-context-menu-item';
-            infoItem.textContent = 'Already in Dock';
-            infoItem.style.opacity = '0.5';
-            infoItem.style.pointerEvents = 'none';
-            menu.appendChild(infoItem);
+            mk('Remove from Dock', () => {
+                const el = document.querySelector(`.dock-app[data-app="${appKey}"]`);
+                this.removeFromDock(appKey, el);
+            });
         }
 
         document.body.appendChild(menu);
@@ -670,30 +1363,114 @@ class Desktop {
         }
 
         try {
-            const entries = await window.filesystem.list('Desktop');
-            if (!entries || entries.length === 0) return;
+            const raw = await window.filesystem.list('Desktop');
+            if (!raw || raw.length === 0) return;
+            const entries = this._sortDesktopEntries(raw);
+            const prefs = this._desktopPrefs();
 
-            let col = 0;
-            const startX = 50;
+            // Keep icons clear of the widgets column AND a left/right dock.
+            const reserves = this.getDockReserves();
+            const startX = 50 + (reserves.left || 0);
             const startY = 50;
             const gapX = 100;
             const gapY = 100;
             // Reserve 340px on the right for the widgets column to prevent overlap
-            const availableWidth = window.innerWidth - 340;
-            const maxCols = Math.max(1, Math.floor((availableWidth - startX) / gapX));
+            const rightEdge = window.innerWidth - 340 - (reserves.right || 0);
+            const maxCols = Math.max(1, Math.floor((rightEdge - startX) / gapX));
+            const posFor = (i) => ({
+                x: startX + (i % maxCols) * gapX,
+                y: startY + Math.floor(i / maxCols) * gapY,
+            });
 
-            for (const entry of entries) {
-                const isDir = entry.kind === 'directory' || entry.type === 'directory';
-                const iconPath = isDir ? BrowOSIcons.folder : this.getIconForFile(entry.name);
-                const x = startX + (col % maxCols) * gapX;
-                const y = startY + Math.floor(col / maxCols) * gapY;
+            if (prefs.stacks) {
+                const groups = new Map();
+                for (const entry of entries) {
+                    const g = this._stackGroupFor(entry);
+                    if (!groups.has(g)) groups.set(g, []);
+                    groups.get(g).push(entry);
+                }
+                let i = 0;
+                for (const [groupName, members] of groups) {
+                    const { x, y } = posFor(i++);
+                    if (members.length === 1) {
+                        const entry = members[0];
+                        const isDir = entry.kind === 'directory' || entry.type === 'directory';
+                        const iconPath = isDir ? BrowOSIcons.folder : this.getIconForFile(entry.name);
+                        this.createDesktopIcon(entry.name, iconPath, x, y, isDir ? null : entry.name);
+                    } else {
+                        this.createDesktopStack(groupName, members, x, y);
+                    }
+                }
+            } else {
+                let col = 0;
+                for (const entry of entries) {
+                    const isDir = entry.kind === 'directory' || entry.type === 'directory';
+                    const iconPath = isDir ? BrowOSIcons.folder : this.getIconForFile(entry.name);
+                    const { x, y } = posFor(col++);
 
-                this.createDesktopIcon(entry.name, iconPath, x, y, isDir ? null : entry.name);
-                col++;
+                    this.createDesktopIcon(entry.name, iconPath, x, y, isDir ? null : entry.name);
+                }
             }
+            this._applyDesktopIconSize(prefs.iconSize);
         } catch (e) {
             console.error('Failed to load desktop icons:', e);
         }
+    }
+
+    createDesktopStack(groupName, members, x, y) {
+        const icon = document.createElement('div');
+        icon.className = 'desktop-icon stack';
+        icon.style.left = `${x}px`;
+        icon.style.top = `${y}px`;
+        const isDir = members[0] && (members[0].kind === 'directory' || members[0].type === 'directory');
+        const frontIcon = isDir ? BrowOSIcons.folder : this.getIconForFile(members[0].name);
+        icon.innerHTML = `
+            <div class="stack-imgs" style="width:48px;height:48px;">
+                <img class="stack-back" src="${BrowOSIcons.folder}" alt="">
+                <img class="stack-front" src="${frontIcon}" alt="${groupName}">
+            </div>
+            <span>${groupName}</span>
+            <span class="stack-badge">${members.length}</span>
+        `;
+        const openStack = () => {
+            const lines = members.map(m => `• ${m.name}`).join('\n');
+            this._alert(`${groupName} Stack (${members.length})`, `${lines}\n\nTurn off "Use Stacks" to show every icon.`);
+        };
+        icon.addEventListener('dblclick', openStack);
+        icon.addEventListener('click', () => {
+            icon.classList.add('selected');
+            setTimeout(() => icon.classList.remove('selected'), 600);
+        });
+        icon.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.hideContextMenu();
+            const menu = document.createElement('div');
+            menu.className = 'mac-context-menu visible';
+            menu.dataset.source = 'desktop-icon';
+            const mk = (label, fn) => {
+                const el = document.createElement('div');
+                el.className = 'mac-context-menu-item';
+                el.textContent = label;
+                el.addEventListener('click', () => { document.querySelectorAll('.mac-context-menu[data-source="desktop-icon"]').forEach(m => m.remove()); fn(); });
+                menu.appendChild(el);
+            };
+            mk(`Open Stack (${members.length} items)`, openStack);
+            mk('Unstack (Turn Stacks Off)', () => {
+                localStorage.setItem('browos_desktop_stacks', 'false');
+                this.refreshDesktopIcons();
+            });
+            document.body.appendChild(menu);
+            let left = e.clientX, top = e.clientY;
+            requestAnimationFrame(() => {
+                const rect = menu.getBoundingClientRect();
+                if (left + rect.width > window.innerWidth) left -= rect.width;
+                if (top + rect.height > window.innerHeight) top -= rect.height;
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+            });
+        });
+        document.getElementById('desktop').appendChild(icon);
     }
 
     refreshDesktopIcons() {
@@ -783,10 +1560,11 @@ class Desktop {
             { label: 'Open', action: 'open' },
             { divider: true },
             { label: 'Get Info', action: 'info' },
-            { label: filename ? 'Open in FileBrow' : 'Open in FileBrow', action: 'filebrow' },
+            { label: 'Open in FileBrow', action: 'filebrow' },
         ];
 
         if (filename) {
+            items.push({ label: 'Rename', action: 'rename' });
             items.push({ divider: true });
             items.push({ label: 'Delete', action: 'delete', danger: true });
         }
@@ -821,23 +1599,84 @@ class Desktop {
         });
     }
 
+    _revealInFileBrow(path) {
+        if (!window.windowManager) return;
+        window.windowManager.launchApp('filebrow');
+        // FileBrow exposes the latest instance globally; navigate it to the folder.
+        const dir = path.includes('/') ? path.split('/').slice(0, -1).join('/') || '/' : '/Desktop';
+        setTimeout(() => {
+            try {
+                if (window.filebrowApp && typeof window.filebrowApp.navigateTo === 'function') {
+                    const target = dir.startsWith('/') ? dir : `/${dir}`;
+                    window.filebrowApp.navigateTo(target);
+                }
+            } catch {}
+        }, 400);
+    }
+
     async handleDesktopIconAction(action, name, filename) {
+        const fullPath = 'Desktop/' + (filename || name);
         switch (action) {
             case 'open':
                 if (filename) this.openDesktopFile(filename);
-                else window.windowManager.launchApp('filebrow');
+                else this._revealInFileBrow('Desktop/' + name);
                 break;
+            case 'info': {
+                try {
+                    const meta = (this._fsReady() && window.filesystem.getMetadata)
+                        ? await window.filesystem.getMetadata(fullPath) : null;
+                    const fmtSize = (b) => (window.filesystem.formatBytes
+                        ? window.filesystem.formatBytes(b)
+                        : `${Math.round(b / 1024)} KB`);
+                    if (!meta) {
+                        await this._alert('Get Info', `Name: ${name}\nPath: ${fullPath}\n\nFilesystem not mounted — mount a folder in FileBrow to see details.`);
+                    } else if (meta.type === 'directory' || meta.kind === 'directory') {
+                        let kids = 0;
+                        try {
+                            const list = await window.filesystem.list(fullPath);
+                            kids = (list || []).length;
+                        } catch {}
+                        await this._alert('Get Info', `Name: ${name}\nKind: Folder\nPath: ${fullPath}\nContains: ${kids} item${kids === 1 ? '' : 's'}`);
+                    } else {
+                        const mod = meta.modified ? new Date(meta.modified).toLocaleString() : 'unknown';
+                        await this._alert('Get Info', `Name: ${name}\nKind: File\nPath: ${fullPath}\nSize: ${fmtSize(meta.size || 0)}\nModified: ${mod}`);
+                    }
+                } catch (e) {
+                    await this._alert('Get Info', `Name: ${name}\nPath: ${fullPath}`);
+                }
+                break;
+            }
             case 'filebrow':
-                window.windowManager.launchApp('filebrow');
+                this._revealInFileBrow(fullPath);
                 break;
+            case 'rename': {
+                if (!this._fsReady()) {
+                    await this._alert('Rename', 'Mount a folder in FileBrow first.');
+                    break;
+                }
+                const newName = window.BrowDialog
+                    ? await window.BrowDialog.prompt('Rename', 'Enter a new name:', name)
+                    : prompt('Enter a new name:', name);
+                if (newName && newName.trim() && newName.trim() !== name) {
+                    const ok = await window.filesystem.rename(fullPath, newName.trim());
+                    if (ok) this.loadDesktopIcons();
+                    else await this._alert('Error', 'Rename failed. The name may be invalid.');
+                }
+                break;
+            }
             case 'delete':
-                if (filename && window.filesystem && window.filesystem.isMounted()) {
-                    const ok = await window.BrowDialog.confirm('Delete', `Are you sure you want to delete "${name}"?`, true);
+                if (filename && this._fsReady()) {
+                    const ok = window.BrowDialog
+                        ? await window.BrowDialog.confirm('Delete', `Are you sure you want to delete "${name}"?`, true)
+                        : confirm(`Delete "${name}"?`);
                     if (ok) {
                         const path = 'Desktop/' + filename;
                         await window.filesystem.delete(path);
+                        try { window.BrowSettings?.audio?.play('trash'); } catch (e) {}
                         this.loadDesktopIcons();
                     }
+                } else if (filename) {
+                    await this._alert('Delete', 'Mount a folder in FileBrow first.');
                 }
                 break;
         }
@@ -934,264 +1773,11 @@ class Desktop {
     }
 
     initializeWidgets() {
-        const desktopEl = document.getElementById('desktop');
-        if (!desktopEl) return;
-
-        // Create container
-        const widgetsContainer = document.createElement('div');
-        widgetsContainer.className = 'desktop-widgets-container';
-        desktopEl.appendChild(widgetsContainer);
-
-        // Render widget slots (Battery is completely removed to fit cleanly on screen!)
-        widgetsContainer.innerHTML = `
-            <!-- 1. Large Clock Widget -->
-            <div class="desktop-widget widget-clock-card">
-                <div class="widget-clock-large" id="widget-time">12:00<span class="widget-clock-colon">:</span>00</div>
-                <div class="widget-date-label" id="widget-date">MONDAY, MAY 24</div>
-            </div>
-
-            <!-- 2. OS Health & Diagnostics -->
-            <div class="desktop-widget widget-health-card">
-                <div class="widget-title">
-                    <span>🛡️</span> OS Health & Diagnostics
-                </div>
-                <div class="health-status-header">
-                    <div class="health-status-title">
-                        <span class="health-status-pulse"></span>
-                        <span id="health-status-text">System Optimal</span>
-                    </div>
-                </div>
-                <div class="health-detail-item">
-                    <span>Active Tasks</span>
-                    <span id="health-tasks-count">7 background</span>
-                </div>
-                <div class="health-detail-item">
-                    <span>OS Uptime</span>
-                    <span id="health-uptime">00:00:00</span>
-                </div>
-                <button class="diag-btn" id="run-diag-btn">Deep Diagnostics Scan</button>
-                <div class="diag-scan-container" id="diag-scan-wrap">
-                    <div class="diag-scan-text" id="diag-scan-label">Scanning system registry...</div>
-                    <div class="diag-scan-track">
-                        <div class="diag-scan-fill" id="diag-scan-progress"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. Storage Usage (Synced dynamically out of 10 GB with Settings / Filesystem) -->
-            <div class="desktop-widget widget-storage-card" style="cursor: pointer;" title="Click to run disk cleanup">
-                <div class="widget-title">
-                    <span>💽</span> Disk Storage
-                </div>
-                <div class="storage-stats-numbers">
-                    <span class="storage-stats-used" id="widget-storage-used">Calculating...</span>
-                    <span class="storage-stats-total">of 10 GB</span>
-                </div>
-                <div class="storage-bar-track">
-                    <div class="storage-bar-segment storage-segment-system" id="widget-storage-system-bar" style="width: 24%;"></div>
-                    <div class="storage-bar-segment storage-segment-apps" id="widget-storage-apps-bar" style="width: 8%;"></div>
-                    <div class="storage-bar-segment storage-segment-media" id="widget-storage-media-bar" style="width: 0%;"></div>
-                </div>
-                <div class="storage-legend-grid">
-                    <div class="storage-legend-item">
-                        <span class="legend-color-dot" style="background-color: #60a5fa;"></span>
-                        <span>System</span>
-                    </div>
-                    <div class="storage-legend-item">
-                        <span class="legend-color-dot" style="background-color: #c084fc;"></span>
-                        <span>Apps</span>
-                    </div>
-                    <div class="storage-legend-item">
-                        <span class="legend-color-dot" style="background-color: #34d399;"></span>
-                        <span>Files</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Initialize Widget Functionalities
-        this._initWidgetClock();
-        this._initWidgetHealth();
-        this._initWidgetStorage();
+        // Widget layer is owned by the BrowWidgets engine (js/widgets.js):
+        // free-position cards, gallery add/remove/edit, per-widget settings.
+        if (window.BrowWidgets) window.BrowWidgets.init();
     }
 
-    _initWidgetClock() {
-        const timeEl = document.getElementById('widget-time');
-        const dateEl = document.getElementById('widget-date');
-        if (!timeEl || !dateEl) return;
-
-        const update = () => {
-            const now = new Date();
-            let hours = now.getHours();
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12; // 0 should be 12
-            
-            timeEl.innerHTML = `${hours}<span class="widget-clock-colon">:</span>${minutes}<span style="font-size: 20px; font-weight: 500; margin-left: 4px;">${ampm}</span>`;
-
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            dateEl.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
-        };
-        update();
-        setInterval(update, 1000);
-    }
-
-    _initWidgetHealth() {
-        const uptimeEl = document.getElementById('health-uptime');
-        const tasksEl = document.getElementById('health-tasks-count');
-        const runDiagBtn = document.getElementById('run-diag-btn');
-        const diagScanWrap = document.getElementById('diag-scan-wrap');
-        const diagScanLabel = document.getElementById('diag-scan-label');
-        const diagScanProgress = document.getElementById('diag-scan-progress');
-
-        if (!uptimeEl || !runDiagBtn) return;
-
-        // Uptime counter
-        const startTime = Date.now();
-        const updateUptime = () => {
-            const diff = Date.now() - startTime;
-            const secs = Math.floor((diff / 1000) % 60);
-            const mins = Math.floor((diff / (1000 * 60)) % 60);
-            const hrs = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            uptimeEl.textContent = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-
-            // Also update tasks count
-            const windowCount = window.windowManager ? window.windowManager.windows.length : 0;
-            tasksEl.textContent = `${windowCount} active / ${8 + Math.floor(Math.sin(Date.now() / 10000) * 3)} system`;
-        };
-        updateUptime();
-        setInterval(updateUptime, 1000);
-
-        // Diagnostic Scan Click
-        let scanning = false;
-        runDiagBtn.addEventListener('click', () => {
-            if (scanning) return;
-            scanning = true;
-            runDiagBtn.disabled = true;
-            runDiagBtn.textContent = 'Diagnostic Running...';
-            diagScanWrap.style.display = 'flex';
-            diagScanProgress.style.width = '0%';
-            
-            const steps = [
-                'Verifying system core files...',
-                'Auditing filesystem registry...',
-                'Scanning active thread pool...',
-                'Cleaning application caches...',
-                'Audit Complete! Health: 100%'
-            ];
-            
-            let progress = 0;
-
-            const interval = setInterval(() => {
-                progress += 5;
-                diagScanProgress.style.width = `${progress}%`;
-                
-                // Change text labels periodically
-                const stepIdx = Math.min(steps.length - 1, Math.floor((progress / 100) * steps.length));
-                diagScanLabel.textContent = steps[stepIdx];
-
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        scanning = false;
-                        runDiagBtn.disabled = false;
-                        runDiagBtn.textContent = 'Run Diagnostic Again';
-                        diagScanWrap.style.display = 'none';
-                        
-                        // Show premium system dialog
-                        if (window.BrowDialog) {
-                            window.BrowDialog.alert(
-                                'System Diagnostics Report',
-                                'Diagnostics Complete!\n\nStatus: OPTIMAL\nHealth Score: 100%\nCaches Cleared: 142 MB\nSystem Files: 0 Corrupt\nAll services running healthy.'
-                            );
-                        } else {
-                            alert('Diagnostics Complete! Status: OPTIMAL (100% Healthy).');
-                        }
-                    }, 500);
-                }
-            }, 100);
-        });
-    }
-
-    _initWidgetStorage() {
-        const usedEl = document.getElementById('widget-storage-used');
-        const systemBar = document.getElementById('widget-storage-system-bar');
-        const appsBar = document.getElementById('widget-storage-apps-bar');
-        const mediaBar = document.getElementById('widget-storage-media-bar');
-        const cardEl = document.querySelector('.widget-storage-card');
-
-        if (!usedEl || !cardEl) return;
-
-        const systemGB = 2.4;
-        const appsGB = 0.8;
-        const totalGB = 10.0;
-
-        const updateStorageUI = async () => {
-            let mediaBytes = 0;
-            if (window.filesystem && typeof window.filesystem.getStorageUsed === 'function') {
-                try {
-                    mediaBytes = await window.filesystem.getStorageUsed();
-                } catch (e) {
-                    console.error('Failed to query storage used:', e);
-                }
-            }
-            
-            const mediaGB = mediaBytes / (1024 * 1024 * 1024);
-            const totalUsedGB = systemGB + appsGB + mediaGB;
-            
-            usedEl.textContent = `${totalUsedGB.toFixed(2)} GB Used`;
-
-            const systemPct = (systemGB / totalGB) * 100;
-            const appsPct = (appsGB / totalGB) * 100;
-            const mediaPct = (mediaGB / totalGB) * 100;
-
-            systemBar.style.width = `${systemPct}%`;
-            appsBar.style.width = `${appsPct}%`;
-            mediaBar.style.width = `${mediaPct}%`;
-        };
-
-        // Real-time synchronization interval
-        updateStorageUI();
-        setInterval(updateStorageUI, 5000);
-
-        // Click to run disk cleanup
-        cardEl.addEventListener('click', async () => {
-            if (window.BrowDialog) {
-                const proceed = await window.BrowDialog.confirm('Disk Analyzer & Cleanup', 'Would you like to run a Deep Disk Audit and clean temporary log files, browser cache, and memory dumps?');
-                if (!proceed) return;
-
-                // Simulate cleaning
-                const cleanupScreen = document.createElement('div');
-                cleanupScreen.className = 'brow-dialog-backdrop';
-                cleanupScreen.innerHTML = `
-                    <div class="brow-dialog">
-                        <div class="brow-dialog-title">Disk Cleanup Running</div>
-                        <div class="brow-dialog-message">Purging cache files and logs...</div>
-                        <div class="diag-scan-track" style="width: 100%; margin-top: 10px;">
-                            <div class="diag-scan-fill" id="cleanup-progress" style="width: 0%; height: 100%;"></div>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(cleanupScreen);
-
-                const progressEl = cleanupScreen.querySelector('#cleanup-progress');
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 10;
-                    progressEl.style.width = `${progress}%`;
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        document.body.removeChild(cleanupScreen);
-
-                        window.BrowDialog.alert('Cleanup Successful', 'Deep Disk Audit Completed!\n\nAll temporary system logs, memory dumps, and duplicate browser caches have been successfully purged.');
-                        updateStorageUI();
-                    }
-                }, 150);
-            }
-        });
-    }
 }
 
 // Initialize the desktop when the page loads

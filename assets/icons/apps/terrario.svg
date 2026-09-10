@@ -1,0 +1,381 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="terSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a88e9"/>
+      <stop offset="0.5%" stop-color="#80d0ff"/>
+      <stop offset="0.5%" stop-color="#4a3525"/>
+      <stop offset="1" stop-color="#1a0e08"/>
+    </linearGradient>
+    <linearGradient id="terDirt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7a4a28"/>
+      <stop offset="1%" stop-color="#3a2010"/>
+    </linearGradient>
+    <linearGradient id="terGrass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5cdb5c"/>
+      <stop offset="1%" stop-color="#2d802d"/>
+    </linearGradient>
+    <linearGradient id="terStone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9a9a9a"/>
+      <stop offset="1%" stop-color="#4a4a4a"/>
+    </linearGradient>
+    <linearGradient id="terGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe66d"/>
+      <stop offset="1%" stop-color="#b47800"/>
+    </linearGradient>
+    <linearGradient id="terGem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a8e6ff"/>
+      <stop offset="0.5%" stop-color="#4facfe"/>
+      <stop offset="1%" stop-color="#1a4a7a"/>
+    </linearGradient>
+    <linearGradient id="terPickMetal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8edf2"/>
+      <stop offset="0.5%" stop-color="#9fb3c8"/>
+      <stop offset="1%" stop-color="#486581"/>
+    </linearGradient>
+    <linearGradient id="terHandle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c0804a"/>
+      <stop offset="1%" stop-color="#5a2a10"/>
+    </linearGradient>
+    <filter id="terGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.5" result="b"/>
+      <feComposite in="b" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="terGemGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feComposite in="b" in2="SourceGraphic" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Sky/underground split background -->
+  <rect width="128" height="128" rx="22" fill="url(#terSky)"/>
+
+  <!-- Sun in sky (top) -->
+  <circle cx="110" cy="18" r="8" fill="#ffe9b0" opacity="0.9"/>
+  <circle cx="110" cy="18" r="12" fill="#ffe9b0" opacity="0.2"/>
+
+  <!-- Clouds -->
+  <g fill="#fff" opacity="0.7">
+    <ellipse cx="30" cy="20" rx="9" ry="2.5"/>
+    <ellipse cx="60" cy="14" rx="7" ry="2"/>
+  </g>
+
+  <!-- Floating gem (top-right area) -->
+  <g transform="translate(95 38)" filter="url(#terGemGlow)">
+    <polygon points="0,-6 5,-2 0,6 -5,-2" fill="url(#terGem)" stroke="#1a4a7a" stroke-width="0.5"/>
+    <polygon points="0,-6 5,-2 0,-1 -5,-2" fill="#fff" opacity="0.4"/>
+    <polygon points="0,-6 2,-2 0,6 -2,-2" fill="none" stroke="#fff" stroke-width="0.4" opacity="0.5"/>
+  </g>
+
+  <!-- Floating heart (top-left area) -->
+  <g transform="translate(22 32)">
+    <path d="M0 -2 C-3 -6, -8 -4, -8 0 C-8 4, 0 8, 0 8 C0 8, 8 4, 8 0 C8 -4, 3 -6, 0 -2 Z"
+      fill="#ff3a5a" stroke="#8a0a1a" stroke-width="0.6"/>
+    <ellipse cx="-3" cy="-1" rx="2" ry="1.5" fill="#fff" opacity="0.6"/>
+  </g>
+
+  <!-- Floating star/coin -->
+  <g transform="translate(50 18)">
+    <polygon points="0,-5 1.4,-1.4 5,-1.4 2,0.8 3,4 0,2 -3,4 -2,0.8 -5,-1.4 -1.4,-1.4"
+      fill="#ffd94d" stroke="#a8791a" stroke-width="0.4"/>
+  </g>
+
+  <!-- Background tree (left) -->
+  <g transform="translate(16 38)">
+    <!-- Trunk -->
+    <rect x="-2" y="6" width="4" height="14" fill="#7a4a25" stroke="#3a2010" stroke-width="0.5"/>
+    <rect x="-2" y="6" width="1" height="14" fill="#9a5a35"/>
+    <!-- Leaves (pixel-art blobs) -->
+    <rect x="-8" y="-2" width="16" height="8" fill="#2d802d"/>
+    <rect x="-6" y="-6" width="12" height="6" fill="#2d802d"/>
+    <rect x="-4" y="-10" width="8" height="6" fill="#2d802d"/>
+    <rect x="-2" y="-12" width="4" height="4" fill="#2d802d"/>
+    <!-- Highlights -->
+    <rect x="-6" y="-4" width="3" height="3" fill="#5cb85c"/>
+    <rect x="0" y="-8" width="3" height="3" fill="#5cb85c"/>
+    <rect x="-2" y="-2" width="2" height="2" fill="#38a138"/>
+  </g>
+
+  <!-- Distant tree (right) -->
+  <g transform="translate(108 50)">
+    <rect x="-1" y="4" width="2" height="8" fill="#7a4a25"/>
+    <rect x="-5" y="-4" width="10" height="6" fill="#2d802d"/>
+    <rect x="-3" y="-8" width="6" height="6" fill="#2d802d"/>
+    <rect x="-1" y="-10" width="2" height="3" fill="#2d802d"/>
+  </g>
+
+  <!-- Ground divider line (terrain) -->
+  <!-- Sky/ground boundary with grass tufts -->
+  <path d="M0 56 L4 50 L6 56 L10 48 L13 56 L18 50 L21 56 L25 47 L28 56 L33 50 L36 56 L40 48 L43 56 L48 50 L51 56 L55 47 L58 56 L63 50 L66 56 L70 48 L73 56 L78 50 L81 56 L85 47 L88 56 L93 50 L96 56 L100 48 L103 56 L108 50 L111 56 L115 47 L118 56 L122 50 L125 56 L128 52 L128 60 L0 60 Z"
+    fill="url(#terGrass)"/>
+  <!-- Bright grass top highlights -->
+  <g fill="#7cec7c">
+    <rect x="0" y="56" width="4" height="1"/>
+    <rect x="10" y="56" width="3" height="1"/>
+    <rect x="18" y="56" width="3" height="1"/>
+    <rect x="25" y="56" width="3" height="1"/>
+    <rect x="33" y="56" width="3" height="1"/>
+    <rect x="40" y="56" width="3" height="1"/>
+    <rect x="48" y="56" width="3" height="1"/>
+    <rect x="55" y="56" width="3" height="1"/>
+    <rect x="63" y="56" width="3" height="1"/>
+    <rect x="70" y="56" width="3" height="1"/>
+    <rect x="78" y="56" width="3" height="1"/>
+    <rect x="85" y="56" width="3" height="1"/>
+    <rect x="93" y="56" width="3" height="1"/>
+    <rect x="100" y="56" width="3" height="1"/>
+    <rect x="108" y="56" width="3" height="1"/>
+    <rect x="115" y="56" width="3" height="1"/>
+    <rect x="122" y="56" width="3" height="1"/>
+  </g>
+
+  <!-- Underground dirt blocks (pixel grid) -->
+  <g>
+    <!-- Row 1: dirt blocks (rows 60-128) -->
+    <rect x="0" y="60" width="128" height="68" fill="url(#terDirt)"/>
+    <!-- Pixel grid lines -->
+    <g stroke="#1a0e08" stroke-width="0.4" opacity="0.5">
+      <line x1="0" y1="68" x2="128" y2="68"/>
+      <line x1="0" y1="76" x2="128" y2="76"/>
+      <line x1="0" y1="84" x2="128" y2="84"/>
+      <line x1="0" y1="92" x2="128" y2="92"/>
+      <line x1="0" y1="100" x2="128" y2="100"/>
+      <line x1="0" y1="108" x2="128" y2="108"/>
+      <line x1="0" y1="116" x2="128" y2="116"/>
+      <line x1="0" y1="124" x2="128" y2="124"/>
+      <line x1="8" y1="60" x2="8" y2="128"/>
+      <line x1="16" y1="60" x2="16" y2="128"/>
+      <line x1="24" y1="60" x2="24" y2="128"/>
+      <line x1="32" y1="60" x2="32" y2="128"/>
+      <line x1="40" y1="60" x2="40" y2="128"/>
+      <line x1="48" y1="60" x2="48" y2="128"/>
+      <line x1="56" y1="60" x2="56" y2="128"/>
+      <line x1="64" y1="60" x2="64" y2="128"/>
+      <line x1="72" y1="60" x2="72" y2="128"/>
+      <line x1="80" y1="60" x2="80" y2="128"/>
+      <line x1="88" y1="60" x2="88" y2="128"/>
+      <line x1="96" y1="60" x2="96" y2="128"/>
+      <line x1="104" y1="60" x2="104" y2="128"/>
+      <line x1="112" y1="60" x2="112" y2="128"/>
+      <line x1="120" y1="60" x2="120" y2="128"/>
+    </g>
+    <!-- Dirt texture: small dots -->
+    <g fill="#2a1a0a" opacity="0.7">
+      <rect x="6" y="64" width="1" height="1"/>
+      <rect x="14" y="66" width="1" height="1"/>
+      <rect x="22" y="64" width="1" height="1"/>
+      <rect x="38" y="66" width="1" height="1"/>
+      <rect x="46" y="64" width="1" height="1"/>
+      <rect x="54" y="66" width="1" height="1"/>
+      <rect x="70" y="64" width="1" height="1"/>
+      <rect x="86" y="66" width="1" height="1"/>
+      <rect x="94" y="64" width="1" height="1"/>
+      <rect x="110" y="66" width="1" height="1"/>
+      <rect x="118" y="64" width="1" height="1"/>
+      <rect x="2" y="72" width="1" height="1"/>
+      <rect x="18" y="74" width="1" height="1"/>
+      <rect x="34" y="72" width="1" height="1"/>
+      <rect x="50" y="74" width="1" height="1"/>
+      <rect x="66" y="72" width="1" height="1"/>
+      <rect x="82" y="74" width="1" height="1"/>
+      <rect x="98" y="72" width="1" height="1"/>
+      <rect x="114" y="74" width="1" height="1"/>
+      <rect x="10" y="80" width="1" height="1"/>
+      <rect x="26" y="82" width="1" height="1"/>
+      <rect x="42" y="80" width="1" height="1"/>
+      <rect x="58" y="82" width="1" height="1"/>
+      <rect x="74" y="80" width="1" height="1"/>
+      <rect x="90" y="82" width="1" height="1"/>
+      <rect x="106" y="80" width="1" height="1"/>
+      <rect x="122" y="82" width="1" height="1"/>
+      <rect x="6" y="96" width="1" height="1"/>
+      <rect x="22" y="98" width="1" height="1"/>
+      <rect x="38" y="96" width="1" height="1"/>
+      <rect x="54" y="98" width="1" height="1"/>
+      <rect x="70" y="96" width="1" height="1"/>
+      <rect x="86" y="98" width="1" height="1"/>
+      <rect x="102" y="96" width="1" height="1"/>
+      <rect x="118" y="98" width="1" height="1"/>
+      <rect x="14" y="104" width="1" height="1"/>
+      <rect x="30" y="106" width="1" height="1"/>
+      <rect x="46" y="104" width="1" height="1"/>
+      <rect x="62" y="106" width="1" height="1"/>
+      <rect x="78" y="104" width="1" height="1"/>
+      <rect x="94" y="106" width="1" height="1"/>
+      <rect x="110" y="104" width="1" height="1"/>
+      <rect x="4" y="112" width="1" height="1"/>
+      <rect x="20" y="114" width="1" height="1"/>
+      <rect x="36" y="112" width="1" height="1"/>
+      <rect x="52" y="114" width="1" height="1"/>
+      <rect x="68" y="112" width="1" height="1"/>
+      <rect x="84" y="114" width="1" height="1"/>
+      <rect x="100" y="112" width="1" height="1"/>
+      <rect x="116" y="114" width="1" height="1"/>
+      <rect x="12" y="120" width="1" height="1"/>
+      <rect x="28" y="122" width="1" height="1"/>
+      <rect x="44" y="120" width="1" height="1"/>
+      <rect x="60" y="122" width="1" height="1"/>
+      <rect x="76" y="120" width="1" height="1"/>
+      <rect x="92" y="122" width="1" height="1"/>
+      <rect x="108" y="120" width="1" height="1"/>
+      <rect x="124" y="122" width="1" height="1"/>
+    </g>
+    <!-- Lighter dirt highlights -->
+    <g fill="#a86840" opacity="0.5">
+      <rect x="4" y="64" width="2" height="1"/>
+      <rect x="20" y="66" width="2" height="1"/>
+      <rect x="36" y="64" width="2" height="1"/>
+      <rect x="52" y="66" width="2" height="1"/>
+      <rect x="68" y="64" width="2" height="1"/>
+      <rect x="84" y="66" width="2" height="1"/>
+      <rect x="100" y="64" width="2" height="1"/>
+      <rect x="116" y="66" width="2" height="1"/>
+      <rect x="8" y="72" width="2" height="1"/>
+      <rect x="24" y="74" width="2" height="1"/>
+      <rect x="40" y="72" width="2" height="1"/>
+      <rect x="56" y="74" width="2" height="1"/>
+      <rect x="72" y="72" width="2" height="1"/>
+      <rect x="88" y="74" width="2" height="1"/>
+      <rect x="104" y="72" width="2" height="1"/>
+      <rect x="120" y="74" width="2" height="1"/>
+      <rect x="12" y="80" width="2" height="1"/>
+      <rect x="28" y="82" width="2" height="1"/>
+      <rect x="44" y="80" width="2" height="1"/>
+      <rect x="60" y="82" width="2" height="1"/>
+      <rect x="76" y="80" width="2" height="1"/>
+      <rect x="92" y="82" width="2" height="1"/>
+      <rect x="108" y="80" width="2" height="1"/>
+    </g>
+  </g>
+
+  <!-- Gold ore embedded blocks (left side) -->
+  <g transform="translate(8 76)">
+    <rect width="8" height="8" fill="url(#terGold)" stroke="#7a4a00" stroke-width="0.5"/>
+    <rect x="1" y="1" width="2" height="2" fill="#fff3a0"/>
+    <rect x="4" y="3" width="2" height="2" fill="#fff3a0"/>
+    <rect x="2" y="5" width="2" height="2" fill="#a06000"/>
+  </g>
+  <g transform="translate(20 92)">
+    <rect width="8" height="8" fill="url(#terGold)" stroke="#7a4a00" stroke-width="0.5"/>
+    <rect x="1" y="2" width="2" height="2" fill="#fff3a0"/>
+    <rect x="5" y="4" width="2" height="2" fill="#fff3a0"/>
+    <rect x="3" y="6" width="2" height="2" fill="#a06000"/>
+  </g>
+  <g transform="translate(4 108)">
+    <rect width="8" height="8" fill="url(#terGold)" stroke="#7a4a00" stroke-width="0.5"/>
+    <rect x="2" y="1" width="2" height="2" fill="#fff3a0"/>
+    <rect x="5" y="3" width="2" height="2" fill="#fff3a0"/>
+    <rect x="1" y="5" width="2" height="2" fill="#a06000"/>
+  </g>
+
+  <!-- Stone block (right side) -->
+  <g transform="translate(112 76)">
+    <rect width="8" height="8" fill="url(#terStone)" stroke="#2a2a2a" stroke-width="0.5"/>
+    <rect x="1" y="1" width="2" height="2" fill="#bababa"/>
+    <rect x="4" y="3" width="2" height="2" fill="#bababa"/>
+    <rect x="2" y="5" width="2" height="2" fill="#5a5a5a"/>
+  </g>
+  <g transform="translate(108 92)">
+    <rect width="8" height="8" fill="url(#terStone)" stroke="#2a2a2a" stroke-width="0.5"/>
+    <rect x="2" y="1" width="2" height="2" fill="#bababa"/>
+    <rect x="5" y="4" width="2" height="2" fill="#bababa"/>
+    <rect x="1" y="6" width="2" height="2" fill="#5a5a5a"/>
+  </g>
+
+  <!-- Diamond/gem block (deep right) -->
+  <g transform="translate(116 108)">
+    <rect width="8" height="8" fill="#5a8db0" stroke="#1a3a5a" stroke-width="0.5"/>
+    <polygon points="4,1 6,3 4,7 2,3" fill="url(#terGem)"/>
+    <polygon points="4,1 5,3 4,7 3,3" fill="#fff" opacity="0.5"/>
+  </g>
+
+  <!-- Wooden chest (bottom-center) -->
+  <g transform="translate(58 112)">
+    <rect x="0" y="2" width="12" height="8" fill="url(#terHandle)" stroke="#3a2010" stroke-width="0.5"/>
+    <rect x="0" y="0" width="12" height="3" fill="#a06030" stroke="#3a2010" stroke-width="0.5"/>
+    <rect x="5" y="3" width="2" height="2" fill="#ffd700" stroke="#7a4a00" stroke-width="0.3"/>
+    <rect x="0" y="2" width="12" height="1" fill="#5a3010"/>
+    <rect x="3" y="4" width="1" height="1" fill="#5a3010"/>
+    <rect x="8" y="4" width="1" height="1" fill="#5a3010"/>
+  </g>
+
+  <!-- Green slime (bouncing on grass) -->
+  <g transform="translate(78 50)">
+    <ellipse cx="0" cy="0" rx="8" ry="6" fill="#39d353" stroke="#1a6a2a" stroke-width="0.6"/>
+    <ellipse cx="-3" cy="-1" rx="2" ry="2.5" fill="#7cec7c" opacity="0.7"/>
+    <circle cx="-2.5" cy="-1" r="1.2" fill="#000"/>
+    <circle cx="2.5" cy="-1" r="1.2" fill="#000"/>
+    <circle cx="-2.2" cy="-1.4" r="0.4" fill="#fff"/>
+    <circle cx="2.8" cy="-1.4" r="0.4" fill="#fff"/>
+    <!-- Crown/spike on top -->
+    <polygon points="-3,-5 -1,-3 -1,-5 1,-3 1,-5 3,-3" fill="#5cb85c"/>
+    <!-- Highlight -->
+    <ellipse cx="-3" cy="-2" rx="2" ry="1" fill="#fff" opacity="0.3"/>
+  </g>
+
+  <!-- Pickaxe (large, diagonal across center) -->
+  <g transform="translate(50 64) rotate(-25 20 20)">
+    <!-- Wooden handle -->
+    <rect x="14" y="30" width="4" height="30" fill="url(#terHandle)" stroke="#3a2010" stroke-width="0.5"/>
+    <rect x="15" y="30" width="1" height="30" fill="#a06030" opacity="0.5"/>
+    <rect x="14" y="30" width="4" height="2" fill="#c0804a"/>
+    <rect x="14" y="58" width="4" height="2" fill="#5a2a10"/>
+    <!-- Metal wrap at top -->
+    <rect x="13" y="28" width="6" height="3" fill="#7a8a9a" stroke="#3a4a5a" stroke-width="0.4"/>
+    <!-- Pickaxe head (horizontal V shape) -->
+    <polygon points="2,18 8,8 14,16 12,18 8,12 4,20" fill="url(#terPickMetal)" stroke="#334e68" stroke-width="0.8"/>
+    <polygon points="34,18 28,8 22,16 24,18 28,12 32,20" fill="url(#terPickMetal)" stroke="#334e68" stroke-width="0.8"/>
+    <!-- Center mount -->
+    <rect x="12" y="14" width="12" height="6" fill="url(#terPickMetal)" stroke="#334e68" stroke-width="0.8"/>
+    <!-- Highlight on metal -->
+    <line x1="14" y1="16" x2="22" y2="16" stroke="#fff" stroke-width="0.5" opacity="0.6"/>
+    <line x1="6" y1="12" x2="10" y2="14" stroke="#fff" stroke-width="0.4" opacity="0.6"/>
+    <line x1="30" y1="12" x2="34" y2="14" stroke="#fff" stroke-width="0.4" opacity="0.6"/>
+    <!-- Tip sparkles -->
+    <g fill="#fff" filter="url(#terGlow)">
+      <polygon points="2,18 4,16 3,19 1,17" opacity="0.8"/>
+      <polygon points="34,18 32,16 33,19 35,17" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- Mining impact particles near pickaxe head -->
+  <g fill="#ffd94d" filter="url(#terGlow)">
+    <circle cx="48" cy="40" r="1"/>
+    <circle cx="42" cy="44" r="0.8"/>
+    <circle cx="52" cy="46" r="0.7"/>
+    <circle cx="38" cy="50" r="0.6"/>
+  </g>
+
+  <!-- Small dirt particles (mining effect) -->
+  <g fill="#7a4a28">
+    <rect x="44" y="70" width="2" height="2"/>
+    <rect x="50" y="74" width="2" height="2"/>
+    <rect x="40" y="76" width="1" height="1"/>
+    <rect x="54" y="78" width="2" height="2"/>
+    <rect x="46" y="82" width="1" height="1"/>
+  </g>
+
+  <!-- Tiny character (bottom-left, mining) -->
+  <g transform="translate(28 102)">
+    <!-- Body (shirt) -->
+    <rect x="0" y="4" width="6" height="6" fill="#3a8eb0" stroke="#1a4a5a" stroke-width="0.4"/>
+    <rect x="0" y="4" width="6" height="1" fill="#5ab0d0"/>
+    <!-- Head -->
+    <rect x="1" y="0" width="4" height="4" fill="#ffcf9e" stroke="#8a5a30" stroke-width="0.3"/>
+    <!-- Hair -->
+    <rect x="1" y="0" width="4" height="1" fill="#5a3010"/>
+    <!-- Eyes -->
+    <rect x="2" y="2" width="0.6" height="0.6" fill="#000"/>
+    <rect x="3.4" y="2" width="0.6" height="0.6" fill="#000"/>
+    <!-- Arms -->
+    <rect x="-1" y="5" width="1" height="3" fill="#ffcf9e" stroke="#8a5a30" stroke-width="0.3"/>
+    <rect x="6" y="5" width="1" height="3" fill="#ffcf9e" stroke="#8a5a30" stroke-width="0.3"/>
+    <!-- Legs -->
+    <rect x="1" y="10" width="2" height="3" fill="#2a2a4a" stroke="#1a1a2a" stroke-width="0.3"/>
+    <rect x="3" y="10" width="2" height="3" fill="#2a2a4a" stroke="#1a1a2a" stroke-width="0.3"/>
+  </g>
+
+  <!-- Light beam from above (sun rays) -->
+  <g opacity="0.15" fill="#fff3a0">
+    <polygon points="100,0 110,0 70,60 60,60"/>
+  </g>
+</svg>

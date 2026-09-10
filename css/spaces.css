@@ -1,0 +1,336 @@
+/* BrowSpaces — virtual desktops + Mission Control */
+
+/* Hidden windows live on another desktop. Mirrors .window-minimized. */
+.window.space-hidden {
+    display: none !important;
+}
+
+/* ── Desktop-switch window motion (direction-aware slide + fade) ──────── */
+.window.space-leaving-next { animation: space-leave-next 0.16s ease-in forwards; }
+.window.space-leaving-prev { animation: space-leave-prev 0.16s ease-in forwards; }
+.window.space-entering-next { animation: space-enter-next 0.24s cubic-bezier(0.16, 1, 0.3, 1); }
+.window.space-entering-prev { animation: space-enter-prev 0.24s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes space-leave-next { to { opacity: 0; transform: translateX(-32px) scale(0.98); } }
+@keyframes space-leave-prev { to { opacity: 0; transform: translateX(32px) scale(0.98); } }
+@keyframes space-enter-next { from { opacity: 0; transform: translateX(32px) scale(0.98); } }
+@keyframes space-enter-prev { from { opacity: 0; transform: translateX(-32px) scale(0.98); } }
+
+/* ── Menu-bar indicator ─────────────────────────────────────────────── */
+.status-spaces-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.status-spaces-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+.status-spaces-btn.mc-open {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+.status-spaces-btn.mc-pop-num {
+    animation: mc-numpop 0.25s ease;
+}
+@keyframes mc-numpop {
+    40% { transform: scale(1.18); }
+}
+
+/* ── Mission Control overlay ────────────────────────────────────────── */
+#mission-control {
+    position: fixed;
+    inset: 0;
+    z-index: 120000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    transition: opacity 0.16s ease;
+}
+#mission-control.mc-closing {
+    opacity: 0;
+}
+#mission-control.mc-closing .mc-panel {
+    transform: scale(0.97) translateY(6px);
+}
+.mc-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 10, 16, 0.62);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+.mc-panel {
+    position: relative;
+    width: min(920px, calc(100vw - 48px));
+    max-height: calc(100vh - 96px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(28, 30, 38, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+    padding: 20px 22px 18px;
+    animation: mc-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.16s ease;
+}
+@keyframes mc-pop {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.mc-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.mc-title {
+    color: #f5f5f7;
+    font-size: 15px;
+    font-weight: 700;
+    margin-right: 6px;
+}
+.mc-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 8px 6px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.25s ease, box-shadow 0.2s ease,
+                opacity 0.18s ease, transform 0.18s ease;
+}
+.mc-tab:hover {
+    background: rgba(255, 255, 255, 0.13);
+    color: #fff;
+}
+.mc-tab.active {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+}
+.mc-tab.dragover {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+.mc-tab-count {
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 1px 7px;
+    min-width: 20px;
+    text-align: center;
+}
+.mc-tab-x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 1;
+}
+.mc-tab-x:hover {
+    background: rgba(255, 59, 48, 0.85);
+    color: #fff;
+}
+.mc-tab-x:disabled {
+    opacity: 0.25;
+    cursor: default;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+}
+.mc-add, .mc-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.mc-add:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.07);
+}
+.mc-add:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.mc-close {
+    margin-left: auto;
+    border-style: solid;
+}
+.mc-hint {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+}
+.mc-columns {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(200px, 1fr);
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    min-height: 120px;
+}
+.mc-column {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 140px;
+    cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.2s ease,
+                opacity 0.18s ease, transform 0.18s ease;
+}
+.mc-column.active-col {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.06);
+}
+.mc-column.dragover {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+.mc-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 2px;
+}
+.mc-col-empty {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    font-style: italic;
+    text-align: center;
+    padding: 18px 6px;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+}
+.mc-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    padding: 8px 10px;
+    cursor: grab;
+    transition: background 0.12s ease, transform 0.12s ease;
+}
+.mc-card:hover {
+    background: rgba(255, 255, 255, 0.13);
+    transform: scale(1.02);
+}
+.mc-card:active {
+    cursor: grabbing;
+}
+.mc-card.dragging {
+    opacity: 0.4;
+}
+.mc-card img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+.mc-card-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    pointer-events: none;
+}
+.mc-card-title {
+    color: #f5f5f7;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mc-card-sub {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+}
+.mc-card-min {
+    margin-left: auto;
+    color: #febc2e;
+    font-size: 11px;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+/* ── Overview micro-motion ──────────────────────────────────────────── */
+/* Freshly added desktop grows in; removed one collapses first. */
+.mc-enter {
+    animation: mc-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes mc-enter {
+    from { opacity: 0; transform: scale(0.9) translateY(6px); }
+}
+.mc-leaving {
+    opacity: 0 !important;
+    transform: scale(0.9);
+    pointer-events: none;
+}
+/* Staggered rise of tabs + cards when the overview opens. */
+.mc-rise {
+    animation: mc-rise 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes mc-rise {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .window.space-leaving-next,
+    .window.space-leaving-prev,
+    .window.space-entering-next,
+    .window.space-entering-prev,
+    .mc-enter,
+    .mc-rise,
+    .status-spaces-btn.mc-pop-num {
+        animation: none;
+    }
+    #mission-control,
+    .mc-panel,
+    .mc-tab,
+    .mc-column {
+        transition: none;
+    }
+}

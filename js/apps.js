@@ -7,11 +7,6 @@ class AppsManager {
                 icon: BrowOSIcons.filebrow,
                 windowTitle: 'FileBrow'
             },
-            'safari': {
-                name: 'BrowOSer',
-                icon: BrowOSIcons.safari,
-                windowTitle: 'BrowOSer'
-            },
             'messages': {
                 name: 'Messages',
                 icon: BrowOSIcons.messages,
@@ -47,6 +42,11 @@ class AppsManager {
                 icon: BrowOSIcons.apps.calculator,
                 windowTitle: 'Calculator'
             },
+            'clock': {
+                name: 'Clock',
+                icon: BrowOSIcons.apps.clock,
+                windowTitle: 'Clock'
+            },
             'camera': {
                 name: 'Camera',
                 icon: BrowOSIcons.apps.camera,
@@ -63,20 +63,60 @@ class AppsManager {
                 windowTitle: 'Photos'
             },
             'snake': {
-                name: 'Snake',
-                icon: BrowOSIcons.apps.monitor,
-                windowTitle: 'Snake Game'
+                name: 'Snake 3D',
+                icon: BrowOSIcons.apps.snake,
+                windowTitle: 'Snake 3D'
             },
             'starship': {
                 name: 'Void Tactics',
                 icon: BrowOSIcons.apps.starship,
                 windowTitle: 'Void Tactics'
             },
-            'browracer': {
-                name: 'BrowRacer',
-                icon: BrowOSIcons.apps.racer,
-                windowTitle: 'BrowRacer - Sonoma Highway'
-            }
+            'browrio': {
+                name: 'Browrio Run',
+                icon: BrowOSIcons.apps.browrio,
+                windowTitle: 'Browrio Run'
+            },
+            'gta': {
+                name: 'Brow City',
+                icon: BrowOSIcons.apps.gta,
+                windowTitle: 'Brow City — 3D'
+            },
+            'terrario': {
+                name: 'Terrario',
+                icon: BrowOSIcons.apps.terrario,
+                windowTitle: 'Terrario'
+            },
+            'browcut': {
+                name: 'BrowCut',
+                icon: BrowOSIcons.apps.browcut,
+                windowTitle: 'BrowCut — Video Studio'
+            },
+            'widgets': {
+                name: 'Widgets',
+                icon: BrowOSIcons.apps.widgets,
+                windowTitle: 'Widgets'
+            },
+            'weather': {
+                name: 'Weather',
+                icon: BrowOSIcons.apps.weather,
+                windowTitle: 'Weather'
+            },
+            'calendar': {
+                name: 'Calendar',
+                icon: BrowOSIcons.apps.calendar,
+                windowTitle: 'Calendar'
+            },
+            'monitor': {
+                name: 'System Monitor',
+                icon: BrowOSIcons.apps.monitor,
+                windowTitle: 'System Monitor'
+            },
+            'showcase': {
+                name: '3D Showcase',
+                icon: BrowOSIcons.apps.gta,
+                windowTitle: 'Brow City — 3D Asset & Architecture Showcase'
+            },
         };
     }
 
@@ -90,14 +130,16 @@ class AppsManager {
         // Check if app is already running
         const existingWindow = this.getExistingWindow(appName);
         if (existingWindow) {
-            // Restore window if minimized
-            if (existingWindow.isMinimized && window.windowManager.restoreWindow) {
-                window.windowManager.restoreWindow(existingWindow.element, existingWindow);
-            }
-            // Bring existing window to front
-            window.windowManager.bringToFront(existingWindow.element);
-            if (window.windowManager.ensureWindowPainted) {
-                window.windowManager.ensureWindowPainted(existingWindow);
+            // Jump to the window's desktop when needed, then focus it.
+            if (window.BrowSpaces) {
+                window.BrowSpaces.focusWindow(existingWindow);
+            } else {
+                // Restore window if minimized
+                if (existingWindow.isMinimized && window.windowManager.restoreWindow) {
+                    window.windowManager.restoreWindow(existingWindow.element, existingWindow);
+                }
+                // Bring existing window to front
+                window.windowManager.bringToFront(existingWindow.element);
             }
             return;
         }

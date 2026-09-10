@@ -55,7 +55,7 @@
 }
 
 .filepicker-item.selected {
-    background-color: #007aff;
+    background-color: var(--accent);
     color: white;
     border-color: #0056b3;
 }
@@ -89,7 +89,7 @@
 }
 
 .filepicker-btn-select {
-    background-color: #007aff;
+    background-color: var(--accent);
     color: #fff;
 }
 

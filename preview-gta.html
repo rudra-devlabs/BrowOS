@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brow City — Asset Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; background: #14161a; color: #e8e8e8; display: flex; height: 100vh; overflow: hidden; }
+  #sidebar { width: 300px; min-width: 300px; background: #1d2026; border-right: 1px solid #333; overflow-y: auto; padding: 12px; }
+  #sidebar h1 { font-size: 16px; margin-bottom: 4px; }
+  #sidebar .sub { font-size: 11px; color: #888; margin-bottom: 10px; }
+  #sidebar h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8ab4ff; margin: 14px 0 6px; }
+  .model-btn { display: flex; justify-content: space-between; width: 100%; text-align: left; background: #262b33; color: #ddd; border: 1px solid #3a3f48; border-radius: 6px; padding: 7px 10px; margin-bottom: 4px; cursor: pointer; font-size: 13px; }
+  .model-btn:hover { background: #303742; }
+  .model-btn.active { border-color: #4ea1ff; background: #2b3a52; }
+  .model-btn .tris { color: #888; font-size: 11px; }
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #1d2026; border-bottom: 1px solid #333; flex-wrap: wrap; }
+  #toolbar button { background: #2b313a; color: #ddd; border: 1px solid #444; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+  #toolbar button:hover { background: #38404c; }
+  #toolbar button.on { border-color: #4ea1ff; color: #9cc8ff; }
+  #model-title { font-size: 15px; font-weight: 600; }
+  #viewport-wrap { flex: 1; position: relative; min-height: 0; }
+  #viewport { width: 100%; height: 100%; display: block; cursor: grab; }
+  #info { width: 280px; min-width: 280px; background: #1d2026; border-left: 1px solid #333; overflow-y: auto; padding: 12px; font-size: 12px; }
+  #info h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8ab4ff; margin: 12px 0 6px; }
+  #info h2:first-child { margin-top: 0; }
+  #info code { color: #ffd479; }
+  #nodes-list { list-style: none; font-family: Consolas, monospace; font-size: 12px; }
+  #nodes-list li { padding: 2px 0; border-bottom: 1px solid #2a2e35; }
+  #status { padding: 8px 14px; background: #1d2026; border-top: 1px solid #333; font-size: 12px; color: #aaa; }
+  #status.err { color: #ff7b72; }
+  #audio-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .audio-item { background: #262b33; border-radius: 6px; padding: 6px 8px; }
+  .audio-item .nm { font-size: 12px; margin-bottom: 4px; }
+  .audio-item audio { width: 100%; height: 28px; }
+  #content-row { flex: 1; display: flex; min-height: 0; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h1>🌆 Brow City Assets</h1>
+  <div class="sub" id="summary">loading manifest…</div>
+  <div id="groups"></div>
+</div>
+<div id="main">
+  <div id="toolbar">
+    <span id="model-title">—</span>
+    <button id="btn-prev">◀ Prev</button>
+    <button id="btn-next">Next ▶</button>
+    <button id="btn-rot">⟳ Autorotate</button>
+    <button id="btn-wire">Wireframe</button>
+    <button id="btn-grid" class="on">Grid</button>
+  </div>
+  <div id="content-row">
+    <div id="viewport-wrap"><canvas id="viewport"></canvas></div>
+    <div id="info">
+      <h2>Details</h2>
+      <div id="details">Select a model.</div>
+      <h2>Node tree</h2>
+      <ul id="nodes-list"><li>—</li></ul>
+      <h2>Audio (16)</h2>
+      <div id="audio-grid"></div>
+    </div>
+  </div>
+  <div id="status">Ready.</div>
+</div>
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/GLTFLoader.js"></script>
+<script>
+(function() {
+  const canvas = document.getElementById('viewport');
+  const statusEl = document.getElementById('status');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x14161a);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 4000);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x334, 0.9));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(30, 50, -20);
+  scene.add(sun);
+  const grid = new THREE.GridHelper(20, 20, 0x4ea1ff, 0x333a44);
+  scene.add(grid);
+  let modelRoot = null, flatMats = [];
+
+  // --- minimal orbit controls (drag = orbit, wheel = zoom, right-drag = pan) ---
+  let target = new THREE.Vector3(0, 1, 0), radius = 8, theta = 0.8, phi = 1.1;
+  function applyCam() {
+    camera.position.set(
+      target.x + radius * Math.sin(phi) * Math.sin(theta),
+      target.y + radius * Math.cos(phi),
+      target.z + radius * Math.sin(phi) * Math.cos(theta));
+    camera.lookAt(target);
+  }
+  let dragging = false, panning = false, lx = 0, ly = 0;
+  canvas.addEventListener('pointerdown', e => { dragging = true; panning = (e.button === 2); lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+  canvas.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+    if (panning) { const s = radius / 500; const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd); const right = new THREE.Vector3().crossVectors(fwd, camera.up).normalize(); const up2 = new THREE.Vector3().crossVectors(right, fwd); target.addScaledVector(right, -dx * s).addScaledVector(up2, dy * s); }
+    else { theta -= dx * 0.008; phi = Math.min(Math.max(phi - dy * 0.008, 0.05), Math.PI - 0.05); }
+    applyCam();
+  });
+  canvas.addEventListener('pointerup', () => { dragging = false; canvas.style.cursor = 'grab'; });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); radius = Math.min(Math.max(radius * (1 + Math.sign(e.deltaY) * 0.1), 0.5), 2000); applyCam(); }, { passive: false });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  let autorotate = false;
+  function resize() { const w = canvas.clientWidth || canvas.parentElement.clientWidth, h = canvas.clientHeight || canvas.parentElement.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize);
+
+  const loader = new THREE.GLTFLoader();
+  let allModels = [], currentIdx = -1;
+
+  function setStatus(msg, isErr) { statusEl.textContent = msg; statusEl.classList.toggle('err', !!isErr); }
+  function fmt(n) { return (Math.round(n * 100) / 100).toString(); }
+
+  function loadModel(entry) {
+    setStatus('Loading ' + entry.file + ' …');
+    document.getElementById('model-title').textContent = entry.label;
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.toggle('active', b.dataset.file === entry.file));
+    loader.load(entry.file,
+      gltf => {
+        if (modelRoot) { scene.remove(modelRoot); modelRoot.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); }); }
+        flatMats = [];
+        const seenMats = new Set();
+        modelRoot = gltf.scene;
+        // All Brow City assets are opaque by contract — force it so no loader
+        // path can leave a translucent-looking state behind.
+        modelRoot.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+          m.vertexColors = true;
+          m.transparent = false;
+          m.opacity = 1;
+          m.side = THREE.DoubleSide;
+          m.alphaTest = 0;
+          m.depthWrite = true;
+          m.depthTest = true;
+          m.needsUpdate = true;
+          if (!seenMats.has(m)) { seenMats.add(m); flatMats.push(m); }
+        }); });
+        scene.add(modelRoot);
+        // frame it
+        const box = new THREE.Box3().setFromObject(modelRoot);
+        const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        target.copy(center); radius = maxDim * 1.9;
+        camera.near = Math.max(maxDim / 1000, 0.05); camera.far = Math.max(maxDim * 20, 5000); camera.updateProjectionMatrix();
+        grid.scale.setScalar(Math.max(maxDim / 10, 1)); grid.position.y = box.min.y;
+        applyCam();
+        // node tree
+        const ul = document.getElementById('nodes-list'); ul.innerHTML = '';
+        modelRoot.traverse(o => { const li = document.createElement('li'); let depth = 0, p = o.parent; while (p && p !== modelRoot) { depth++; p = p.parent; } li.textContent = '  '.repeat(depth) + '• ' + (o.name || '(unnamed)') + (o.isMesh ? ' [mesh]' : ''); ul.appendChild(li); });
+        // details
+        let tris = entry.tris !== undefined ? entry.tris : '—';
+        document.getElementById('details').innerHTML =
+          '<code>' + entry.file + '</code><br>Size: ' + fmt(size.x) + ' × ' + fmt(size.y) + ' × ' + fmt(size.z) + ' m<br>Tris: ' + tris +
+          (entry.height_m ? '<br>Authored height: ' + entry.height_m + ' m' : '') +
+          '<br>Forward: −Z · Up: +Y · Origin: ground';
+        setStatus('✓ ' + entry.file + ' loaded.');
+        resize();
+      },
+      undefined,
+      err => { console.error(err); setStatus('✗ Failed to load ' + entry.file + ': ' + (err && err.message ? err.message : err), true); });
+  }
+
+  fetch('assets/models/gta/manifest.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(m => {
+    const groupsEl = document.getElementById('groups');
+    const defs = [
+      ['Vehicles', m.vehicles, 'vehicles/'], ['Characters', m.characters, 'characters/'],
+      ['Weapons', m.weapons || {}, 'weapons/'], ['Props', m.props, 'props/'],
+      ['Landmarks', m.landmarks, 'landmarks/'], ['Buildings', m.buildings || {}, 'buildings/'],
+      ['Houses', m.houses || {}, 'houses/']
+    ];
+    defs.forEach(([gname, obj, prefix]) => {
+      const h = document.createElement('h2'); h.textContent = gname + ' (' + Object.keys(obj).length + ')'; groupsEl.appendChild(h);
+      Object.keys(obj).forEach(key => {
+        const e = obj[key];
+        const entry = { label: gname.slice(0, -1) + ': ' + key, file: 'assets/models/gta/' + e.file, tris: e.tris, height_m: e.height_m };
+        allModels.push(entry);
+        const btn = document.createElement('button'); btn.className = 'model-btn'; btn.dataset.file = entry.file;
+        btn.innerHTML = '<span>' + key + '</span><span class="tris">' + e.tris + ' tris</span>';
+        btn.onclick = () => { currentIdx = allModels.indexOf(entry); loadModel(entry); };
+        groupsEl.appendChild(btn);
+      });
+    });
+    document.getElementById('summary').textContent = allModels.length + ' models · ' + (m.generator || '');
+    // audio
+    const ag = document.getElementById('audio-grid');
+    Object.keys(m.audio || {}).forEach(name => {
+      const base = 'assets/audio/gta/' + name;
+      const div = document.createElement('div'); div.className = 'audio-item';
+      div.innerHTML = '<div class="nm">' + name + '</div><audio controls preload="none"><source src="' + base + '.ogg" type="audio/ogg"><source src="' + base + '.mp3" type="audio/mpeg"></audio>';
+      ag.appendChild(div);
+    });
+    setStatus('Manifest loaded — ' + allModels.length + ' models. Pick one to preview.');
+    if (allModels.length) { currentIdx = 0; loadModel(allModels[0]); }
+  }).catch(err => { console.error(err); setStatus('✗ Could not load manifest. Serve over http (e.g. npm start → http://localhost:3000/preview-gta.html). ' + err, true); });
+
+  document.getElementById('btn-prev').onclick = () => { if (!allModels.length) return; currentIdx = (currentIdx - 1 + allModels.length) % allModels.length; loadModel(allModels[currentIdx]); };
+  document.getElementById('btn-next').onclick = () => { if (!allModels.length) return; currentIdx = (currentIdx + 1) % allModels.length; loadModel(allModels[currentIdx]); };
+  const rotBtn = document.getElementById('btn-rot');
+  rotBtn.onclick = () => { autorotate = !autorotate; rotBtn.classList.toggle('on', autorotate); };
+  const wireBtn = document.getElementById('btn-wire');
+  wireBtn.onclick = () => { const on = !wireBtn.classList.contains('on'); wireBtn.classList.toggle('on', on); flatMats.forEach(m => { m.wireframe = on; m.needsUpdate = true; }); };
+  const gridBtn = document.getElementById('btn-grid');
+  gridBtn.onclick = () => { grid.visible = !grid.visible; gridBtn.classList.toggle('on', grid.visible); };
+
+  (function tick() { requestAnimationFrame(tick); if (autorotate && modelRoot) { modelRoot.rotation.y += 0.01; } renderer.render(scene, camera); })();
+  resize(); applyCam();
+})();
+</script>
+</body>
+</html>

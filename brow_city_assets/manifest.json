@@ -1,0 +1,479 @@
+[
+  {
+    "id": "motorcycle",
+    "category": "Vehicles",
+    "triangles": 592,
+    "dimensionsMeters": {
+      "x": 0.7361028957350891,
+      "y": 1.1469888197766687,
+      "z": 2.1800000154972077
+    },
+    "conventions": {
+      "asset": "motorcycle",
+      "category": "Vehicles",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 592,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "supercar",
+    "category": "Vehicles",
+    "triangles": 640,
+    "dimensionsMeters": {
+      "x": 2.1450000001490115,
+      "y": 1.101838097423315,
+      "z": 4.322500004470348
+    },
+    "conventions": {
+      "asset": "supercar",
+      "category": "Vehicles",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 640,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "ambulance",
+    "category": "Vehicles",
+    "triangles": 664,
+    "dimensionsMeters": {
+      "x": 2.2450000001490116,
+      "y": 2.5454225930571557,
+      "z": 5.495000001192093
+    },
+    "conventions": {
+      "asset": "ambulance",
+      "category": "Vehicles",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 664,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "firetruck",
+    "category": "Vehicles",
+    "triangles": 828,
+    "dimensionsMeters": {
+      "x": 2.4150000001490115,
+      "y": 2.5324859905242922,
+      "z": 6.840000002980233
+    },
+    "conventions": {
+      "asset": "firetruck",
+      "category": "Vehicles",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 828,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "police_enforcer",
+    "category": "Vehicles",
+    "triangles": 762,
+    "dimensionsMeters": {
+      "x": 2.3650000001490117,
+      "y": 2.433954293429852,
+      "z": 5.202499999552965
+    },
+    "conventions": {
+      "asset": "police_enforcer",
+      "category": "Vehicles",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 762,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "speedboat",
+    "category": "Vehicles",
+    "triangles": 424,
+    "dimensionsMeters": {
+      "x": 2.0399999618530273,
+      "y": 1.431650641858578,
+      "z": 5.02749992378056
+    },
+    "conventions": {
+      "asset": "speedboat",
+      "category": "Vehicles",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 424,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "cop",
+    "category": "Characters",
+    "triangles": 516,
+    "dimensionsMeters": {
+      "x": 0.8000000017881393,
+      "y": 1.9149999989569189,
+      "z": 0.4350000011920929
+    },
+    "conventions": {
+      "asset": "cop",
+      "category": "Characters",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 516,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "swat",
+    "category": "Characters",
+    "triangles": 490,
+    "dimensionsMeters": {
+      "x": 0.8000000017881393,
+      "y": 1.9469599944353102,
+      "z": 0.48549999624490736
+    },
+    "conventions": {
+      "asset": "swat",
+      "category": "Characters",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 490,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "ped_business",
+    "category": "Characters",
+    "triangles": 512,
+    "dimensionsMeters": {
+      "x": 0.8900000017881393,
+      "y": 1.8894499945640564,
+      "z": 0.4949999910593033
+    },
+    "conventions": {
+      "asset": "ped_business",
+      "category": "Characters",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 512,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "ped_street",
+    "category": "Characters",
+    "triangles": 492,
+    "dimensionsMeters": {
+      "x": 0.8000000017881393,
+      "y": 1.9205500002205373,
+      "z": 0.49762372076511385
+    },
+    "conventions": {
+      "asset": "ped_street",
+      "category": "Characters",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 492,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "shotgun",
+    "category": "Weapons",
+    "triangles": 756,
+    "dimensionsMeters": {
+      "x": 0.10199999809265137,
+      "y": 0.26928561105210724,
+      "z": 1.1834999860450626
+    },
+    "conventions": {
+      "asset": "shotgun",
+      "category": "Weapons",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "grip pivot",
+      "procedural": true,
+      "triangles": 756,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "smg",
+    "category": "Weapons",
+    "triangles": 600,
+    "dimensionsMeters": {
+      "x": 0.111000000923872,
+      "y": 0.49149999913573267,
+      "z": 0.5635000006556511
+    },
+    "conventions": {
+      "asset": "smg",
+      "category": "Weapons",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "grip pivot",
+      "procedural": true,
+      "triangles": 600,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "rifle",
+    "category": "Weapons",
+    "triangles": 1152,
+    "dimensionsMeters": {
+      "x": 0.10400000214576721,
+      "y": 0.48750000435858964,
+      "z": 1.029500000230968
+    },
+    "conventions": {
+      "asset": "rifle",
+      "category": "Weapons",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "grip pivot",
+      "procedural": true,
+      "triangles": 1152,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "bat",
+    "category": "Weapons",
+    "triangles": 984,
+    "dimensionsMeters": {
+      "x": 0.10461621731519699,
+      "y": 0.10999999940395375,
+      "z": 0.8819999732077122
+    },
+    "conventions": {
+      "asset": "bat",
+      "category": "Weapons",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "grip pivot",
+      "procedural": true,
+      "gripAxis": "-Z",
+      "triangles": 984,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "parking_barrier",
+    "category": "Props",
+    "triangles": 456,
+    "dimensionsMeters": {
+      "x": 3.450000012069941,
+      "y": 1.3199999992549418,
+      "z": 0.730000002682209
+    },
+    "conventions": {
+      "asset": "parking_barrier",
+      "category": "Props",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 456,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "vendor_cart",
+    "category": "Props",
+    "triangles": 550,
+    "dimensionsMeters": {
+      "x": 2.0999999046325684,
+      "y": 2.5187429678440094,
+      "z": 2.0999999046325684
+    },
+    "conventions": {
+      "asset": "vendor_cart",
+      "category": "Props",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 550,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "subway_entrance",
+    "category": "Props",
+    "triangles": 746,
+    "dimensionsMeters": {
+      "x": 2.6880000007152556,
+      "y": 2.970000005811453,
+      "z": 3.450000047683716
+    },
+    "conventions": {
+      "asset": "subway_entrance",
+      "category": "Props",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "note": "Cutaway stair module: lowest stair/base is Y=0; street rim is raised.",
+      "triangles": 746,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "atm",
+    "category": "Props",
+    "triangles": 996,
+    "dimensionsMeters": {
+      "x": 0.7799999713897705,
+      "y": 1.6399999864399433,
+      "z": 0.8099999997019768
+    },
+    "conventions": {
+      "asset": "atm",
+      "category": "Props",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 996,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  },
+  {
+    "id": "traffic_cone",
+    "category": "Props",
+    "triangles": 432,
+    "dimensionsMeters": {
+      "x": 0.5699999928474426,
+      "y": 0.8199999945610761,
+      "z": 0.5699999928474426
+    },
+    "conventions": {
+      "asset": "traffic_cone",
+      "category": "Props",
+      "units": "meters",
+      "up": "+Y",
+      "forward": "-Z",
+      "right": "+X",
+      "origin": "ground/base center",
+      "procedural": true,
+      "triangles": 432,
+      "triangleBudget": [
+        400,
+        1200
+      ]
+    }
+  }
+]

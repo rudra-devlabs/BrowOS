@@ -19,18 +19,22 @@
 
 /* Keep xterm text metrics predictable. */
 #xterm-container,
-#xterm-container .xterm {
+.xterm-mount-point,
+#xterm-container .xterm,
+.xterm-mount-point .xterm {
     width: 100% !important;
     height: 100% !important;
     min-height: 0 !important;
 }
 
-#xterm-container {
+#xterm-container,
+.xterm-mount-point {
     position: absolute !important;
     inset: 0 !important;
 }
 
-#xterm-container .xterm {
+#xterm-container .xterm,
+.xterm-mount-point .xterm {
     padding: 8px !important;
     box-sizing: border-box !important;
     letter-spacing: 0 !important;
@@ -40,25 +44,32 @@
     overflow: hidden !important;
 }
 
-#xterm-container .xterm-viewport {
+#xterm-container .xterm-viewport,
+.xterm-mount-point .xterm-viewport {
     overflow-y: scroll !important;
     overflow-x: hidden !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
 }
 
-#xterm-container .xterm-viewport::-webkit-scrollbar {
+#xterm-container .xterm-viewport::-webkit-scrollbar,
+.xterm-mount-point .xterm-viewport::-webkit-scrollbar {
     display: none !important;
 }
 
-#xterm-container .xterm-screen {
+#xterm-container .xterm-screen,
+.xterm-mount-point .xterm-screen {
     overflow: hidden !important;
 }
 
 #xterm-container .xterm-rows,
 #xterm-container .xterm-screen,
 #xterm-container .xterm-helpers textarea,
-#xterm-container .xterm-char-measure-element {
+#xterm-container .xterm-char-measure-element,
+.xterm-mount-point .xterm-rows,
+.xterm-mount-point .xterm-screen,
+.xterm-mount-point .xterm-helpers textarea,
+.xterm-mount-point .xterm-char-measure-element {
     letter-spacing: 0 !important;
     word-spacing: 0 !important;
     font-family: "Ubuntu Mono", "Cascadia Mono", Consolas, "Lucida Console", "SF Mono", "DejaVu Sans Mono", monospace !important;
@@ -67,7 +78,8 @@
     font-feature-settings: "liga" 0, "calt" 0 !important;
 }
 
-#xterm-container .xterm-rows span {
+#xterm-container .xterm-rows span,
+.xterm-mount-point .xterm-rows span {
     letter-spacing: 0 !important;
     word-spacing: 0 !important;
     font-kerning: none !important;
@@ -105,4 +117,271 @@
 .window.terminal-window .terminal-shell-container,
 .window.terminal-window .terminal-shell {
     background: #1a1a1c !important;
+}
+
+/* ─── Phase 4: Terminal Multiplexing & Tab Bar ───────────────────── */
+
+.terminal-shell-container {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.terminal-tab-bar {
+    height: 34px;
+    background: rgba(24, 24, 28, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    user-select: none;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.terminal-tabs-track {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex: 1;
+}
+
+.terminal-tabs-track::-webkit-scrollbar {
+    display: none;
+}
+
+.terminal-tab {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11.5px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    max-width: 160px;
+}
+
+.terminal-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.terminal-tab.is-active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.terminal-tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.terminal-tab.is-active .terminal-tab-icon {
+    color: #60a5fa;
+}
+
+.terminal-tab-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
+.terminal-tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.terminal-tab-close {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 2px;
+    opacity: 0.6;
+    transition: all 0.15s ease;
+}
+
+.terminal-tab:hover .terminal-tab-close {
+    opacity: 1;
+}
+
+.terminal-tab-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ef4444;
+}
+
+.terminal-tab-close svg {
+    width: 9px;
+    height: 9px;
+}
+
+.terminal-tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 8px;
+}
+
+.terminal-action-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.terminal-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.terminal-action-btn svg {
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+
+/* Viewport hosting all tab pages */
+.terminal-viewport {
+    position: relative;
+    flex: 1 1 auto;
+    height: calc(100% - 34px);
+    width: 100%;
+    overflow: hidden;
+    background: #000000;
+}
+
+.terminal-tab-page {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background: #000000;
+}
+
+.terminal-tab-page.is-active {
+    display: flex !important;
+}
+
+.terminal-tab-page.split-vertical {
+    flex-direction: row !important;
+}
+
+.terminal-tab-page.split-horizontal {
+    flex-direction: column !important;
+}
+
+/* Individual Panes inside Tab Page */
+.terminal-pane {
+    position: relative;
+    flex: 1 1 0%;
+    min-width: 100px;
+    min-height: 80px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: #000000;
+    transition: box-shadow 0.15s ease;
+}
+
+.terminal-pane.is-active {
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.35);
+}
+
+.terminal-pane-divider {
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 0.15s ease;
+    z-index: 5;
+    flex-shrink: 0;
+}
+
+.terminal-tab-page.split-vertical .terminal-pane-divider {
+    width: 4px;
+    cursor: col-resize;
+}
+
+.terminal-tab-page.split-horizontal .terminal-pane-divider {
+    height: 4px;
+    cursor: row-resize;
+}
+
+.terminal-pane-divider:hover,
+.terminal-pane-divider.is-dragging {
+    background: #3b82f6 !important;
+}
+
+/* Theme Selector Popover */
+.terminal-theme-popover {
+    position: absolute;
+    top: 36px;
+    right: 8px;
+    width: 200px;
+    background: rgba(24, 24, 30, 0.94);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.terminal-theme-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.terminal-theme-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.terminal-theme-item.is-selected {
+    background: rgba(96, 165, 250, 0.2);
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.terminal-theme-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }

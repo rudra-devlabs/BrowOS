@@ -1,0 +1,112 @@
+/* ============================================================================
+   BrowMacOS — styles for the macOS-style feature package.
+   (menu bar menus · App Switcher)
+   Sections are clearly labelled so it stays easy to tweak later.
+   ============================================================================ */
+
+/* ── App-aware Menu Bar ──────────────────────────────────────────────────── */
+.menu-bar-menus {
+    display: flex;
+    align-items: center;
+    margin-left: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.macos-menu-item { position: relative; user-select: none; }
+.macos-menu-item.menu-open {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* Dropdown rendered under the clicked menu name. */
+.macos-menu-popup {
+    position: fixed;
+    z-index: 200000;
+    background: rgba(28, 28, 32, 0.9);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+    padding: 5px 0;
+    min-width: 220px;
+    font-size: 13px;
+    color: #f1f1f2;
+    animation: macos-popup-in 0.12s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes macos-popup-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.macos-menu-popup .mac-context-menu-item { padding: 6px 12px; gap: 20px; }
+.macos-menu-item-entry.disabled { opacity: 0.4; cursor: default; }
+.macos-menu-item-entry.disabled:hover { background: transparent; color: #f1f1f2; }
+
+.macos-menu-entry-label { flex: 1 1 auto; }
+.macos-menu-entry-shortcut {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    flex: 0 0 auto;
+}
+.macos-menu-entry-shortcut:hover + .macos-menu-entry-shortcut,
+.macos-menu-entry-label { letter-spacing: 0.2px; }
+
+.macos-menu-item-entry.has-checkmark { position: relative; }
+.macos-menu-item-entry.has-checkmark::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+
+/* ── App Switcher ────────────────────────────────────────────────────────── */
+.app-switcher {
+    position: fixed;
+    inset: 0;
+    z-index: 195000;
+    background: rgba(0, 0, 0, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.app-switcher-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    background: rgba(28, 28, 32, 0.8);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: macos-popup-in 0.14s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.app-switcher-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    min-width: 58px;
+}
+.app-switcher-item.selected {
+    background: rgba(0, 96, 223, 0.55);
+    transform: scale(1.08);
+}
+.app-switcher-icon { font-size: 40px; display: grid; place-items: center; }
+.app-switcher-icon img, .app-switcher-icon svg { width: 40px; height: 40px; }
+.app-switcher-name {
+    font-size: 11px;
+    color: #fff;
+    font-weight: 500;
+    white-space: nowrap;
+}

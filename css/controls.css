@@ -1,0 +1,266 @@
+/* ============================================================================
+   BrowOS Control System
+   Shared language for platform controls: glass surfaces, indigo focus rings,
+   compact motion, and a consistent scrollbar treatment.
+   ============================================================================ */
+:root {
+    --brow-control-bg: rgba(255, 255, 255, 0.085);
+    --brow-control-bg-hover: rgba(255, 255, 255, 0.14);
+    --brow-control-bg-active: rgba(104, 151, 255, 0.2);
+    --brow-control-border: rgba(255, 255, 255, 0.16);
+    --brow-control-border-strong: rgba(138, 178, 255, 0.62);
+    --brow-control-text: rgba(255, 255, 255, 0.92);
+    --brow-control-muted: rgba(255, 255, 255, 0.54);
+    --brow-accent: #6d9dff;
+    --brow-accent-strong: #4f83ff;
+    --brow-control-radius: 10px;
+    --brow-control-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+/* Only unclassified platform controls receive this fallback. App-specific
+   buttons keep their own visual identity. */
+button.brow-auto-control,
+input.brow-auto-control,
+textarea.brow-auto-control {
+    font: inherit;
+    color: var(--brow-control-text);
+    border: 1px solid var(--brow-control-border);
+    border-radius: var(--brow-control-radius);
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.055));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 5px 18px rgba(0,0,0,.12);
+    transition: border-color .16s var(--brow-control-ease), background .16s var(--brow-control-ease),
+                box-shadow .16s var(--brow-control-ease), transform .16s var(--brow-control-ease);
+}
+
+button.brow-auto-control {
+    min-height: 32px;
+    padding: 7px 13px;
+    cursor: pointer;
+}
+
+button.brow-auto-control:hover {
+    background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+    border-color: rgba(255,255,255,.28);
+    transform: translateY(-1px);
+}
+
+button.brow-auto-control:active { transform: translateY(0) scale(.98); }
+
+input.brow-auto-control,
+textarea.brow-auto-control {
+    min-height: 34px;
+    padding: 8px 11px;
+    outline: none;
+}
+
+textarea.brow-auto-control { resize: vertical; min-height: 84px; }
+
+input.brow-auto-control::placeholder,
+textarea.brow-auto-control::placeholder { color: var(--brow-control-muted); }
+
+button.brow-auto-control:focus-visible,
+input.brow-auto-control:focus-visible,
+textarea.brow-auto-control:focus-visible,
+.brow-select-trigger:focus-visible {
+    outline: none;
+    border-color: var(--brow-control-border-strong);
+    box-shadow: 0 0 0 3px rgba(89, 136, 255, .22), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+button.brow-auto-control:disabled,
+input.brow-auto-control:disabled,
+textarea.brow-auto-control:disabled,
+.brow-select.is-disabled .brow-select-trigger {
+    opacity: .42;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Custom select shell. The real select remains available to scripts and AT. */
+.brow-select {
+    position: relative;
+    display: inline-flex;
+    min-width: 132px;
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+.brow-select-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.brow-select-trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 31px 7px 11px;
+    overflow: hidden;
+    color: var(--brow-control-text);
+    font: inherit;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    border: 1px solid var(--brow-control-border);
+    border-radius: var(--brow-control-radius);
+    background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.055));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 5px 18px rgba(0,0,0,.13);
+    transition: border-color .16s var(--brow-control-ease), background .16s var(--brow-control-ease), box-shadow .16s var(--brow-control-ease);
+}
+
+.brow-select-trigger::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid rgba(255,255,255,.72);
+    border-bottom: 1.5px solid rgba(255,255,255,.72);
+    transform: translateY(-65%) rotate(45deg);
+    transition: transform .18s var(--brow-control-ease), border-color .18s ease;
+}
+
+.brow-select.is-open .brow-select-trigger {
+    border-color: var(--brow-control-border-strong);
+    background: rgba(91, 132, 238, .16);
+    box-shadow: 0 0 0 3px rgba(89,136,255,.16), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.brow-select.is-open .brow-select-trigger::after { transform: translateY(-28%) rotate(225deg); border-color: #b8ceff; }
+
+.brow-select-menu {
+    position: fixed;
+    z-index: 300000;
+    min-width: 150px;
+    max-height: min(280px, 42vh);
+    padding: 5px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    color: var(--brow-control-text);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 12px;
+    background: rgba(25, 29, 43, .94);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    backdrop-filter: blur(26px) saturate(150%);
+    box-shadow: 0 18px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
+    animation: brow-select-in .14s var(--brow-control-ease);
+}
+
+@keyframes brow-select-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.brow-select-option {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: rgba(255,255,255,.8);
+    font: inherit;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+}
+
+.brow-select-option:hover,
+.brow-select-option.is-highlighted { color: #fff; background: rgba(108,157,255,.18); }
+.brow-select-option.is-selected { color: #d8e5ff; background: rgba(94,141,255,.25); }
+.brow-select-option.is-selected::after { content: '✓'; margin-left: auto; color: #a9c4ff; font-size: 12px; }
+
+/* Existing settings controls get the same language without changing layout. */
+.setting-input,
+.setting-select,
+.setting-btn {
+    border-color: var(--brow-control-border) !important;
+    border-radius: var(--brow-control-radius) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 5px 18px rgba(0,0,0,.12) !important;
+}
+
+.setting-input:focus,
+.setting-select:focus,
+.setting-btn:focus-visible { border-color: var(--brow-control-border-strong) !important; box-shadow: 0 0 0 3px rgba(89,136,255,.2) !important; }
+
+/* The legacy class is copied onto the select wrapper for app-specific sizing;
+   keep its old white/dark fill from leaking around the new trigger. */
+.brow-select.setting-select,
+.brow-select.brownote-font-select,
+.brow-select.brownote-size-select,
+.brow-select.codebrow-panel-select,
+.brow-select.browcut-input {
+    min-width: 0;
+    padding: 0;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.brow-select.setting-select { min-width: 160px; }
+.brow-select.brownote-size-select { width: 55px; }
+.brow-select.browcut-input { width: 100%; }
+
+/* Accessible, high-contrast range controls. */
+input[type="range"] { accent-color: var(--brow-accent); }
+input[type="range"].brow-auto-control {
+    min-height: 22px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+input[type="checkbox"]:not(.toggle-switch input),
+input[type="radio"] {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    accent-color: var(--brow-accent-strong);
+    cursor: pointer;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.18));
+}
+
+/* Preserve surfaces that deliberately hide scrollbars. */
+.filebrow-dark-sidebar,
+.filebrow-dark-grid,
+#xterm-container .xterm-viewport,
+.xterm-mount-point .xterm-viewport,
+.terminal-tabs-track,
+.codebrow-tabs,
+.codebrow-breadcrumbs,
+.widgets-container { scrollbar-width: none; }
+
+.filebrow-dark-sidebar::-webkit-scrollbar,
+.filebrow-dark-grid::-webkit-scrollbar,
+#xterm-container .xterm-viewport::-webkit-scrollbar,
+.xterm-mount-point .xterm-viewport::-webkit-scrollbar,
+.terminal-tabs-track::-webkit-scrollbar,
+.codebrow-tabs::-webkit-scrollbar,
+.codebrow-breadcrumbs::-webkit-scrollbar,
+.widgets-container::-webkit-scrollbar { display: none; }
+
+/* Unified browser scrollbars; hidden terminal/editor scrollbars stay hidden. */
+*, *::before, *::after { scrollbar-color: rgba(143,177,255,.58) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: rgba(5, 8, 18, .18); border-radius: 999px; }
+*::-webkit-scrollbar-thumb {
+    min-height: 28px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(164,194,255,.75), rgba(91,132,238,.55));
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(192,214,255,.92), rgba(103,149,255,.78)); background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:active { background: #7da7ff; background-clip: padding-box; }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+    .brow-select-menu, .brow-select-trigger, button.brow-auto-control,
+    input.brow-auto-control, textarea.brow-auto-control { animation: none !important; transition-duration: .01ms !important; }
+}

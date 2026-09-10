@@ -1,0 +1,582 @@
+/* ============================================================================
+   BrowOS Theme System
+   Accent color, glass blur, transparency and motion preferences applied as
+   CSS variables + root classes by js/settings.js. Loaded last so these
+   overrides win at equal specificity.
+
+   Light palette (Apple-like):
+     chrome      rgba(255,255,255,.62-.78) frosted
+     text        #1d1d1f / rgba(60,60,67,.6) / rgba(60,60,67,.35)
+     cards       #ffffff, border rgba(0,0,0,.06), shadow 0 1px 3px rgba(0,0,0,.07)
+     separators  rgba(0,0,0,.08)
+   ============================================================================ */
+
+:root {
+    --accent: #0a84ff;
+    --accent-rgb: 10, 132, 255;
+    --glass-blur: 24px;
+}
+
+/* Keyboard focus is always visible, always in the accent color. */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ─── Glass blur follows the user's slider ─────────────────────────────── */
+#menu-bar,
+#dock .dock-background,
+.window-header,
+.desktop-widget,
+.settings-sidebar,
+.spotlight-search-bar,
+#snap-preview {
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+
+/* ─── Reduce transparency: solid chrome, zero backdrop cost ────────────── */
+:root.theme-reduce-transparency #menu-bar,
+:root.theme-reduce-transparency #dock .dock-background,
+:root.theme-reduce-transparency .desktop-widget,
+:root.theme-reduce-transparency .settings-sidebar,
+:root.theme-reduce-transparency .spotlight-search-bar,
+:root.theme-reduce-transparency #snap-preview {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(22, 22, 26, 0.97) !important;
+}
+:root.theme-reduce-transparency[data-theme="light"] #menu-bar,
+:root.theme-reduce-transparency[data-theme="light"] #dock .dock-background,
+:root.theme-reduce-transparency[data-theme="light"] .desktop-widget,
+:root.theme-reduce-transparency[data-theme="light"] .settings-sidebar,
+:root.theme-reduce-transparency[data-theme="light"] .spotlight-search-bar {
+    background: rgba(245, 245, 248, 0.99) !important;
+}
+
+/* ─── Wallpaper motion control ─────────────────────────────────────────── */
+:root.theme-static-wallpaper .wallpaper-blob,
+body.is-window-dragging .wallpaper-blob,
+body.is-resizing-window .wallpaper-blob {
+    animation-play-state: paused !important;
+}
+
+/* ─── Widgets sidebar toggle ───────────────────────────────────────────── */
+:root.theme-hide-widgets .desktop-widgets-container {
+    display: none !important;
+}
+
+/* ─── Reduce motion: kill transitions and ambient animation ────────────── */
+:root.theme-reduce-motion *,
+:root.theme-reduce-motion *::before,
+:root.theme-reduce-motion *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+}
+:root.theme-reduce-motion .wallpaper-blob {
+    animation: none !important;
+}
+
+/* Respect the OS-level preference even before Settings is touched. */
+@media (prefers-reduced-motion: reduce) {
+    .wallpaper-blob {
+        animation-play-state: paused !important;
+    }
+}
+
+/* ============================================================================
+   LIGHT THEME — system chrome
+   ============================================================================ */
+
+/* Menu bar: bright frosted strip, crisp dark type */
+:root[data-theme="light"] #menu-bar {
+    background: rgba(255, 255, 255, 0.72);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+    color: #1d1d1f;
+}
+:root[data-theme="light"] #menu-bar .menu-item {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] #menu-bar .menu-item:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="light"] #menu-bar .status-bar,
+:root[data-theme="light"] #menu-bar #clock {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] #menu-bar img,
+:root[data-theme="light"] #menu-bar svg {
+    filter: invert(0.2);
+}
+
+/* Dock: bright frosted shelf */
+:root[data-theme="light"] #dock .dock-background {
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+:root[data-theme="light"] #dock.taskbar-mode .dock-background {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] #dock.taskbar-mode .dock-app.taskbar-active {
+    background: rgba(0, 0, 0, 0.07);
+}
+:root[data-theme="light"] .taskbar-label {
+    color: #1d1d1f;
+}
+
+/* Desktop icon labels: keep white over the wallpaper, just deepen the shadow
+   so they stay readable on bright wallpapers too. */
+:root[data-theme="light"] .desktop-icon span {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), 0 0 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Windows already use light chrome; keep shadows soft. */
+:root[data-theme="light"] .window {
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   LIGHT THEME — desktop widgets (frosted white cards, dark type)
+   ============================================================================ */
+
+:root[data-theme="light"] .desktop-widget {
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #1d1d1f;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12),
+                inset 0 1px 1px rgba(255, 255, 255, 0.7);
+}
+:root[data-theme="light"] .desktop-widget:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.16),
+                inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.75);
+}
+:root[data-theme="light"] .widget-clock-large {
+    background: linear-gradient(135deg, #1d1d1f, #515154);
+    -webkit-background-clip: text;
+}
+:root[data-theme="light"] .widget-date-label {
+    color: rgba(60, 60, 67, 0.6);
+}
+:root[data-theme="light"] .widget-title {
+    color: rgba(60, 60, 67, 0.55);
+    border-bottom-color: rgba(0, 0, 0, 0.07);
+}
+:root[data-theme="light"] .health-status-title {
+    color: #1f9d48;
+}
+:root[data-theme="light"] .health-detail-item {
+    color: rgba(60, 60, 67, 0.75);
+}
+:root[data-theme="light"] .health-detail-item span:first-child {
+    color: rgba(60, 60, 67, 0.45);
+}
+:root[data-theme="light"] .diag-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .diag-btn:hover {
+    background: rgba(0, 0, 0, 0.09);
+    border-color: rgba(0, 0, 0, 0.14);
+}
+:root[data-theme="light"] .diag-scan-text {
+    color: rgba(60, 60, 67, 0.6);
+}
+:root[data-theme="light"] .diag-scan-track {
+    background: rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .storage-stats-used {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .storage-stats-total {
+    color: rgba(60, 60, 67, 0.45);
+}
+:root[data-theme="light"] .storage-bar-track {
+    background: rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .storage-legend-item {
+    color: rgba(60, 60, 67, 0.7);
+}
+
+/* ============================================================================
+   LIGHT THEME — Settings app
+   ============================================================================ */
+
+:root[data-theme="light"] .settings-sidebar {
+    background: rgba(240, 240, 246, 0.92);
+    border-right-color: rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .settings-sidebar .sidebar-item {
+    color: #3a3a3c;
+}
+:root[data-theme="light"] .settings-sidebar .sidebar-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+:root[data-theme="light"] .settings-sidebar .sidebar-item.active {
+    background: var(--accent);
+    color: #fff;
+}
+:root[data-theme="light"] .settings-content {
+    background: #f5f5f7;
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .settings-content h2,
+:root[data-theme="light"] .settings-content h3 {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .settings-subtitle {
+    color: rgba(60, 60, 67, 0.6);
+}
+:root[data-theme="light"] .settings-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+:root[data-theme="light"] .setting-title {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .setting-desc {
+    color: rgba(60, 60, 67, 0.6);
+}
+:root[data-theme="light"] .setting-input,
+:root[data-theme="light"] .setting-select {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    color: #1d1d1f;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+:root[data-theme="light"] .setting-input:focus,
+:root[data-theme="light"] .setting-select:focus {
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.22);
+    border-color: var(--accent);
+}
+:root[data-theme="light"] .setting-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23515154' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+:root[data-theme="light"] .setting-btn {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #1d1d1f;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="light"] .setting-btn:hover {
+    background: #f2f2f7;
+}
+:root[data-theme="light"] .setting-slider {
+    background: #dcdce0;
+}
+:root[data-theme="light"] .setting-slider::-webkit-slider-thumb {
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+:root[data-theme="light"] .toggle-switch .toggle-slider {
+    background: #d6d6db;
+}
+:root[data-theme="light"] .toggle-switch .toggle-slider:before {
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+:root[data-theme="light"] .toggle-switch input:checked + .toggle-slider {
+    background: var(--accent);
+}
+:root[data-theme="light"] .toggle-switch input:checked + .toggle-slider:before {
+    background: #ffffff;
+}
+:root[data-theme="light"] .storage-bar-container {
+    background: rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .wallpaper-fs-grid div {
+    color: rgba(60, 60, 67, 0.6) !important;
+}
+:root[data-theme="light"] .wallpaper-thumb.active {
+    border-color: var(--accent);
+}
+:root[data-theme="light"] .accent-swatch {
+    border-color: rgba(0, 0, 0, 0.18);
+}
+:root[data-theme="light"] .accent-swatch.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* Segmented control */
+:root[data-theme="light"] .seg-control {
+    background: rgba(120, 120, 128, 0.14);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+:root[data-theme="light"] .seg-control button {
+    color: rgba(60, 60, 67, 0.7);
+}
+:root[data-theme="light"] .seg-control button:hover {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .seg-control button.active {
+    background: #ffffff;
+    color: #1d1d1f;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+
+/* Badges, chips, outputs */
+:root[data-theme="light"] .perm-badge.muted {
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(60, 60, 67, 0.55);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+:root[data-theme="light"] .value-chip {
+    color: rgba(60, 60, 67, 0.8);
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+:root[data-theme="light"] .setting-row output {
+    color: rgba(60, 60, 67, 0.55);
+}
+:root[data-theme="light"] .setting-btn.danger-btn {
+    background: rgba(255, 59, 48, 0.08);
+    color: #d70015;
+    border-color: rgba(255, 59, 48, 0.25);
+}
+
+/* Benchmark card */
+:root[data-theme="light"] .bench-status {
+    color: rgba(60, 60, 67, 0.6);
+}
+:root[data-theme="light"] #wasm-bench-results {
+    background: rgba(0, 0, 0, 0.035);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .bench-cell {
+    background: rgba(0, 0, 0, 0.04);
+}
+:root[data-theme="light"] .bench-cell-label {
+    color: rgba(60, 60, 67, 0.5);
+}
+
+/* ============================================================================
+   LIGHT THEME — Spotlight
+   ============================================================================ */
+
+:root[data-theme="light"] .spotlight-search-bar {
+    background: rgba(255, 255, 255, 0.85);
+}
+:root[data-theme="light"] .spotlight-search-bar input {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .spotlight-results {
+    background: rgba(250, 250, 252, 0.96);
+}
+:root[data-theme="light"] .spotlight-item-title,
+:root[data-theme="light"] .spotlight-footer {
+    color: #1d1d1f;
+}
+:root[data-theme="light"] .spotlight-item-sub {
+    color: rgba(60, 60, 67, 0.55);
+}
+:root[data-theme="light"] .spotlight-item.selected,
+:root[data-theme="light"] .spotlight-item:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+:root[data-theme="light"] .spotlight-key {
+    background: rgba(0, 0, 0, 0.06);
+    color: rgba(60, 60, 67, 0.8);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* ============================================================================
+   Settings app — shared control language (v2)
+   ============================================================================ */
+
+/* Sidebar icon tiles */
+.settings-sidebar .sidebar-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.settings-sidebar .icon-tile {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+.settings-sidebar .icon-tile svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* Segmented control (Theme) */
+.seg-control {
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
+    padding: 2px;
+    gap: 2px;
+}
+.seg-control button {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.65);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.seg-control button:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+.seg-control button.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Accent swatches */
+.accent-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-sizing: border-box;
+    transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.accent-swatch:hover {
+    transform: scale(1.12);
+}
+.accent-swatch.active {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.08);
+}
+.accent-custom {
+    position: relative;
+    overflow: hidden;
+}
+.accent-custom input[type="color"] {
+    position: absolute;
+    inset: -6px;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Status badges */
+.perm-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.perm-badge.ok { background: rgba(52, 199, 89, 0.16); color: #34c759; border: 1px solid rgba(52, 199, 89, 0.35); }
+.perm-badge.warn { background: rgba(255, 159, 10, 0.16); color: #ff9f0a; border: 1px solid rgba(255, 159, 10, 0.35); }
+.perm-badge.bad { background: rgba(255, 69, 58, 0.16); color: #ff453a; border: 1px solid rgba(255, 69, 58, 0.35); }
+.perm-badge.muted { background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.12); }
+
+/* Static readout values */
+.value-chip {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 3px 10px;
+    border-radius: 7px;
+    white-space: nowrap;
+}
+
+/* Buttons */
+.setting-btn.accent-btn {
+    background: var(--accent);
+    color: #fff;
+    border-color: transparent;
+    font-weight: 600;
+}
+.setting-btn.danger-btn {
+    background: rgba(255, 69, 58, 0.12);
+    color: #ff453a;
+    border-color: rgba(255, 69, 58, 0.3);
+}
+.setting-btn.danger-btn:hover {
+    background: rgba(255, 69, 58, 0.22);
+}
+
+/* Slider value readouts */
+.setting-row output {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    min-width: 44px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Privacy rows: badge sits before the request button */
+#settings-privacy .setting-row {
+    gap: 10px;
+}
+
+/* Benchmark card */
+.bench-status {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+#wasm-bench-results {
+    display: none;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+#wasm-bench-results.visible {
+    display: block;
+}
+.bench-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    text-align: center;
+}
+.bench-cell {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px;
+    border-radius: 6px;
+}
+.bench-cell-accent {
+    background: rgba(52, 199, 89, 0.1);
+    border: 1px solid rgba(52, 199, 89, 0.25);
+}
+.bench-cell-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+}
+.bench-cell-accent .bench-cell-label {
+    color: #34c759;
+}
+.bench-value {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+.bench-value.js { color: #ff9f0a; }
+.bench-value.wasm,
+.bench-value.speedup { color: #34c759; }
+.bench-value.speedup { font-weight: 800; }

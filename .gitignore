@@ -1,6 +1,16 @@
 # Ignore dependencies
 node_modules/
 
+# Build and temporary artifacts
+target/
+*/target/
+scratch/
+*.log
+*.bak
+
 # OS generated files
 .DS_Store
 Thumbs.db
+.agent/
+.agents/
+.claude/

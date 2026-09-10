@@ -1,0 +1,859 @@
+{
+  "generator": "BrowOS clean low-poly fleet generator v4",
+  "vehicles": {
+    "sedan": {
+      "file": "vehicles/sedan.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "taxi": {
+      "file": "vehicles/taxi.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "coupe": {
+      "file": "vehicles/coupe.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "suv": {
+      "file": "vehicles/suv.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "van": {
+      "file": "vehicles/ambulance.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "pickup": {
+      "file": "vehicles/pickup.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "police": {
+      "file": "vehicles/police_cruiser.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "bus": {
+      "file": "vehicles/bus_city.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "truck": {
+      "file": "vehicles/truck_box.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "hatchback": {
+      "file": "vehicles/compact.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "semi": {
+      "file": "vehicles/truck_semi.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "schoolbus": {
+      "file": "vehicles/bus_coach.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "police_suv": {
+      "file": "vehicles/police_suv.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "supercar": {
+      "file": "vehicles/supercar_hyper.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "ambulance": {
+      "file": "vehicles/ambulance.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "firetruck": {
+      "file": "vehicles/firetruck.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "police_enforcer": {
+      "file": "vehicles/police_enforcer.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "motorcycle": {
+      "file": "vehicles/bike_sport.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "speedboat": {
+      "file": "vehicles/boat_speedboat.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "compact": {
+      "file": "vehicles/compact.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "wagon": {
+      "file": "vehicles/wagon.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "muscle": {
+      "file": "vehicles/coupe.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "minivan": {
+      "file": "vehicles/suv.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "offroad": {
+      "file": "vehicles/suv.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "limo": {
+      "file": "vehicles/luxury_limo.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "scooter": {
+      "file": "vehicles/bike_cruiser.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "garbage": {
+      "file": "vehicles/garbage_truck.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "towtruck": {
+      "file": "vehicles/pickup.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "custom_vehicle": {
+      "file": "vehicles/custom_vehicle.glb",
+      "tris": 572,
+      "materials": 1,
+      "dimensions_m": {
+        "width": 2.15,
+        "height": 1.25,
+        "length": 4.6
+      },
+      "orientation": "Y-up, front -Z",
+      "wheels": [
+        "Wheel_FL",
+        "Wheel_FR",
+        "Wheel_RL",
+        "Wheel_RR"
+      ],
+      "features": "Custom Design",
+      "style": "clean low-poly vehicle pack v4 (under 900-1000 tris, multi-color)"
+    },
+    "luxury_sedan": {
+      "file": "vehicles/luxury_sedan.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "luxury_limo": {
+      "file": "vehicles/luxury_limo.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "supercar_hyper": {
+      "file": "vehicles/supercar_hyper.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "supercar_track": {
+      "file": "vehicles/supercar_track.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "police_cruiser": {
+      "file": "vehicles/police_cruiser.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "garbage_truck": {
+      "file": "vehicles/garbage_truck.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "bus_city": {
+      "file": "vehicles/bus_city.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "bus_coach": {
+      "file": "vehicles/bus_coach.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "truck_box": {
+      "file": "vehicles/truck_box.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "truck_semi": {
+      "file": "vehicles/truck_semi.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "bike_sport": {
+      "file": "vehicles/bike_sport.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "bike_cruiser": {
+      "file": "vehicles/bike_cruiser.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "bike_dirt": {
+      "file": "vehicles/bike_dirt.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "boat_speedboat": {
+      "file": "vehicles/boat_speedboat.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "boat_police": {
+      "file": "vehicles/boat_police.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "boat_yacht": {
+      "file": "vehicles/boat_yacht.glb",
+      "tris": 4500,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Custom High-Detail Fleet with Openable Doors and Colliders"
+    },
+    "armored_truck": {
+      "file": "vehicles/armored_truck.glb",
+      "tris": 1800,
+      "materials": 1,
+      "orientation": "Y-up, front -Z",
+      "style": "Heavy Armored Bank Vault Truck"
+    }
+  },
+  "characters": {
+    "player": {
+      "file": "characters/player.glb",
+      "tris": 720,
+      "nodes": [
+        "Torso",
+        "Head",
+        "ArmL",
+        "ArmR",
+        "LegL",
+        "LegR",
+        "Gun",
+        "HandR"
+      ]
+    },
+    "ped": {
+      "file": "characters/ped.glb",
+      "tris": 696,
+      "nodes": [
+        "Torso",
+        "Head",
+        "ArmL",
+        "ArmR",
+        "LegL",
+        "LegR",
+        "Gun",
+        "HandR"
+      ]
+    },
+    "cop": {
+      "file": "characters/cop.glb",
+      "tris": 620
+    },
+    "swat": {
+      "file": "characters/swat.glb",
+      "tris": 710
+    },
+    "ped_business": {
+      "file": "characters/ped_business.glb",
+      "tris": 580
+    },
+    "ped_street": {
+      "file": "characters/ped_street.glb",
+      "tris": 540
+    },
+    "ped_female": {
+      "file": "characters/ped_female.glb",
+      "tris": 1080,
+      "nodes": [
+        "Torso",
+        "Head",
+        "ArmL",
+        "ArmR",
+        "LegL",
+        "LegR"
+      ]
+    },
+    "ped_worker": {
+      "file": "characters/ped_worker.glb",
+      "tris": 720,
+      "nodes": [
+        "Torso",
+        "Head",
+        "ArmL",
+        "ArmR",
+        "LegL",
+        "LegR"
+      ]
+    },
+    "ped_medic": {
+      "file": "characters/ped_medic.glb",
+      "tris": 680,
+      "nodes": [
+        "Torso",
+        "Head",
+        "ArmL",
+        "ArmR",
+        "LegL",
+        "LegR"
+      ]
+    }
+  },
+  "landmarks": {
+    "empire": {
+      "file": "landmarks/empire.glb",
+      "tris": 1844,
+      "height_m": 380
+    },
+    "chrysler": {
+      "file": "landmarks/chrysler.glb",
+      "tris": 1284,
+      "height_m": 300
+    },
+    "flatiron": {
+      "file": "landmarks/flatiron.glb",
+      "tris": 1184,
+      "height_m": 85
+    },
+    "wtc": {
+      "file": "landmarks/wtc.glb",
+      "tris": 1024,
+      "height_m": 540
+    },
+    "grandcentral": {
+      "file": "landmarks/grandcentral.glb",
+      "tris": 672,
+      "height_m": 50
+    },
+    "rockefeller": {
+      "file": "landmarks/rockefeller.glb",
+      "tris": 600,
+      "height_m": 250
+    },
+    "msg": {
+      "file": "landmarks/msg.glb",
+      "tris": 624,
+      "height_m": 50
+    },
+    "un": {
+      "file": "landmarks/un.glb",
+      "tris": 960,
+      "height_m": 155
+    },
+    "met": {
+      "file": "landmarks/met.glb",
+      "tris": 768,
+      "height_m": 40
+    },
+    "guggenheim": {
+      "file": "landmarks/guggenheim.glb",
+      "tris": 556,
+      "height_m": 30
+    },
+    "cathedral": {
+      "file": "landmarks/cathedral.glb",
+      "tris": 824,
+      "height_m": 100
+    },
+    "hospital": {
+      "file": "landmarks/hospital.glb",
+      "tris": 2100,
+      "height_m": 45
+    },
+    "police": {
+      "file": "landmarks/police.glb",
+      "tris": 3160,
+      "height_m": 50
+    },
+    "police_hq": {
+      "file": "landmarks/police_hq.glb",
+      "tris": 40828,
+      "height_m": 46
+    },
+    "villa_land": {
+      "file": "landmarks/villa_land.glb",
+      "tris": 25000,
+      "height_m": 42
+    },
+    "apollo": {
+      "file": "landmarks/apollo.glb",
+      "tris": 552,
+      "height_m": 25
+    },
+    "spray": {
+      "file": "landmarks/spray.glb",
+      "tris": 456,
+      "height_m": 5
+    },
+    "timesquare": {
+      "file": "landmarks/timesquare.glb",
+      "tris": 648,
+      "height_m": 80
+    }
+  },
+  "props": {
+    "tree_round": {
+      "file": "props/tree_round.glb",
+      "tris": 412
+    },
+    "tree_conifer": {
+      "file": "props/tree_conifer.glb",
+      "tris": 126
+    },
+    "lamp": {
+      "file": "props/lamp.glb",
+      "tris": 112
+    },
+    "hydrant": {
+      "file": "props/hydrant.glb",
+      "tris": 280
+    },
+    "bin": {
+      "file": "props/bin.glb",
+      "tris": 308
+    },
+    "bull": {
+      "file": "props/bull.glb",
+      "tris": 312
+    },
+    "statue_liberty": {
+      "file": "props/statue_liberty.glb",
+      "tris": 500
+    },
+    "parking_barrier": {
+      "file": "props/parking_barrier.glb",
+      "tris": 480
+    },
+    "vendor_cart": {
+      "file": "props/vendor_cart.glb",
+      "tris": 620
+    },
+    "subway_entrance": {
+      "file": "props/subway_entrance.glb",
+      "tris": 560
+    },
+    "atm": {
+      "file": "props/atm.glb",
+      "tris": 510
+    },
+    "traffic_cone": {
+      "file": "props/traffic_cone.glb",
+      "tris": 260
+    },
+    "water_tower": {
+      "file": "props/water_tower.glb",
+      "tris": 750
+    },
+    "rooftop_ac_unit": {
+      "file": "props/rooftop_ac_unit.glb",
+      "tris": 420
+    },
+    "fire_escape": {
+      "file": "props/fire_escape.glb",
+      "tris": 850
+    },
+    "mailbox_blue": {
+      "file": "props/mailbox_blue.glb",
+      "tris": 320
+    }
+  },
+  "audio": {
+    "engine_idle": "audio/gta/engine_idle.ogg",
+    "engine_loop": "audio/gta/engine_loop.ogg",
+    "siren_loop": "audio/gta/siren_loop.ogg",
+    "horn": "audio/gta/horn.ogg",
+    "skid": "audio/gta/skid.ogg",
+    "crash": "audio/gta/crash.ogg",
+    "gunshot": "audio/gta/gunshot.ogg",
+    "punch": "audio/gta/punch.ogg",
+    "pickup_cash": "audio/gta/pickup_cash.ogg",
+    "pickup_item": "audio/gta/pickup_item.ogg",
+    "splash": "audio/gta/splash.ogg",
+    "boom": "audio/gta/boom.ogg",
+    "footstep": "audio/gta/footstep.ogg",
+    "scream": "audio/gta/scream.ogg",
+    "spray": "audio/gta/spray.ogg",
+    "bust": "audio/gta/bust.ogg"
+  },
+  "houses": {
+    "colonial_brick": {
+      "file": "houses/colonial_brick.glb",
+      "tris": 1038
+    },
+    "cottage_stone": {
+      "file": "houses/cottage_stone.glb",
+      "tris": 490
+    },
+    "craftsman_bungalow": {
+      "file": "houses/craftsman_bungalow.glb",
+      "tris": 706
+    },
+    "duplex_mirror": {
+      "file": "houses/duplex_mirror.glb",
+      "tris": 930
+    },
+    "farmhouse_country": {
+      "file": "houses/farmhouse_country.glb",
+      "tris": 1012
+    },
+    "mansion_suburban": {
+      "file": "houses/mansion_suburban.glb",
+      "tris": 1008
+    },
+    "modern_villa": {
+      "file": "houses/modern_villa.glb",
+      "tris": 376
+    },
+    "ranch_single": {
+      "file": "houses/ranch_single.glb",
+      "tris": 534
+    },
+    "townhouse_brownstone": {
+      "file": "houses/townhouse_brownstone.glb",
+      "tris": 480
+    },
+    "victorian_queen": {
+      "file": "houses/victorian_queen.glb",
+      "tris": 1438
+    },
+    "bungalow_modern": {
+      "file": "houses/bungalow_modern.glb",
+      "tris": 330
+    },
+    "split_level_ranch": {
+      "file": "houses/split_level_ranch.glb",
+      "tris": 420
+    },
+    "colonial_white": {
+      "file": "houses/colonial_white.glb",
+      "tris": 516
+    },
+    "tudor_cottage": {
+      "file": "houses/tudor_cottage.glb",
+      "tris": 312
+    },
+    "brick_townhouse_2": {
+      "file": "houses/brick_townhouse_2.glb",
+      "tris": 300
+    },
+    "cape_cod": {
+      "file": "houses/cape_cod.glb",
+      "tris": 294
+    },
+    "cottage_beach": {
+      "file": "houses/cottage_beach.glb",
+      "tris": 330
+    },
+    "modern_box": {
+      "file": "houses/modern_box.glb",
+      "tris": 228
+    }
+  },
+  "weapons": {
+    "bat": {
+      "file": "weapons/bat.glb",
+      "tris": 420
+    },
+    "shotgun": {
+      "file": "weapons/shotgun.glb",
+      "tris": 680
+    },
+    "smg": {
+      "file": "weapons/smg.glb",
+      "tris": 610
+    },
+    "rifle": {
+      "file": "weapons/rifle.glb",
+      "tris": 740
+    }
+  },
+  "buildings": {
+    "building_tenement": {
+      "file": "buildings/building_tenement.glb",
+      "tris": 1564
+    },
+    "building_castiron": {
+      "file": "buildings/building_castiron.glb",
+      "tris": 1888
+    },
+    "building_commercial": {
+      "file": "buildings/building_commercial.glb",
+      "tris": 1672
+    },
+    "building_warehouse": {
+      "file": "buildings/building_warehouse.glb",
+      "tris": 1060
+    },
+    "tower_artdeco": {
+      "file": "buildings/tower_artdeco.glb",
+      "tris": 2300
+    },
+    "tower_glass": {
+      "file": "buildings/tower_glass.glb",
+      "tris": 1240
+    },
+    "tower_prewar": {
+      "file": "buildings/tower_prewar.glb",
+      "tris": 1560
+    },
+    "tower_setback": {
+      "file": "buildings/tower_setback.glb",
+      "tris": 1420
+    },
+    "office_glass_spire": {
+      "file": "buildings/office_glass_spire.glb",
+      "tris": 11766
+    },
+    "office_corporate_block": {
+      "file": "buildings/office_corporate_block.glb",
+      "tris": 6192
+    },
+    "gov_cityhall": {
+      "file": "buildings/gov_cityhall.glb",
+      "tris": 2024
+    },
+    "gov_courthouse": {
+      "file": "buildings/gov_courthouse.glb",
+      "tris": 1322
+    },
+    "bank_capital": {
+      "file": "buildings/bank_capital.glb",
+      "tris": 3504
+    },
+    "police_precinct": {
+      "file": "buildings/police_precinct.glb",
+      "tris": 1914
+    },
+    "fire_station": {
+      "file": "buildings/fire_station.glb",
+      "tris": 342
+    },
+    "hospital": {
+      "file": "buildings/hospital.glb",
+      "tris": 73856
+    },
+    "hospital_tower": {
+      "file": "buildings/hospital_tower.glb",
+      "tris": 9288
+    },
+    "carpark_multistory": {
+      "file": "buildings/carpark_multistory.glb",
+      "tris": 1284
+    },
+    "carpark_garage": {
+      "file": "buildings/carpark_garage.glb",
+      "tris": 456
+    },
+    "library_civic": {
+      "file": "buildings/library_civic.glb",
+      "tris": 756
+    },
+    "theater_cinema": {
+      "file": "buildings/theater_cinema.glb",
+      "tris": 564
+    },
+    "hotel_tower": {
+      "file": "buildings/hotel_tower.glb",
+      "tris": 8976
+    },
+    "department_store": {
+      "file": "buildings/department_store.glb",
+      "tris": 816
+    },
+    "school_public": {
+      "file": "buildings/school_public.glb",
+      "tris": 1098
+    },
+    "university_hall": {
+      "file": "buildings/university_hall.glb",
+      "tris": 1532
+    },
+    "factory_plant": {
+      "file": "buildings/factory_plant.glb",
+      "tris": 660
+    },
+    "transit_station": {
+      "file": "buildings/transit_station.glb",
+      "tris": 840
+    },
+    "data_center": {
+      "file": "buildings/data_center.glb",
+      "tris": 396
+    },
+    "warehouse_modern": {
+      "file": "buildings/warehouse_modern.glb",
+      "tris": 624
+    }
+  },
+  "radio": [
+    {
+      "title": "Cheri Cheri Lady",
+      "file": "audio/gta/music/cheri-cheri-lady.mp3"
+    },
+    {
+      "title": "Cook Pardon",
+      "file": "audio/gta/music/cook-pardon.mp3"
+    },
+    {
+      "title": "Darkside",
+      "file": "audio/gta/music/darkside.mp3"
+    },
+    {
+      "title": "Gangsta S Paradise",
+      "file": "audio/gta/music/gangsta-s-paradise.mp3"
+    },
+    {
+      "title": "General Levy",
+      "file": "audio/gta/music/general-levy.mp3"
+    },
+    {
+      "title": "Go Down Deh",
+      "file": "audio/gta/music/Go-down-deh.mp3"
+    },
+    {
+      "title": "Hey Mama",
+      "file": "audio/gta/music/hey-mama.mp3"
+    },
+    {
+      "title": "Rasputin",
+      "file": "audio/gta/music/rasputin.mp3"
+    },
+    {
+      "title": "Unstoppable",
+      "file": "audio/gta/music/unstoppable.mp3"
+    },
+    {
+      "title": "Whoopty",
+      "file": "audio/gta/music/whoopty.mp3"
+    },
+    {
+      "title": "Midtown Cruise",
+      "file": "audio/gta/music/midtown_cruise.wav",
+      "thumb": "audio/gta/music/midtown_cruise.svg"
+    },
+    {
+      "title": "Harbor Nights",
+      "file": "audio/gta/music/harbor_nights.wav",
+      "thumb": "audio/gta/music/harbor_nights.svg"
+    }
+  ]
+}

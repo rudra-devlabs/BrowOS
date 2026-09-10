@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="bcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="50%" stop-color="#4FACFE"/>
+      <stop offset="100%" stop-color="#000851"/>
+    </linearGradient>
+    <linearGradient id="neonPink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF0844"/>
+      <stop offset="100%" stop-color="#FFB199"/>
+    </linearGradient>
+    <filter id="bcGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00F2FE" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect x="6" y="6" width="88" height="88" rx="20" fill="url(#bcGrad)"/>
+  <path d="M18 24 H82 V34 H18 Z" fill="#FFFFFF" fill-opacity="0.15"/>
+  <circle cx="26" cy="29" r="2.5" fill="#FFFFFF" fill-opacity="0.5"/>
+  <circle cx="42" cy="29" r="2.5" fill="#FFFFFF" fill-opacity="0.5"/>
+  <circle cx="58" cy="29" r="2.5" fill="#FFFFFF" fill-opacity="0.5"/>
+  <circle cx="74" cy="29" r="2.5" fill="#FFFFFF" fill-opacity="0.5"/>
+  <path d="M28 66 L68 42 L64 36 L24 60 Z" fill="#FFFFFF" filter="url(#bcGlow)"/>
+  <path d="M28 40 L68 64 L64 70 L24 46 Z" fill="#FFFFFF" filter="url(#bcGlow)"/>
+  <circle cx="28" cy="40" r="10" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+  <circle cx="28" cy="66" r="10" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+  <circle cx="50" cy="53" r="5" fill="url(#neonPink)"/>
+  <polygon points="70,53 82,45 82,61" fill="#00F2FE"/>
+</svg>

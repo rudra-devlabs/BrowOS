@@ -2,7 +2,6 @@
 const BrowOSIcons = {
     // Dock & desktop apps
     filebrow: 'assets/icons/filebrow.svg',
-    safari: 'assets/icons/safari.svg',
     messages: 'assets/icons/messages.svg',
     appstore: 'assets/icons/appstore.svg',
     launchpad: 'assets/icons/launchpad.svg',
@@ -29,9 +28,15 @@ const BrowOSIcons = {
         weather: 'assets/icons/apps/weather.svg',
         clock: 'assets/icons/apps/clock.svg',
         camera: 'assets/icons/apps/camera.svg',
+        calendar: 'assets/icons/apps/calendar.svg',
+        widgets: 'assets/icons/apps/widgets.svg',
         codebrow: 'assets/icons/apps/codebrow.svg',
         starship: 'assets/icons/apps/starship.svg',
-        racer: 'assets/icons/apps/racer.svg'
+        browrio: 'assets/icons/apps/browrio.svg',
+        gta: 'assets/icons/apps/gta.svg',
+        snake: 'assets/icons/apps/snake.svg',
+        terrario: 'assets/icons/apps/terrario.svg',
+        browcut: 'assets/icons/apps/browcut.svg',
     },
 
     // Window chrome & toolbars
@@ -80,7 +85,6 @@ const BrowOSIcons = {
         if (key === 'finder') key = 'filebrow';
         const map = {
             filebrow: this.filebrow,
-            safari: this.safari,
             messages: this.messages,
             appstore: this.appstore,
             launchpad: this.launchpad,
@@ -90,13 +94,22 @@ const BrowOSIcons = {
             brownote: this.brownote,
             codebrow: this.codebrow,
             calculator: this.apps.calculator,
+            clock: this.apps.clock,
             camera: this.apps.camera,
+            weather: this.apps.weather,
+            calendar: this.apps.calendar,
+            monitor: this.apps.monitor,
+            widgets: this.apps.widgets,
             music: this.apps.music,
             photos: this.apps.photos,
             files: this.apps.files,
             mail: this.apps.mail,
             starship: this.apps.starship,
-            browracer: this.apps.racer
+            browrio: this.apps.browrio,
+            gta: this.apps.gta,
+            snake: this.apps.snake,
+            terrario: this.apps.terrario,
+            browcut: this.apps.browcut,
         };
         return map[key] || this.file;
     },

@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brow City — Vehicle Showroom & Fleet Selector</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d131d;
+    --panel: #141c28;
+    --panel2: #1c2738;
+    --panel-hover: #223247;
+    --line: #2b3b50;
+    --text: #eef5fc;
+    --muted: #8ea5bd;
+    --accent: #10b981;
+    --accent-glow: rgba(16, 185, 129, 0.35);
+    --accent-dark: #064e3b;
+    --cyan: #06b6d4;
+    --orange: #f59e0b;
+    --purple: #8b5cf6;
+    --red: #ef4444;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 13.5px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  button, input, select { font: inherit; }
+
+  button {
+    color: var(--text);
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  button:hover {
+    border-color: var(--accent);
+    background: var(--panel-hover);
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: wait; transform: none; }
+
+  button.primary {
+    background: var(--accent);
+    color: #04241b;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  button.primary:hover {
+    background: #34d399;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+
+  /* Header */
+  header {
+    height: 60px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-icon {
+    font-size: 24px;
+    background: #1e2e42;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+  }
+  h1 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .subtitle {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .header-badges {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    background: #172a38;
+    color: var(--cyan);
+    border: 1px solid #23465e;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .pill.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  /* Main Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 340px minmax(380px, 1fr) 320px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Left Sidebar: Catalog & Selection */
+  aside {
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .search-toolbar {
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+    background: #111822;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .search-input-wrapper {
+    position: relative;
+  }
+  .search-input-wrapper input {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    outline: none;
+    font-size: 12.5px;
+  }
+  .search-input-wrapper input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+  }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    font-size: 13px;
+  }
+  .filter-row {
+    display: flex;
+    gap: 6px;
+  }
+  .filter-row select {
+    flex: 1;
+    padding: 6px 9px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 11.5px;
+    outline: none;
+    cursor: pointer;
+  }
+  .filter-row select:focus {
+    border-color: var(--accent);
+  }
+
+  .category-scroll {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    background: #0f1520;
+    scrollbar-width: none;
+  }
+  .category-scroll::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .chip:hover {
+    color: var(--text);
+    border-color: var(--muted);
+  }
+  .chip.active {
+    background: var(--accent);
+    color: #03281e;
+    font-weight: 700;
+    border-color: var(--accent);
+  }
+
+  /* Vehicle Cards List */
+  #vehicleList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  #vehicleList::-webkit-scrollbar {
+    width: 6px;
+  }
+  #vehicleList::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 3px;
+  }
+
+  .slot-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px 4px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .slot-count-badge {
+    font-size: 10px;
+    background: #1f2b3b;
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: #8fa5bd;
+  }
+
+  .vehicle-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: #111a26;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    position: relative;
+  }
+  .vehicle-card:hover {
+    background: #182435;
+    border-color: #3b516d;
+  }
+  .vehicle-card.viewing {
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+    background: #162638;
+  }
+  .vehicle-card.active-slot {
+    border-color: var(--accent);
+    background: rgba(16, 185, 129, 0.08);
+  }
+  .vehicle-card.active-slot.viewing {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px var(--accent-glow);
+    background: rgba(16, 185, 129, 0.14);
+  }
+
+  /* The Tick Sign Selector Button */
+  .tick-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    border: 1.5px solid #32465e;
+    background: #152232;
+    color: #5d748f;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  .tick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(16, 185, 129, 0.12);
+    transform: scale(1.08);
+  }
+  .tick-btn.ticked {
+    background: var(--accent);
+    color: #02251c;
+    border-color: var(--accent);
+    font-weight: 900;
+    box-shadow: 0 0 10px var(--accent-glow);
+    transform: scale(1.04);
+  }
+  .tick-btn.ticked::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    opacity: 0.5;
+  }
+
+  .card-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .pack-tag {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #1b2838;
+    color: #88a4c2;
+    border: 1px solid #283a4f;
+  }
+  .pack-tag.active-fleet {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+  .pack-tag.rgsdev {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+  .pack-tag.downloads {
+    background: rgba(6, 182, 212, 0.15);
+    color: #67e8f9;
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+  .pack-tag.lowpoly_free {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .pack-tag.blender {
+    background: rgba(52, 211, 153, 0.15);
+    color: #6ee7b7;
+    border-color: rgba(52, 211, 153, 0.35);
+  }
+  .pack-tag.blender::before { content: '◆ '; }
+
+  .pack-tag.audio {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  .pack-tag.radio {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+  .pack-tag.elevenlabs {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.45);
+    font-weight: 700;
+  }
+
+  .tick-btn.audio-play-btn {
+    font-size: 13px;
+    color: var(--cyan);
+  }
+  .tick-btn.audio-play-btn:hover {
+    background: var(--cyan);
+    color: #022026;
+    border-color: var(--cyan);
+  }
+  .tick-btn.audio-play-btn.playing {
+    background: var(--accent);
+    color: #02241b;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .active-indicator {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  /* Center: 3D Viewport */
+  main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: #090e15;
+    position: relative;
+  }
+  .viewport-toolbar {
+    padding: 8px 14px;
+    background: #101620;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    z-index: 10;
+  }
+  .viewport-toolbar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .viewport-toolbar label:hover { color: var(--text); }
+  .viewport-toolbar select {
+    padding: 4px 8px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 11.5px;
+    outline: none;
+  }
+  input[type="checkbox"] { accent-color: var(--accent); }
+
+  #canvasContainer {
+    flex: 1;
+    position: relative;
+    outline: none;
+  }
+  #canvasContainer canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Viewport Floating Overlays */
+  .viewport-status-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(16, 24, 36, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 14px;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .vp-model-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .vp-model-meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .viewport-activation-banner {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(16, 24, 38, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid #2b3e55;
+    border-radius: 12px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+  .vp-act-text {
+    font-size: 12.5px;
+  }
+  .vp-act-text strong {
+    color: var(--text);
+    display: block;
+  }
+  .vp-act-text span {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .vp-hint {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    background: rgba(12, 19, 29, 0.7);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    pointer-events: none;
+    line-height: 1.4;
+  }
+
+  /* Right Sidebar: Vehicle Inspector & Customizer */
+  .inspector {
+    border-left: 1px solid var(--line);
+    background: var(--panel);
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .inspector::-webkit-scrollbar { width: 6px; }
+  .inspector::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+  .spec-box {
+    background: #111a26;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .hero-status-card {
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #28394e;
+    background: #111a26;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hero-status-card.is-active {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--accent);
+  }
+  .hero-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #1d2b3c;
+    color: var(--muted);
+  }
+  .status-badge.active {
+    background: var(--accent);
+    color: #03241b;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat-item {
+    background: #162232;
+    border: 1px solid #22344a;
+    border-radius: 8px;
+    padding: 9px;
+  }
+  .stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .color-palette {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .swatch:hover {
+    transform: scale(1.15);
+    border-color: #fff;
+  }
+  .custom-color-input {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  #nodeTree {
+    font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: pre;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #0d141e;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    color: #8da4be;
+  }
+
+  /* Toast notification */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #10212e;
+    border: 1px solid var(--accent);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px var(--accent-glow);
+    padding: 12px 18px;
+    border-radius: 10px;
+    color: #ecfdf5;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1000;
+    pointer-events: none;
+  }
+  #toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  #toast .toast-icon {
+    font-size: 18px;
+    color: var(--accent);
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-icon">🏎️</div>
+    <div>
+      <h1>Brow City <span style="color:var(--accent)">Vehicle Showroom</span></h1>
+      <div class="subtitle">Complete Fleet Showcase &amp; In-Game Vehicle Selector</div>
+    </div>
+  </div>
+
+  <div class="header-badges">
+    <span class="pill" id="totalModelsBadge">76 Models Available</span>
+    <span class="pill success" id="fleetSlotsBadge">29 In-Game Slots</span>
+  </div>
+
+  <div class="header-actions">
+    <button id="btnResetFleet" title="Reset in-game fleet to clean default procedural low-poly vehicles">🔄 Reset Fleet to Default</button>
+    <button id="btnExportGlb" title="Download GLB of currently viewed car">⬇️ Export GLB</button>
+    <button class="primary" id="btnPlayGame" onclick="window.open('preview-gta.html', '_blank')">🎮 Play GTA City</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Left Sidebar: Catalog & Selection with Tick Sign -->
+  <aside>
+    <div class="search-toolbar">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search vehicle name, slot...">
+      </div>
+      <div class="filter-row">
+        <select id="packFilter">
+          <option value="all">📦 All Packs</option>
+          <option value="active">Active In-Game Fleet (29)</option>
+          <option value="elevenlabs">✨ ElevenLabs AI SFX (5)</option>
+          <option value="audio">🔊 Sound Effects (16)</option>
+          <option value="radio">📻 Radio Station (11)</option>
+          <option value="blender">Blender Custom (2)</option>
+          <option value="rgsdev">Rgsdev Low-Poly Pack (21)</option>
+          <option value="lowpoly_free">Low-Poly Sports Pack (12)</option>
+          <option value="downloads">Downloads Pack (12)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="category-scroll" id="categoryChips">
+      <div class="chip active" data-cat="all">All Items</div>
+      <div class="chip" data-cat="Vehicles">🚗 Vehicles</div>
+      <div class="chip" data-cat="Audio">🔊 Sound Effects</div>
+      <div class="chip" data-cat="Radio">📻 Radio Music</div>
+      <div class="chip" data-cat="Props">📦 Props</div>
+      <div class="chip" data-cat="Characters">🧍 Characters</div>
+      <div class="chip" data-cat="Weapons">🔫 Weapons</div>
+      <div class="chip" data-cat="Landmarks">🏛 Landmarks</div>
+      <div class="chip" data-cat="Buildings">🏢 Buildings</div>
+      <div class="chip" data-cat="Houses">🏡 Houses</div>
+    </div>
+
+    <div id="vehicleList">
+      <!-- Generated vehicle cards with tick buttons -->
+    </div>
+  </aside>
+
+  <!-- Center: 3D Turntable Viewport -->
+  <main>
+    <div class="viewport-toolbar">
+      <label><input type="checkbox" id="chkAutoRotate" checked> Auto-Rotate</label>
+      <label><input type="checkbox" id="chkWireframe"> Wireframe</label>
+      <label><input type="checkbox" id="chkGrid" checked> Showroom Floor</label>
+      <label><input type="checkbox" id="chkAxes"> Pivot Axes</label>
+      <select id="selLighting">
+        <option value="studio">💡 Studio Lighting</option>
+        <option value="sunset">🌅 Sunset Gold</option>
+        <option value="cyberpunk">🌃 Cyberpunk Night</option>
+      </select>
+      <button id="btnFrameCamera" style="padding: 3px 9px; font-size: 11.5px;">🎯 Frame Car</button>
+    </div>
+
+    <div id="canvasContainer">
+      <div class="viewport-status-badge">
+        <h2 class="vp-model-title" id="vpTitle">Loading Showroom...</h2>
+        <div class="vp-model-meta" id="vpMeta">Three.js GLTF Engine</div>
+      </div>
+
+      <div class="viewport-activation-banner" id="vpBanner">
+        <div class="vp-act-text">
+          <strong id="vpSlotNotice">Slot: Sedan</strong>
+          <span id="vpActiveNotice">Not active in game</span>
+        </div>
+        <button class="primary" id="btnActivateInView">✔ Use This Vehicle In-Game</button>
+      </div>
+
+      <div class="vp-hint">
+        Left-drag: Orbit · Right-drag: Pan · Scroll: Zoom
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Sidebar: Inspector, Specs & Material Swatches -->
+  <section class="inspector">
+    <div class="hero-status-card" id="heroCard">
+      <div class="hero-status-header">
+        <span class="status-badge" id="heroStatusBadge">Inactive Variant</span>
+        <span class="pack-tag" id="heroPackTag">Pack</span>
+      </div>
+      <div>
+        <h2 style="margin:0; font-size:17px;" id="heroTitle">Select a vehicle</h2>
+        <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="heroSlot">Slot: None</div>
+      </div>
+      <button class="primary" id="btnHeroActivate" style="width:100%; justify-content:center; padding:10px;">
+        ✔ Activate for In-Game Fleet
+      </button>
+    </div>
+
+    <!-- 3D Technical Specs Box -->
+    <div class="spec-box" id="specBox3D">
+      <div style="font-weight: 700; font-size: 12.5px; margin-bottom: 10px; display:flex; justify-content:space-between;">
+        <span>3D Technical Specs</span>
+        <span style="color:var(--accent); font-size:11px;">Meters (Y-Up)</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-item">
+          <div class="stat-val" id="triCount">—</div>
+          <div class="stat-lbl">Triangles</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="vertCount">—</div>
+          <div class="stat-lbl">Vertices</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="meshCount">—</div>
+          <div class="stat-lbl">Meshes</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="fileSize">—</div>
+          <div class="stat-lbl">File Size</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px; font-size: 11.5px; color: var(--muted);" id="dimText">
+        Dimensions: L 0.0m × W 0.0m × H 0.0m
+      </div>
+    </div>
+
+    <!-- Studio Audio Master Deck Box -->
+    <div class="spec-box" id="specBoxAudio" style="display:none;">
+      <div style="font-weight: 700; font-size: 12.5px; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+        <span>Studio Audio Deck</span>
+        <span class="pill success" style="font-size:10px;">48 kHz Master</span>
+      </div>
+
+      <div style="background:#0d141f; border:1px solid var(--line); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <button id="btnAudioPlayDeck" class="primary" style="padding:8px 16px; font-size:13px; font-weight:700;">
+            ▶ Play Audio
+          </button>
+          <div id="audioTimeDisplay" style="font-size:12px; font-family:monospace; color:var(--cyan);">0:00 / 0:00</div>
+        </div>
+
+        <div>
+          <input type="range" id="audioScrubber" min="0" max="100" value="0" step="0.1" style="width:100%; cursor:pointer; accent-color:var(--accent);">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+          <div>
+            <span style="color:var(--muted); display:block; margin-bottom:3px;">Volume</span>
+            <input type="range" id="audioVolume" min="0" max="1" value="0.8" step="0.05" style="width:100%; accent-color:var(--cyan);">
+          </div>
+          <div>
+            <span style="color:var(--muted); display:block; margin-bottom:3px;">Speed</span>
+            <select id="audioSpeed" style="width:100%; background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:3px 4px; font-size:11px;">
+              <option value="0.5">0.5x Slow</option>
+              <option value="0.75">0.75x</option>
+              <option value="1.0" selected>1.0x Normal</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2.0">2.0x Double</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:2px;">
+          <label style="font-size:11px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+            <input type="checkbox" id="chkAudioLoop"> Continuous Loop
+          </label>
+          <div style="display:flex; gap:6px;">
+            <button id="btnDownloadOgg" style="padding:3px 7px; font-size:10px;">⬇ OGG</button>
+            <button id="btnDownloadMp3" style="padding:3px 7px; font-size:10px;">⬇ MP3</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid" style="margin-top:10px;">
+        <div class="stat-item">
+          <div class="stat-val" style="font-size:13px; color:var(--accent);" id="audioRateVal">48,000 Hz</div>
+          <div class="stat-lbl">Sample Rate</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="font-size:13px; color:var(--cyan);" id="audioChanVal">Stereo 2.0</div>
+          <div class="stat-lbl">Channels</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="font-size:13px; color:var(--orange);" id="audioMasterVal">-1.0 dBFS</div>
+          <div class="stat-lbl">Peak Master</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="font-size:13px; color:var(--purple);" id="audioCodecVal">Vorbis + LAME</div>
+          <div class="stat-lbl">Codecs</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px; font-size: 11px; line-height:1.45; color: var(--muted); background:#111b27; border:1px solid var(--line); border-radius:6px; padding:9px;" id="audioDescText">
+        Acoustic sound design description...
+      </div>
+    </div>
+
+    <div class="spec-box" id="paintBox">
+      <div style="font-weight: 700; font-size: 12.5px; margin-bottom: 6px;">Live Vehicle Paint</div>
+      <div style="font-size: 11.5px; color: var(--muted);">Tints body paint shader in real-time</div>
+      <div class="color-palette">
+        <div class="swatch" style="background:#ef4444;" data-color="#ef4444" title="Crimson Red"></div>
+        <div class="swatch" style="background:#3b82f6;" data-color="#3b82f6" title="Electric Blue"></div>
+        <div class="swatch" style="background:#10b981;" data-color="#10b981" title="Emerald Green"></div>
+        <div class="swatch" style="background:#f59e0b;" data-color="#f59e0b" title="Sunset Amber"></div>
+        <div class="swatch" style="background:#e0e7ff;" data-color="#e0e7ff" title="Alpine White"></div>
+        <div class="swatch" style="background:#1e293b;" data-color="#1e293b" title="Matte Obsidian"></div>
+        <div class="swatch" style="background:#8b5cf6;" data-color="#8b5cf6" title="Cyber Violet"></div>
+        <input type="color" class="custom-color-input" id="customColorPicker" value="#ef4444" title="Pick custom color">
+      </div>
+    </div>
+
+    <div class="spec-box" id="nodeTreeBox">
+      <div style="font-weight: 700; font-size: 12.5px; margin-bottom: 8px;" id="nodeTreeTitle">Model Hierarchy &amp; Wheels</div>
+      <div id="nodeTree">Select an asset to inspect node tree...</div>
+    </div>
+  </section>
+
+</div>
+
+<div id="toast">
+  <span class="toast-icon">✔</span>
+  <span id="toastMsg">Vehicle activated!</span>
+</div>
+
+<!-- Three.js and loaders -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+
+  // State
+  let catalog = [];
+  let fleetSelection = {}; // slot -> { modelId, url, name, packId }
+  let currentModel = null;
+  let currentObject = null;
+  let activeCategory = 'all';
+  let activePack = 'all';
+  let searchQuery = '';
+
+  // Scene Setup
+  const container = $("canvasContainer");
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0c121b);
+
+  const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+  camera.position.set(4.5, 2.6, 5.2);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  container.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't flip under ground
+  controls.minDistance = 1.2;
+  controls.maxDistance = 25;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.2;
+
+  // Lighting Setup
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  keyLight.position.set(5, 8, 5);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.width = 1024;
+  keyLight.shadow.mapSize.height = 1024;
+  keyLight.shadow.bias = -0.0005;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0x7090b0, 0.7);
+  fillLight.position.set(-5, 4, -5);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+  rimLight.position.set(0, 3, -6);
+  scene.add(rimLight);
+
+  // Showroom Floor Grid & Pedestal
+  const floorGroup = new THREE.Group();
+  scene.add(floorGroup);
+
+  const grid = new THREE.GridHelper(20, 20, 0x25394f, 0x162232);
+  grid.position.y = -0.005;
+  floorGroup.add(grid);
+
+  // Pedestal disc
+  const discGeo = new THREE.CircleGeometry(3.5, 64);
+  const discMat = new THREE.MeshStandardMaterial({
+    color: 0x111b27,
+    roughness: 0.4,
+    metalness: 0.1
+  });
+  const disc = new THREE.Mesh(discGeo, discMat);
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.y = -0.01;
+  disc.receiveShadow = true;
+  floorGroup.add(disc);
+
+  // Subtle outer ring
+  const ringGeo = new THREE.RingGeometry(3.45, 3.52, 64);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = -0.008;
+  floorGroup.add(ring);
+
+  // Pivot axes helper
+  const axes = new THREE.AxesHelper(1.5);
+  axes.visible = false;
+  scene.add(axes);
+
+  // GLTF Loader
+  const gltfLoader = new THREE.GLTFLoader();
+
+  // ---------------------------------------------------------------------------
+  // 3D Audio Visualizer & HTML5 Audio Player
+  // ---------------------------------------------------------------------------
+  let audioCtx = null;
+  let audioAnalyser = null;
+  let audioSourceNode = null;
+  const audioEl = new Audio();
+  audioEl.crossOrigin = "anonymous";
+  let freqData = null;
+  let currentlyPlayingItem = null;
+
+  // 3D Audio Visualizer Stage
+  const audioVizGroup = new THREE.Group();
+  audioVizGroup.visible = false;
+  scene.add(audioVizGroup);
+
+  // Subwoofer Base Cylinder
+  const subBaseGeo = new THREE.CylinderGeometry(1.2, 1.45, 0.35, 32);
+  const subBaseMat = new THREE.MeshStandardMaterial({ color: 0x121b27, roughness: 0.35, metalness: 0.7 });
+  const subBase = new THREE.Mesh(subBaseGeo, subBaseMat);
+  subBase.position.y = 0.175;
+  subBase.receiveShadow = true;
+  audioVizGroup.add(subBase);
+
+  // Chrome Bezel Ring
+  const bezelGeo = new THREE.TorusGeometry(1.22, 0.045, 16, 48);
+  const bezelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.95 });
+  const bezel = new THREE.Mesh(bezelGeo, bezelMat);
+  bezel.rotation.x = Math.PI / 2;
+  bezel.position.y = 0.35;
+  audioVizGroup.add(bezel);
+
+  // Pulsing Diaphragm Cone
+  const coneGeo = new THREE.ConeGeometry(1.15, 0.28, 32, 1, true);
+  const coneMat = new THREE.MeshStandardMaterial({ color: 0x090e17, roughness: 0.5, metalness: 0.2 });
+  const cone = new THREE.Mesh(coneGeo, coneMat);
+  cone.rotation.x = Math.PI;
+  cone.position.y = 0.32;
+  audioVizGroup.add(cone);
+
+  // Center Dustcap
+  const capGeo = new THREE.SphereGeometry(0.35, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+  const capMat = new THREE.MeshStandardMaterial({
+    color: 0x10b981,
+    roughness: 0.2,
+    metalness: 0.8,
+    emissive: 0x064e3b,
+    emissiveIntensity: 0.4
+  });
+  const dustCap = new THREE.Mesh(capGeo, capMat);
+  dustCap.position.y = 0.22;
+  audioVizGroup.add(dustCap);
+
+  // 48 Radial Spectrum Equalizer Bars
+  const NUM_BARS = 48;
+  const vizBars = [];
+  const barGeo = new THREE.BoxGeometry(0.12, 1, 0.12);
+  barGeo.translate(0, 0.5, 0); // Scale upwards from ground
+
+  for (let i = 0; i < NUM_BARS; i++) {
+    const angle = (i / NUM_BARS) * Math.PI * 2;
+    const r = 2.45;
+    const hue = (i / NUM_BARS) * 0.45 + 0.35; // Emerald -> Cyan -> Violet
+    const color = new THREE.Color().setHSL(hue, 0.85, 0.55);
+    const barMat = new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: 0.3,
+      metalness: 0.4,
+      emissive: color,
+      emissiveIntensity: 0.35
+    });
+    const bar = new THREE.Mesh(barGeo, barMat);
+    bar.position.set(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+    bar.scale.set(1, 0.08, 1);
+    bar.castShadow = true;
+    audioVizGroup.add(bar);
+    vizBars.push(bar);
+  }
+
+  function ensureAudioGraph() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        audioCtx = new AC();
+        audioAnalyser = audioCtx.createAnalyser();
+        audioAnalyser.fftSize = 128;
+        freqData = new Uint8Array(audioAnalyser.frequencyBinCount);
+        try {
+          audioSourceNode = audioCtx.createMediaElementSource(audioEl);
+          audioSourceNode.connect(audioAnalyser);
+          audioAnalyser.connect(audioCtx.destination);
+        } catch (e) {
+          console.warn("Audio node setup:", e);
+        }
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function formatTime(sec) {
+    if (!sec || isNaN(sec)) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  function playAudioItem(item) {
+    ensureAudioGraph();
+    if (currentlyPlayingItem && currentlyPlayingItem.id === item.id && !audioEl.paused) {
+      audioEl.pause();
+      updateAudioDeckButtons();
+      renderCatalog();
+      return;
+    }
+    currentlyPlayingItem = item;
+    audioEl.src = item.url;
+    audioEl.playbackRate = parseFloat($("audioSpeed").value) || 1.0;
+    audioEl.loop = $("chkAudioLoop").checked;
+    audioEl.volume = parseFloat($("audioVolume").value) || 0.8;
+    audioEl.onerror = () => {
+      if (/\.ogg$/i.test(audioEl.src) && item.mp3Url) {
+        audioEl.src = item.mp3Url;
+        audioEl.play().catch(() => {});
+      }
+    };
+    audioEl.play().catch(e => console.warn("Audio play prevented:", e));
+    updateAudioDeckButtons();
+    renderCatalog();
+  }
+
+  function toggleAudioPlayback() {
+    if (!currentModel || !currentModel.isAudio) return;
+    ensureAudioGraph();
+    if (audioEl.paused) {
+      if (currentlyPlayingItem && currentlyPlayingItem.id === currentModel.id) {
+        audioEl.play().catch(() => {});
+      } else {
+        playAudioItem(currentModel);
+      }
+    } else {
+      audioEl.pause();
+    }
+    updateAudioDeckButtons();
+    renderCatalog();
+  }
+
+  function updateAudioDeckButtons() {
+    const isPlaying = !audioEl.paused && currentlyPlayingItem && currentModel && currentlyPlayingItem.id === currentModel.id;
+    $("btnAudioPlayDeck").textContent = isPlaying ? "⏸ Pause Audio" : "▶ Play Audio";
+    $("btnAudioPlayDeck").classList.toggle("primary", !isPlaying);
+    $("btnHeroActivate").textContent = isPlaying ? "⏸ Pause Playback" : "▶ Play Audio";
+    $("btnActivateInView").textContent = isPlaying ? "⏸ Pause Audio" : "▶ Play Audio";
+  }
+
+  // Audio element events
+  audioEl.ontimeupdate = () => {
+    if (audioEl.duration) {
+      const pct = (audioEl.currentTime / audioEl.duration) * 100;
+      $("audioScrubber").value = pct;
+      $("audioTimeDisplay").textContent = `${formatTime(audioEl.currentTime)} / ${formatTime(audioEl.duration)}`;
+    }
+  };
+  audioEl.onended = () => {
+    if (!audioEl.loop) {
+      updateAudioDeckButtons();
+      renderCatalog();
+    }
+  };
+  audioEl.onplay = () => updateAudioDeckButtons();
+  audioEl.onpause = () => updateAudioDeckButtons();
+
+  // Deck Controls
+  $("btnAudioPlayDeck").onclick = () => toggleAudioPlayback();
+  $("audioScrubber").oninput = (e) => {
+    if (audioEl.duration) {
+      audioEl.currentTime = (parseFloat(e.target.value) / 100) * audioEl.duration;
+    }
+  };
+  $("audioVolume").oninput = (e) => audioEl.volume = parseFloat(e.target.value);
+  $("audioSpeed").onchange = (e) => audioEl.playbackRate = parseFloat(e.target.value);
+  $("chkAudioLoop").onchange = (e) => audioEl.loop = e.target.checked;
+  $("btnDownloadOgg").onclick = () => {
+    if (!currentModel || !currentModel.isAudio) return;
+    const a = document.createElement("a");
+    a.href = currentModel.url;
+    a.download = currentModel.filename;
+    a.click();
+    showToast("Downloaded " + currentModel.filename);
+  };
+  $("btnDownloadMp3").onclick = () => {
+    if (!currentModel || !currentModel.isAudio) return;
+    const a = document.createElement("a");
+    a.href = currentModel.mp3Url || currentModel.url;
+    a.download = (currentModel.shortName.toLowerCase().replace(/\s+/g, '_')) + ".mp3";
+    a.click();
+    showToast("Downloaded " + a.download);
+  };
+
+  // Toast Notification
+  function showToast(msg) {
+    const toast = $("toast");
+    $("toastMsg").textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3200);
+  }
+
+  // Load Catalog and Fleet Selection
+  async function init() {
+    try {
+      const [catRes, manifestRes, fleetRes] = await Promise.all([
+        fetch('assets/models/gta/vehicle-catalog.json').catch(() => null),
+        fetch('assets/models/gta/manifest.json'),
+        fetch('/api/fleet-selection').catch(() => null)
+      ]);
+
+      let vehCatalog = [];
+      if (catRes && catRes.ok) {
+        vehCatalog = await catRes.json();
+      }
+
+      if (fleetRes && fleetRes.ok) {
+        const fData = await fleetRes.json();
+        fleetSelection = fData.selection || {};
+      }
+
+      const manifest = manifestRes.ok ? await manifestRes.json() : {};
+      catalog = [];
+
+      // Add vehicle catalog items
+      const knownUrls = new Set();
+      vehCatalog.forEach(v => {
+        v.typeCategory = 'Vehicles';
+        catalog.push(v);
+        knownUrls.add(v.url);
+      });
+
+      // Add vehicles from manifest if not in vehCatalog (e.g. armored_truck)
+      if (manifest.vehicles) {
+        Object.keys(manifest.vehicles).forEach(k => {
+          const vDef = manifest.vehicles[k];
+          const url = 'assets/models/gta/' + vDef.file;
+          if (!knownUrls.has(url)) {
+            const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            catalog.push({
+              id: 'manifest_veh_' + k,
+              filename: vDef.file.split('/').pop(),
+              name: `${shortName} (${vDef.style || 'Custom Asset'})`,
+              shortName: shortName,
+              packId: 'active',
+              packName: 'Active Fleet',
+              slot: k,
+              category: 'Vehicles',
+              typeCategory: 'Vehicles',
+              url: url,
+              sizeBytes: 56000,
+              sizeKB: '56.5 KB'
+            });
+            knownUrls.add(url);
+          }
+        });
+      }
+
+      // Add props
+      if (manifest.props) {
+        Object.keys(manifest.props).forEach(k => {
+          const pDef = manifest.props[k];
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          catalog.push({
+            id: 'prop_' + k,
+            filename: pDef.file.split('/').pop(),
+            name: `${shortName} (Prop)`,
+            shortName: shortName,
+            packId: 'props',
+            packName: 'City Props',
+            slot: 'prop',
+            category: 'Props',
+            typeCategory: 'Props',
+            url: 'assets/models/gta/' + pDef.file,
+            sizeBytes: 30000,
+            sizeKB: (pDef.tris || 300) + ' tris'
+          });
+        });
+      }
+
+      // Add characters
+      if (manifest.characters) {
+        Object.keys(manifest.characters).forEach(k => {
+          const cDef = manifest.characters[k];
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          catalog.push({
+            id: 'char_' + k,
+            filename: cDef.file.split('/').pop(),
+            name: `${shortName} (Character)`,
+            shortName: shortName,
+            packId: 'characters',
+            packName: 'Pedestrians',
+            slot: 'character',
+            category: 'Characters',
+            typeCategory: 'Characters',
+            url: 'assets/models/gta/' + cDef.file,
+            sizeBytes: 25000,
+            sizeKB: (cDef.tris || 600) + ' tris'
+          });
+        });
+      }
+
+      // Add weapons
+      if (manifest.weapons) {
+        Object.keys(manifest.weapons).forEach(k => {
+          const wDef = manifest.weapons[k];
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          catalog.push({
+            id: 'weapon_' + k,
+            filename: wDef.file.split('/').pop(),
+            name: `${shortName} (Weapon)`,
+            shortName: shortName,
+            packId: 'weapons',
+            packName: 'Weapons',
+            slot: 'weapon',
+            category: 'Weapons',
+            typeCategory: 'Weapons',
+            url: 'assets/models/gta/' + wDef.file,
+            sizeBytes: 20000,
+            sizeKB: (wDef.tris || 400) + ' tris'
+          });
+        });
+      }
+
+      // Add landmarks
+      if (manifest.landmarks) {
+        Object.keys(manifest.landmarks).forEach(k => {
+          const lDef = manifest.landmarks[k];
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          catalog.push({
+            id: 'landmark_' + k,
+            filename: lDef.file.split('/').pop(),
+            name: `${shortName} (Landmark)`,
+            shortName: shortName,
+            packId: 'landmarks',
+            packName: 'Landmarks',
+            slot: 'landmark',
+            category: 'Landmarks',
+            typeCategory: 'Landmarks',
+            url: 'assets/models/gta/' + lDef.file,
+            sizeBytes: 60000,
+            sizeKB: (lDef.height_m ? lDef.height_m + 'm · ' : '') + (lDef.tris || 1000) + ' tris'
+          });
+        });
+      }
+
+      // Add buildings
+      if (manifest.buildings) {
+        Object.keys(manifest.buildings).forEach(k => {
+          const bDef = manifest.buildings[k];
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          catalog.push({
+            id: 'building_' + k,
+            filename: bDef.file.split('/').pop(),
+            name: `${shortName} (Building)`,
+            shortName: shortName,
+            packId: 'buildings',
+            packName: 'Buildings',
+            slot: 'building',
+            category: 'Buildings',
+            typeCategory: 'Buildings',
+            url: 'assets/models/gta/' + bDef.file,
+            sizeBytes: 50000,
+            sizeKB: (bDef.tris || 1200) + ' tris'
+          });
+        });
+      }
+
+      // Add houses
+      if (manifest.houses) {
+        Object.keys(manifest.houses).forEach(k => {
+          const hDef = manifest.houses[k];
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          catalog.push({
+            id: 'house_' + k,
+            filename: hDef.file.split('/').pop(),
+            name: `${shortName} (House)`,
+            shortName: shortName,
+            packId: 'houses',
+            packName: 'Houses',
+            slot: 'house',
+            category: 'Houses',
+            typeCategory: 'Houses',
+            url: 'assets/models/gta/' + hDef.file,
+            sizeBytes: 40000,
+            sizeKB: (hDef.tris || 800) + ' tris'
+          });
+        });
+      }
+
+      // Add Audio Sound Effects (SFX)
+      if (manifest.audio) {
+        const sfxMeta = {
+          gunshot: {
+            desc: '★ ElevenLabs AI Studio SFX: Close-up 9mm handgun firing in concrete urban alleyway, supersonic muzzle crack, heavy sub-bass chest thump, metallic slide rack, echoing city slapback.',
+            dsp: '[AI Acoustic Engine]\n  ├── Model: ElevenLabs Studio Sound Effects\n  ├── Source Prompt: Close-up 9mm handgun firing in narrow concrete urban alleyway\n  ├── Sample Rate: 48,000 Hz Stereo (2.00s)\n  └── Mastering: Zero-latency transient trim · DC Block · -0.8 dBFS peak limit'
+          },
+          boom: {
+            desc: '★ ElevenLabs AI Studio SFX: Massive vehicle gas tank explosion, instantaneous high-pressure shockwave, heavy seismic low-end rumble, fireball whoosh, scattering metal shrapnel.',
+            dsp: '[AI Acoustic Engine]\n  ├── Model: ElevenLabs Studio Sound Effects\n  ├── Source Prompt: Massive vehicle gas tank explosion, instantaneous high-pressure shockwave\n  ├── Sample Rate: 48,000 Hz Stereo (1.00s)\n  └── Mastering: Zero-latency shockwave trim · DC Block · -0.8 dBFS peak limit'
+          },
+          crash: {
+            desc: '★ ElevenLabs AI Studio SFX: Violent vehicle crash collision, heavy metal bumper crumpling, sheet metal warping, tempered safety glass shattering and raining down on pavement.',
+            dsp: '[AI Acoustic Engine]\n  ├── Model: ElevenLabs Studio Sound Effects\n  ├── Source Prompt: Violent car crash collision at 45 mph, metal bumper crumpling, glass shattering\n  ├── Sample Rate: 48,000 Hz Stereo (2.00s)\n  └── Mastering: Immediate impact trim · DC Block · -0.8 dBFS peak limit'
+          },
+          engine_idle: {
+            desc: '★ ElevenLabs AI Studio SFX: V8 muscle car rumbling at idle, deep throaty exhaust burble, low-frequency rhythmic camshaft lope, subtle mechanical valvetrain tick. Mastered 250ms seamless loop.',
+            dsp: '[AI Acoustic Engine]\n  ├── Model: ElevenLabs Studio Sound Effects\n  ├── Source Prompt: V8 muscle car rumbling at idle, deep throaty exhaust burble, rhythmic camshaft lope\n  ├── Sample Rate: 48,000 Hz Stereo (2.75s)\n  └── Boundary Mastering: 250ms Equal-Power Sinusoidal Crossfade (Zero-Click Infinite Loop)'
+          },
+          engine_loop: {
+            desc: '3400 RPM Roaring V8 Acceleration: 226.66 Hz cylinder firing harmonics, 280-950Hz high-flow intake growl, high-velocity exhaust buffeting. Seamless clickless 2.0s loop.',
+            dsp: '[High-RPM Harmonic Series]\n  └── 3400 RPM V8 Engine Order: 226.66 Hz power strokes (8 harmonics)\n[Induction Acoustics]\n  └── High-Flow Intake Growl: Bandpass 280Hz - 950Hz\n[Exhaust Manifold]\n  └── High-Pressure Gas Turbulence: Bandpass 55Hz - 380Hz\n[Loop Boundary]\n  └── Seamless 150ms Crossfade Window (Zero-Click Seamless 2.0s Loop)\n[Mastering]\n  └── 48 kHz / 24-bit Stereo Master · Stereo Panning Delay (3ms)'
+          },
+          siren_loop: {
+            desc: '★ ElevenLabs AI Studio SFX: Modern American police cruiser emergency siren in wail mode, electronic dual-tone horn speaker with downtown skyscraper reverb. Mastered 500ms seamless loop.',
+            dsp: '[AI Acoustic Engine]\n  ├── Model: ElevenLabs Studio Sound Effects\n  ├── Source Prompt: Modern American police cruiser emergency siren in wail mode, downtown skyscraper reverb\n  ├── Sample Rate: 48,000 Hz Stereo (15.50s)\n  └── Boundary Mastering: 500ms Equal-Power Sinusoidal Crossfade (Zero-Click Continuous Loop)'
+          },
+          horn: {
+            desc: 'Dual-Tone Detroit Automotive Horn Chord: F#4 (370Hz) + A#4 (466Hz) with brass acoustic bell resonance, chorus shimmer, and fast attack.',
+            dsp: '[Dual-Tone Automotive Chord]\n  ├── Horn 1: F#4 370 Hz + 2nd Harmonic + Detuned Chorus\n  └── Horn 2: A#4 466 Hz + 2nd Harmonic + Detuned Chorus\n[Acoustic Bell]\n  └── Fast 20ms Attack · Exponential 90ms Brass Reverb Release\n[Spatial Taps]\n  └── Street Early Reflections (18ms & 45ms)'
+          },
+          punch: {
+            desc: 'Heavy Melee Hit: Sharp knuckles-on-bone impact crack (1.4-6.5kHz), visceral torso displacement thump (40-125Hz), rapid decay.',
+            dsp: '[Impact Transient]\n  └── Knuckle Bone Crack: Bandpass 1.4kHz - 6.5kHz (2.2x)\n[Visceral Body Thump]\n  └── Torso Displacement Drop: 125Hz -> 40Hz (2.5x)\n[Soft Tissue Wash]\n  └── Muscle & Clothing Rustle: Lowpass 350Hz (1.2x)'
+          },
+          skid: {
+            desc: 'Tire Screech on Asphalt: High-friction stick-slip rubber squeal with 14Hz flutter modulation + asphalt grit texture.',
+            dsp: '[Stick-Slip Friction]\n  └── Modulated Rubber Squeal: 950Hz - 1300Hz with 14Hz Flutter\n[Asphalt Texture]\n  └── Road Grit Friction Noise: Bandpass 700Hz - 4.2kHz\n[Stereo Spread]\n  └── Left/Right Tire Skid Micro-Delay (4ms)'
+          },
+          pickup_cash: {
+            desc: 'Arcade Cash Reward: Crisp register bell ding + crystalline C7 (2093Hz) & G7 (3136Hz) metallic coin cascade.',
+            dsp: '[Bell Chimes]\n  ├── C7 Bell Ding: 2093 Hz (120ms decay)\n  ├── G7 Crystal Ring: 3136 Hz (90ms decay)\n  └── C8 Sparkle: 4186 Hz (50ms decay)\n[Coin Cascade]\n  └── Metallic Coin Clink: Highpass 4.5kHz'
+          },
+          pickup_item: {
+            desc: 'Tactical Equipment Grab: Mechanical firearm cocking click + clean rising dual confirmation chimes (1046Hz & 1568Hz).',
+            dsp: '[Mechanical Action]\n  └── Tactical Weapon Cocking Click: Bandpass 1.8kHz - 8.0kHz\n[Confirmation Chime]\n  └── Ascending Dual Tone: C6 (1046.5Hz) -> G6 (1568Hz)'
+          },
+          footstep: {
+            desc: 'Footstep: Solid shoe sole impact on sidewalk concrete + pavement mass density resonance.',
+            dsp: '[Heel Strike]\n  └── Shoe Sole Leather/Rubber Scuff: Bandpass 600Hz - 3.2kHz\n[Pavement Resonance]\n  └── Concrete Slab Density Thud: 140Hz downwards'
+          },
+          scream: {
+            desc: 'Pedestrian Panic Cry: Multi-formant vocal cord scream (850Hz, 1450Hz, 2900Hz) with 7.5Hz terror vibrato and aspiration breath.',
+            dsp: '[Glottal Oscillator]\n  └── Distressed Contour: 260Hz -> 485Hz -> 280Hz + 7.5Hz Terror Vibrato\n[Vocal Formants]\n  ├── Throat Formant 1: 850 Hz (/a/ vowel)\n  ├── Oral Formant 2: 1450 Hz (/e/ vowel)\n  └── Nasal Formant 3: 2900 Hz\n[Aspiration]\n  └── Breath Noise: Bandpass 1.6kHz - 4.5kHz'
+          },
+          spray: {
+            desc: 'Aerosol Spray Can: High-pressure nozzle atomization hiss + 4 internal steel marble agitation clicks.',
+            dsp: '[Aerosol Nozzle]\n  └── Atomized Pressure Hiss: Bandpass 2.8kHz - 14.0kHz\n[Internal Agitation]\n  └── 4 Stainless Steel Marble Clicks (3.2kHz - 8.5kHz)'
+          },
+          splash: {
+            desc: 'Water Splash: Cavity displacement plop (190Hz -> 60Hz downward chirp) + bubbling droplet spray.',
+            dsp: '[Cavity Impact]\n  └── Water Displacement Plop: 190Hz -> 60Hz drop\n[Droplet Spray]\n  └── High-Frequency Water Bubble Spray: Bandpass 900Hz - 6.0kHz'
+          },
+          bust: {
+            desc: 'Busted / Mission Failed Sting: Dissonant minor-second brass hit (Eb + E) + seismic sub-bass drop + heavy iron jail cell door slam.',
+            dsp: '[Ominous Sub Drop]\n  └── 80Hz -> 32Hz Sub-Bass Rumble\n[Dissonant Sting]\n  └── Minor Second Brass Hit: Eb (155.56Hz) + E Natural (164.81Hz)\n[Jailbreak Lock Impact]\n  └── Heavy Steel Cell Door Slam: Bandpass 180Hz - 2.4kHz @ 120ms'
+          }
+        };
+
+        Object.keys(manifest.audio).forEach(k => {
+          const file = manifest.audio[k];
+          const isElevenLabs = ['gunshot', 'boom', 'crash', 'engine_idle', 'siren_loop'].includes(k);
+          const shortName = k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          const oggUrl = /^audio\//.test(file) ? 'assets/' + file : 'assets/models/gta/' + file;
+          const meta = sfxMeta[k] || { desc: 'Studio 48 kHz stereo audio master', dsp: 'Acoustic DSP synthesis chain' };
+          catalog.push({
+            id: 'audio_' + k,
+            filename: file.split('/').pop(),
+            name: `${shortName} (SFX)`,
+            shortName: shortName,
+            packId: isElevenLabs ? 'elevenlabs' : 'audio',
+            packName: isElevenLabs ? 'ElevenLabs AI' : 'Studio SFX',
+            slot: 'audio',
+            category: isElevenLabs ? 'ElevenLabs SFX' : 'Audio',
+            typeCategory: 'Audio',
+            isAudio: true,
+            isElevenLabs: isElevenLabs,
+            desc: meta.desc,
+            dspInfo: meta.dsp,
+            url: oggUrl,
+            mp3Url: oggUrl.replace(/\.ogg$/i, '.mp3'),
+            sizeBytes: 38000,
+            sizeKB: '48 kHz Stereo'
+          });
+        });
+      }
+
+      // Add Radio Station Tracks
+      if (manifest.radio) {
+        manifest.radio.forEach((r, idx) => {
+          const file = r.file || r.url;
+          const title = r.title || file.split('/').pop().replace(/\.[^.]+$/, '');
+          const url = /^audio\//.test(file) ? 'assets/' + file : 'assets/models/gta/' + file;
+          catalog.push({
+            id: 'radio_' + idx,
+            filename: file.split('/').pop(),
+            name: `${title} (Radio)`,
+            shortName: title,
+            packId: 'radio',
+            packName: 'Radio Station',
+            slot: 'radio',
+            category: 'Radio',
+            typeCategory: 'Radio',
+            isAudio: true,
+            isRadio: true,
+            desc: `Brow City In-Vehicle Radio Music Track: "${title}"`,
+            dspInfo: `[Vehicle Radio Streaming Channel]\n  ├── Track: ${title}\n  ├── Source: ${file}\n  ├── Codec: HTML5 Audio Streaming\n  └── Bus: AudioBus In-Game Radio Deck`,
+            url: url,
+            mp3Url: url,
+            sizeBytes: 5000000,
+            sizeKB: 'Stereo Audio'
+          });
+        });
+      }
+
+      $("totalModelsBadge").textContent = catalog.length + " Assets Available";
+
+      renderCatalog();
+
+      // Select initial vehicle
+      const initial = catalog.find(c => c.slot === 'armored_truck') || catalog.find(c => c.slot === 'sedan' && isSlotActive(c)) || catalog[0];
+      if (initial) selectVehicle(initial);
+
+    } catch (e) {
+      console.error(e);
+      $("vpTitle").textContent = "Error loading catalog: " + e.message;
+    }
+  }
+
+  // Check if a vehicle card is currently active for its slot
+  function isSlotActive(v) {
+    const sel = fleetSelection[v.slot];
+    if (sel && sel.modelId === v.id) return true;
+    if (sel && sel.url === v.url) return true;
+    // Fallback: if in active pack and no custom selection
+    if (!sel && v.packId === 'active') return true;
+    return false;
+  }
+
+  // Render the vehicle cards list
+  function renderCatalog() {
+    const list = $("vehicleList");
+    list.innerHTML = "";
+
+    // Filter
+    let filtered = catalog.filter(v => {
+      if (activeCategory !== 'all') {
+        const catMatch = (v.category && v.category.toLowerCase() === activeCategory.toLowerCase()) ||
+                         (v.typeCategory && v.typeCategory.toLowerCase() === activeCategory.toLowerCase());
+        if (!catMatch) return false;
+      }
+      if (activePack !== 'all' && v.packId !== activePack) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (v.name && v.name.toLowerCase().includes(q)) ||
+               (v.slot && v.slot.toLowerCase().includes(q)) ||
+               (v.category && v.category.toLowerCase().includes(q));
+      }
+      return true;
+    });
+
+    // Group by Slot or Category
+    const slots = {};
+    filtered.forEach(v => {
+      const grp = (v.typeCategory && v.typeCategory !== 'Vehicles') ? v.typeCategory : v.slot;
+      if (!slots[grp]) slots[grp] = [];
+      slots[grp].push(v);
+    });
+
+    Object.keys(slots).sort().forEach(slot => {
+      const items = slots[slot];
+      const slotHeader = document.createElement("div");
+      slotHeader.className = "slot-header";
+      slotHeader.innerHTML = `<span>${slot.toUpperCase()}</span> <span class="slot-count-badge">${items.length} items</span>`;
+      list.appendChild(slotHeader);
+
+      items.forEach(v => {
+        const isVehicle = (v.typeCategory === 'Vehicles' || !v.typeCategory);
+        const isAudio = v.isAudio;
+        const isTicked = isVehicle && isSlotActive(v);
+        const isViewing = currentModel && currentModel.id === v.id;
+        const isPlayingThis = isAudio && currentlyPlayingItem && currentlyPlayingItem.id === v.id && !audioEl.paused;
+
+        const card = document.createElement("div");
+        card.className = "vehicle-card" + (isTicked ? " active-slot" : "") + (isViewing ? " viewing" : "");
+        card.dataset.id = v.id;
+
+        card.innerHTML = `
+          <button class="tick-btn ${isAudio ? 'audio-play-btn ' + (isPlayingThis ? 'playing' : '') : (isTicked ? 'ticked' : '')}" title="${isAudio ? (isPlayingThis ? 'Pause audio preview' : 'Play ' + v.shortName) : (isVehicle ? (isTicked ? 'Active in-game model for ' + v.slot : 'Click to activate this model for ' + v.slot) : 'Inspect 3D model')}">
+            ${isAudio ? (isPlayingThis ? '⏸' : '▶') : (isVehicle ? (isTicked ? '✔' : '○') : '👁️')}
+          </button>
+          <div class="card-info">
+            <div class="card-title">
+              <span>${v.shortName}</span>
+              ${isTicked ? '<span class="active-indicator">✔ IN-GAME</span>' : (isAudio ? '<span class="active-indicator" style="color:var(--cyan);">48 kHz</span>' : '')}
+            </div>
+            <div class="card-sub">
+              <span class="pack-tag ${v.packId}">${v.category}</span>
+              <span>${v.sizeKB}</span>
+            </div>
+          </div>
+        `;
+
+        // Clicking the tick/play button
+        const tickBtn = card.querySelector(".tick-btn");
+        tickBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (isAudio) {
+            selectVehicle(v);
+          } else if (isVehicle) {
+            activateVehicle(v);
+          } else {
+            selectVehicle(v);
+          }
+        };
+
+        // Clicking card selects it for 3D inspection / Audio playback
+        card.onclick = () => selectVehicle(v);
+
+        list.appendChild(card);
+      });
+    });
+  }
+
+  // Activate vehicle for its in-game slot
+  async function activateVehicle(v) {
+    try {
+      const res = await fetch('/api/select-vehicle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slot: v.slot,
+          modelId: v.id,
+          modelUrl: v.url,
+          modelName: v.shortName,
+          packId: v.packId
+        })
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to activate");
+
+      // Update local fleetSelection
+      fleetSelection[v.slot] = {
+        modelId: v.id,
+        url: v.url,
+        name: v.shortName,
+        packId: v.packId
+      };
+
+      showToast(`✔ ${v.shortName} activated for in-game [${v.slot.toUpperCase()}]!`);
+
+      // Refresh cards UI
+      renderCatalog();
+      updateInspectorView();
+
+    } catch (e) {
+      console.error(e);
+      showToast("Activation error: " + e.message);
+    }
+  }
+
+  // Select a vehicle or audio asset and load it into the 3D scene
+  function selectVehicle(v) {
+    currentModel = v;
+    const isVehicle = (v.typeCategory === 'Vehicles' || !v.typeCategory);
+    const isAudio = v.isAudio;
+    $("vpTitle").textContent = v.shortName;
+    $("vpMeta").textContent = isAudio ? (v.isRadio ? `Radio Station · ${v.packName} · ${v.sizeKB}` : `Studio SFX · ${v.packName} · ${v.sizeKB}`) : (isVehicle ? `Slot: ${v.slot} · ${v.packName} · ${v.sizeKB}` : `${v.category} · ${v.packName} · ${v.sizeKB}`);
+
+    // Highlight card
+    document.querySelectorAll(".vehicle-card").forEach(c => {
+      c.classList.toggle("viewing", c.dataset.id === v.id);
+    });
+
+    updateInspectorView();
+
+    if (isAudio) {
+      if (currentObject) {
+        scene.remove(currentObject);
+        currentObject = null;
+      }
+      audioVizGroup.visible = true;
+      controls.target.set(0, 0.45, 0);
+      camera.position.set(3.8, 2.2, 4.2);
+      controls.update();
+      playAudioItem(v);
+    } else {
+      audioVizGroup.visible = false;
+      if (!audioEl.paused) audioEl.pause();
+      updateAudioDeckButtons();
+      load3DModel(v.url);
+    }
+  }
+
+  // Update right inspector panel
+  function updateInspectorView() {
+    if (!currentModel) return;
+    const v = currentModel;
+    const isVehicle = (v.typeCategory === 'Vehicles' || !v.typeCategory);
+    const isAudio = v.isAudio;
+    const isTicked = isVehicle && isSlotActive(v);
+    const isPlaying = !audioEl.paused && currentlyPlayingItem && currentlyPlayingItem.id === v.id;
+
+    $("heroTitle").textContent = v.shortName;
+    $("heroSlot").textContent = isAudio ? (v.isRadio ? "In-Game Radio Station" : "In-Game Sound Effect") : (isVehicle ? `Slot: ${v.slot.toUpperCase()} (${v.category})` : `Category: ${v.category}`);
+    $("heroPackTag").textContent = v.packName;
+    $("fileSize").textContent = v.sizeKB;
+
+    const heroCard = $("heroCard");
+    heroCard.classList.toggle("is-active", isTicked || isAudio);
+
+    const badge = $("heroStatusBadge");
+    badge.className = "status-badge" + ((isTicked || isAudio) ? " active" : "");
+    badge.textContent = isAudio ? "✔ Active In-Game Audio" : (isVehicle ? (isTicked ? "✔ Active In-Game Fleet" : "Inactive Variant") : "✔ In-Game Model");
+
+    const heroBtn = $("btnHeroActivate");
+    if (isAudio) {
+      heroBtn.textContent = isPlaying ? "⏸ Pause Audio Playback" : "▶ Play Audio Track";
+      heroBtn.classList.add("primary");
+      heroBtn.onclick = () => toggleAudioPlayback();
+    } else if (isTicked) {
+      heroBtn.textContent = "✔ Currently Active Model";
+      heroBtn.classList.remove("primary");
+      heroBtn.onclick = () => activateVehicle(v);
+    } else {
+      heroBtn.textContent = isVehicle ? `✔ Activate For [${v.slot.toUpperCase()}]` : "✔ In-Game Model";
+      heroBtn.classList.toggle("primary", isVehicle);
+      heroBtn.onclick = () => isVehicle ? activateVehicle(v) : null;
+    }
+
+    if (isAudio) {
+      $("specBox3D").style.display = "none";
+      $("paintBox").style.display = "none";
+      $("specBoxAudio").style.display = "block";
+      $("audioDescText").textContent = v.desc || "Studio 48 kHz stereo audio master";
+      $("nodeTreeTitle").textContent = "Acoustic DSP Synthesis Chain";
+      $("nodeTree").textContent = v.dspInfo || "Acoustic synthesis breakdown...";
+    } else {
+      $("specBox3D").style.display = "block";
+      $("paintBox").style.display = isVehicle ? "block" : "none";
+      $("specBoxAudio").style.display = "none";
+      $("nodeTreeTitle").textContent = "Model Hierarchy & Wheels";
+    }
+
+    // Viewport banner
+    $("vpSlotNotice").textContent = isAudio ? (v.isRadio ? "Radio: " + v.shortName : "SFX: " + v.shortName) : `Slot: ${v.slot.toUpperCase()}`;
+    $("vpActiveNotice").textContent = isAudio ? "✔ Active 48 kHz stereo game audio" : (isTicked ? "✔ Currently active in-game vehicle" : "Inactive variant — click to activate");
+    const vpBtn = $("btnActivateInView");
+    if (isAudio) {
+      vpBtn.textContent = isPlaying ? "⏸ Pause Audio" : "▶ Play Audio";
+      vpBtn.classList.add("primary");
+      vpBtn.onclick = () => toggleAudioPlayback();
+    } else {
+      vpBtn.textContent = isTicked ? "✔ In-Game Active" : `✔ Use for ${v.slot.toUpperCase()}`;
+      vpBtn.classList.toggle("primary", !isTicked);
+      vpBtn.onclick = () => activateVehicle(v);
+    }
+  }
+
+  // Load GLB Model into 3D scene
+  function load3DModel(url) {
+    if (currentObject) {
+      scene.remove(currentObject);
+      currentObject = null;
+    }
+
+    $("vpTitle").textContent = "Loading " + currentModel.shortName + "…";
+
+    gltfLoader.load(url, (gltf) => {
+      currentObject = gltf.scene;
+      currentObject.name = currentModel.shortName;
+
+      // Ensure shadows and materials
+      let triCount = 0;
+      let vertCount = 0;
+      let meshCount = 0;
+
+      currentObject.traverse(child => {
+        if (child.isMesh) {
+          meshCount++;
+          child.castShadow = true;
+          child.receiveShadow = true;
+
+          if (child.geometry) {
+            const geo = child.geometry;
+            if (geo.index) {
+              triCount += geo.index.count / 3;
+            } else if (geo.attributes.position) {
+              triCount += geo.attributes.position.count / 3;
+            }
+            if (geo.attributes.position) {
+              vertCount += geo.attributes.position.count;
+            }
+          }
+
+          // Ensure material flat shading or standard
+          if (child.material) {
+            child.material.side = THREE.DoubleSide;
+          }
+        }
+      });
+
+      // Compute bounding box and center at ground level Y=0
+      const box = new THREE.Box3().setFromObject(currentObject);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      // Center car at origin
+      currentObject.position.x = -center.x;
+      currentObject.position.z = -center.z;
+      currentObject.position.y = -box.min.y;
+
+      scene.add(currentObject);
+
+      // Update Inspector Stats
+      $("triCount").textContent = Math.round(triCount).toLocaleString();
+      $("vertCount").textContent = Math.round(vertCount).toLocaleString();
+      $("meshCount").textContent = meshCount;
+      $("dimText").textContent = `Dimensions: L ${size.z.toFixed(2)}m × W ${size.x.toFixed(2)}m × H ${size.y.toFixed(2)}m`;
+
+      // Update node tree view
+      updateNodeTree(currentObject);
+
+      $("vpTitle").textContent = currentModel.shortName;
+
+      // Adjust camera distance to fit vehicle
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = camera.fov * (Math.PI / 180);
+      const cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.8;
+
+      controls.target.set(0, size.y * 0.45, 0);
+      camera.position.set(cameraDistance * 0.9, size.y * 0.7 + 0.5, cameraDistance * 1.1);
+      camera.lookAt(controls.target);
+      controls.update();
+
+    }, undefined, (err) => {
+      console.error(err);
+      $("vpTitle").textContent = "Failed to load 3D model";
+    });
+  }
+
+  // Update Node Tree
+  function updateNodeTree(obj) {
+    const lines = [];
+    function walk(node, depth = 0) {
+      const indent = "  ".repeat(depth);
+      const type = node.isMesh ? "[Mesh]" : "[Group]";
+      lines.push(`${indent}${type} ${node.name || 'unnamed'}`);
+      if (node.children) {
+        node.children.forEach(c => walk(c, depth + 1));
+      }
+    }
+    walk(obj);
+    $("nodeTree").textContent = lines.join("\n");
+  }
+
+  // Apply Custom Vehicle Paint Color
+  function applyPaintColor(hex) {
+    if (!currentObject) return;
+    const color = new THREE.Color(hex);
+
+    currentObject.traverse(child => {
+      if (child.isMesh && child.material) {
+        const mat = child.material;
+        const name = (mat.name || child.name || '').toLowerCase();
+
+        // Never re-tint the collider visualization shells
+        if (name.includes('collider')) return;
+
+        // Target body, paint, primary materials, or non-wheel/glass materials
+        if (name.includes('paint') || name.includes('body') || name.includes('car') ||
+            (!name.includes('wheel') && !name.includes('tire') && !name.includes('glass') && !name.includes('light'))) {
+          if (mat.color) {
+            mat.color.copy(color);
+            mat.needsUpdate = true;
+          }
+        }
+      }
+    });
+  }
+
+  // Lighting Mode Presets
+  function setLightingPreset(mode) {
+    if (mode === 'sunset') {
+      scene.background.set(0x181014);
+      keyLight.color.set(0xffa044);
+      keyLight.intensity = 1.5;
+      fillLight.color.set(0x7c3aed);
+      fillLight.intensity = 0.8;
+      rimLight.color.set(0xf59e0b);
+    } else if (mode === 'cyberpunk') {
+      scene.background.set(0x060913);
+      keyLight.color.set(0x06b6d4);
+      keyLight.intensity = 1.6;
+      fillLight.color.set(0xd946ef);
+      fillLight.intensity = 1.2;
+      rimLight.color.set(0x3b82f6);
+    } else { // Studio
+      scene.background.set(0x0c121b);
+      keyLight.color.set(0xffffff);
+      keyLight.intensity = 1.2;
+      fillLight.color.set(0x7090b0);
+      fillLight.intensity = 0.7;
+      rimLight.color.set(0x38bdf8);
+    }
+  }
+
+  // Event Handlers
+  $("chkAutoRotate").onchange = (e) => controls.autoRotate = e.target.checked;
+  $("chkGrid").onchange = (e) => floorGroup.visible = e.target.checked;
+  $("chkAxes").onchange = (e) => axes.visible = e.target.checked;
+  $("selLighting").onchange = (e) => setLightingPreset(e.target.value);
+
+  $("chkWireframe").onchange = (e) => {
+    if (!currentObject) return;
+    const wire = e.target.checked;
+    currentObject.traverse(child => {
+      if (child.isMesh && child.material) {
+        child.material.wireframe = wire;
+      }
+    });
+  };
+
+  $("btnFrameCamera").onclick = () => {
+    if (!currentObject) return;
+    const box = new THREE.Box3().setFromObject(currentObject);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    controls.target.set(0, size.y * 0.45, 0);
+    camera.position.set(maxDim * 1.5, size.y * 0.7 + 0.5, maxDim * 1.8);
+    controls.update();
+  };
+
+  // Swatches
+  document.querySelectorAll(".swatch").forEach(s => {
+    s.onclick = () => {
+      const col = s.dataset.color;
+      $("customColorPicker").value = col;
+      applyPaintColor(col);
+    };
+  });
+  $("customColorPicker").oninput = (e) => applyPaintColor(e.target.value);
+
+  // Search and Filters
+  $("searchInput").oninput = (e) => {
+    searchQuery = e.target.value;
+    renderCatalog();
+  };
+
+  $("packFilter").onchange = (e) => {
+    activePack = e.target.value;
+    renderCatalog();
+  };
+
+  $("categoryChips").onclick = (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeCategory = chip.dataset.cat;
+    renderCatalog();
+  };
+
+  // Reset Fleet to Default
+  $("btnResetFleet").onclick = async () => {
+    try {
+      $("btnResetFleet").disabled = true;
+      $("btnResetFleet").textContent = "⏳ Resetting...";
+      const res = await fetch('/api/reset-fleet', { method: 'POST' });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.error || "Reset failed");
+
+      // Reset local fleetSelection to active fleet
+      fleetSelection = {};
+      catalog.filter(c => c.packId === 'active').forEach(c => {
+        fleetSelection[c.slot] = {
+          modelId: c.id,
+          url: c.url,
+          name: c.shortName,
+          packId: c.packId
+        };
+      });
+
+      renderCatalog();
+      updateInspectorView();
+      showToast("✔ Fleet successfully reset to default crisp low-poly vehicles!");
+    } catch (e) {
+      showToast("Reset error: " + e.message);
+    } finally {
+      $("btnResetFleet").disabled = false;
+      $("btnResetFleet").textContent = "🔄 Reset Fleet to Default";
+    }
+  };
+
+  // Export current GLB or Audio Asset
+  $("btnExportGlb").onclick = () => {
+    if (!currentModel) return;
+    const a = document.createElement("a");
+    a.href = currentModel.url;
+    a.download = currentModel.filename;
+    a.click();
+    showToast("Downloaded " + currentModel.filename);
+  };
+
+  // Window Resize
+  function onResize() {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  }
+  window.addEventListener("resize", onResize);
+
+  // Animation Loop
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+
+    // 3D Audio Visualizer Spectrum Animation
+    if (audioVizGroup.visible && audioAnalyser && freqData) {
+      audioAnalyser.getByteFrequencyData(freqData);
+      const bassVal = (freqData[1] + freqData[2] + freqData[3]) / (3 * 255.0);
+      dustCap.position.y = 0.22 + bassVal * 0.16;
+      cone.position.y = 0.32 + bassVal * 0.10;
+      capMat.emissiveIntensity = 0.3 + bassVal * 1.5;
+
+      for (let i = 0; i < NUM_BARS; i++) {
+        const bin = Math.min(freqData.length - 1, Math.floor((i / NUM_BARS) * (freqData.length * 0.85)));
+        const val = freqData[bin] / 255.0;
+        const targetHeight = 0.08 + Math.pow(val, 1.35) * 2.8;
+        vizBars[i].scale.y += (targetHeight - vizBars[i].scale.y) * 0.35;
+        vizBars[i].material.emissiveIntensity = 0.2 + val * 1.4;
+      }
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  init();
+  animate();
+
+})();
+</script>
+
+</body>
+</html>

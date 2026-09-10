@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brow City — 27 Vehicle Fleet Showcase</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; overflow: hidden; background: #121820; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #fff; }
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(15, 23, 36, 0.94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 18px; display: flex; align-items: center; justify-content: space-between;
+    z-index: 100;
+  }
+  .title-group { display: flex; align-items: baseline; gap: 12px; }
+  .title-group h1 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; color: #7ee787; }
+  .title-group span { font-size: 12px; color: #8b949e; }
+  .nav-tabs { display: flex; gap: 6px; }
+  .tab-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    color: #c9d1d9; padding: 6px 12px; border-radius: 6px; font-size: 12px;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .tab-btn.active { background: #238636; border-color: #2ea043; color: #fff; font-weight: 600; }
+  .controls-group { display: flex; gap: 8px; align-items: center; }
+  .ctrl-btn {
+    background: rgba(56, 139, 253, 0.15); border: 1px solid rgba(56, 139, 253, 0.4);
+    color: #58a6ff; padding: 6px 12px; border-radius: 6px; font-size: 12px;
+    cursor: pointer; font-weight: 600; transition: all 0.15s ease;
+  }
+  .ctrl-btn:hover { background: rgba(56, 139, 253, 0.3); color: #fff; }
+  .ctrl-btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
+  #hud-bottom {
+    position: fixed; bottom: 12px; left: 16px; right: 16px;
+    pointer-events: none; display: flex; justify-content: space-between; align-items: flex-end;
+    font-size: 12px; color: #8b949e; z-index: 90;
+  }
+  .legend-box {
+    background: rgba(15, 23, 36, 0.88); backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px;
+    pointer-events: auto; display: flex; gap: 16px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  #status-toast {
+    position: fixed; top: 62px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); border: 1px solid #388bfd; border-radius: 6px;
+    padding: 6px 16px; font-size: 13px; color: #58a6ff; font-weight: 600;
+    pointer-events: none; opacity: 0; transition: opacity 0.25s; z-index: 101;
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="title-group">
+    <h1>BROW CITY FLEET</h1>
+    <span id="fleet-count">27 Models Ready</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" data-cat="all">All (27)</button>
+    <button class="tab-btn" data-cat="civilian">Cars & Taxi (11)</button>
+    <button class="tab-btn" data-cat="emergency">Emergency & Public (8)</button>
+    <button class="tab-btn" data-cat="trucks">Trucks & Haulers (2)</button>
+    <button class="tab-btn" data-cat="bikes">Motorcycles (3)</button>
+    <button class="tab-btn" data-cat="boats">Motorboats (3)</button>
+  </div>
+  <div class="controls-group">
+    <button class="ctrl-btn" id="btn-doors">🚪 Open Doors & Gates</button>
+    <button class="ctrl-btn" id="btn-colliders">🛡️ Toggle Colliders</button>
+    <button class="ctrl-btn" id="btn-spin">🔄 Auto-Spin</button>
+    <button class="ctrl-btn" id="btn-wireframe">📐 Wireframe</button>
+  </div>
+</div>
+
+<div id="status-toast">Ready</div>
+
+<div id="hud-bottom">
+  <div class="legend-box">
+    <div class="legend-item"><span class="legend-dot" style="background:#58a6ff;"></span> Left Drag: Orbit</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#7ee787;"></span> Scroll: Zoom</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#d29922;"></span> Right Drag: Pan</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#f85149;"></span> Click Vehicle: Inspect</div>
+  </div>
+  <div style="text-align:right;">
+    <span>Brow City GTA Engine · Procedural & GLB Fleet v4.0</span>
+  </div>
+</div>
+
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/GLTFLoader.js"></script>
+<script>
+// Fleet categories mapping
+const FLEET = {
+  civilian: [
+    { id: 'sedan', name: 'Sentinel Sedan', file: 'vehicles/sedan.glb' },
+    { id: 'taxi', name: 'Metro Cabbie', file: 'vehicles/taxi.glb' },
+    { id: 'compact', name: 'Dilettante Compact', file: 'vehicles/compact.glb' },
+    { id: 'coupe', name: 'Banshee GT Coupe', file: 'vehicles/coupe.glb' },
+    { id: 'wagon', name: 'Regina Station Wagon', file: 'vehicles/wagon.glb' },
+    { id: 'suv', name: 'Patriot 4x4 SUV', file: 'vehicles/suv.glb' },
+    { id: 'pickup', name: 'Bobcat Heavy Pickup', file: 'vehicles/pickup.glb' },
+    { id: 'luxury_sedan', name: 'Cognoscenti V12', file: 'vehicles/luxury_sedan.glb' },
+    { id: 'luxury_limo', name: 'Presidential Limousine', file: 'vehicles/luxury_limo.glb' },
+    { id: 'supercar_hyper', name: 'Infernus Hyper GT', file: 'vehicles/supercar_hyper.glb' },
+    { id: 'supercar_track', name: 'Turismo Track Edition', file: 'vehicles/supercar_track.glb' }
+  ],
+  emergency: [
+    { id: 'police_cruiser', name: 'Metro Police Cruiser', file: 'vehicles/police_cruiser.glb' },
+    { id: 'police_suv', name: 'Police Tactical SUV', file: 'vehicles/police_suv.glb' },
+    { id: 'police_enforcer', name: 'SWAT Heavy Enforcer', file: 'vehicles/police_enforcer.glb' },
+    { id: 'ambulance', name: 'EMS Rescue Ambulance', file: 'vehicles/ambulance.glb' },
+    { id: 'firetruck', name: 'Ladder 1 Fire Brigade', file: 'vehicles/firetruck.glb' },
+    { id: 'garbage_truck', name: 'City Trashmaster', file: 'vehicles/garbage_truck.glb' },
+    { id: 'bus_city', name: 'Metro Transit City Bus', file: 'vehicles/bus_city.glb' },
+    { id: 'bus_coach', name: 'Grand Horizon Coach', file: 'vehicles/bus_coach.glb' }
+  ],
+  trucks: [
+    { id: 'truck_box', name: 'Industrial Box Truck', file: 'vehicles/truck_box.glb' },
+    { id: 'truck_semi', name: 'Titan Hauler Semi', file: 'vehicles/truck_semi.glb' }
+  ],
+  bikes: [
+    { id: 'bike_sport', name: 'NRG-1000 Superbike', file: 'vehicles/bike_sport.glb' },
+    { id: 'bike_cruiser', name: 'Highway V-Twin Chopper', file: 'vehicles/bike_cruiser.glb' },
+    { id: 'bike_dirt', name: 'Sanchez Motocross', file: 'vehicles/bike_dirt.glb' }
+  ],
+  boats: [
+    { id: 'boat_speedboat', name: 'Offshore Speedboat', file: 'vehicles/boat_speedboat.glb' },
+    { id: 'boat_police', name: 'Harbor Patrol Cutter', file: 'vehicles/boat_police.glb' },
+    { id: 'boat_yacht', name: 'Tropic Luxury Yacht', file: 'vehicles/boat_yacht.glb' }
+  ]
+};
+
+const ALL_VEHICLES = [
+  ...FLEET.civilian,
+  ...FLEET.emergency,
+  ...FLEET.trucks,
+  ...FLEET.bikes,
+  ...FLEET.boats
+];
+
+// Three.js Setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e141d);
+scene.fog = new THREE.FogExp2(0x0e141d, 0.007);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 500);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.body.appendChild(renderer.domElement);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xddeeff, 0.75);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xfffaed, 1.4);
+sunLight.position.set(40, 80, 50);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.left = -60; sunLight.shadow.camera.right = 60;
+sunLight.shadow.camera.top = 60; sunLight.shadow.camera.bottom = -60;
+sunLight.shadow.bias = -0.0003;
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x6080a0, 0.6);
+fillLight.position.set(-40, 30, -30);
+scene.add(fillLight);
+
+// Ground Grid
+const gridGeo = new THREE.PlaneGeometry(300, 300);
+const gridMat = new THREE.MeshStandardMaterial({
+  color: 0x161d27,
+  roughness: 0.85,
+  metalness: 0.1
+});
+const ground = new THREE.Mesh(gridGeo, gridMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const gridHelper = new THREE.GridHelper(300, 75, 0x303d4f, 0x1b2533);
+gridHelper.position.y = 0.01;
+scene.add(gridHelper);
+
+// Water surface indicator for boats
+const waterGeo = new THREE.PlaneGeometry(120, 40);
+const waterMat = new THREE.MeshStandardMaterial({
+  color: 0x0a324a,
+  roughness: 0.1,
+  metalness: 0.8,
+  transparent: true,
+  opacity: 0.75
+});
+const waterPlane = new THREE.Mesh(waterGeo, waterMat);
+waterPlane.rotation.x = -Math.PI / 2;
+waterPlane.position.set(0, 0.02, 0);
+waterPlane.visible = false;
+scene.add(waterPlane);
+
+// Vehicle Loading & State
+const loader = new THREE.GLTFLoader();
+const vehicleGroup = new THREE.Group();
+scene.add(vehicleGroup);
+
+let currentCat = 'all';
+let doorsOpen = false;
+let collidersVisible = false;
+let wireframeMode = false;
+let autoSpin = false;
+const loadedVehicles = []; // { id, name, scene, doors: [], colliders: [] }
+
+function toast(msg) {
+  const el = document.getElementById('status-toast');
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+}
+
+function loadCategory(cat) {
+  currentCat = cat;
+  while (vehicleGroup.children.length) vehicleGroup.remove(vehicleGroup.children[0]);
+  loadedVehicles.length = 0;
+
+  const list = (cat === 'all') ? ALL_VEHICLES : FLEET[cat];
+  const count = list.length;
+  document.getElementById('fleet-count').textContent = count + ' Model' + (count === 1 ? '' : 's') + ' Loaded';
+  waterPlane.visible = (cat === 'boats');
+
+  const COLS = (count <= 4) ? count : (count <= 8 ? 4 : 5);
+  const SPACING_X = (cat === 'boats' || cat === 'trucks') ? 11 : 8.5;
+  const SPACING_Z = (cat === 'boats' || cat === 'trucks') ? 16 : 11;
+  const rows = Math.ceil(count / COLS);
+
+  let done = 0;
+  list.forEach((spec, i) => {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const posX = (col - (COLS - 1) / 2) * SPACING_X;
+    const posZ = (row - (rows - 1) / 2) * SPACING_Z;
+
+    loader.load('assets/models/gta/' + spec.file, gltf => {
+      const v = gltf.scene;
+      v.position.set(posX, 0, posZ);
+      const doors = [];
+      const colliders = [];
+
+      v.traverse(o => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+          // Wireframe check
+          if (o.material) o.material.wireframe = wireframeMode;
+
+          // Colliders
+          if (/^collider/i.test(o.name)) {
+            colliders.push(o);
+            o.visible = collidersVisible;
+            if (o.material) {
+              o.material.transparent = true;
+              o.material.opacity = 0.45;
+              o.material.wireframe = true;
+            }
+          }
+
+          // Openable doors & gates
+          if (/^door_/i.test(o.name) || /^gate_/i.test(o.name)) {
+            doors.push({ node: o, origRot: o.rotation.clone(), name: o.name });
+          }
+        }
+      });
+
+      // Name Label Floating
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(15,23,36,0.85)';
+      ctx.roundRect(4, 4, 248, 56, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#388bfd';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(spec.name, 128, 38);
+      const tex = new THREE.CanvasTexture(canvas);
+      const labelMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const sprite = new THREE.Sprite(labelMat);
+      sprite.scale.set(3.4, 0.85, 1);
+      sprite.position.set(0, 3.2, 0);
+      v.add(sprite);
+
+      vehicleGroup.add(v);
+      loadedVehicles.push({ id: spec.id, name: spec.name, scene: v, doors, colliders });
+      window.loadedVehicles = loadedVehicles;
+
+      if (++done === count) {
+        frameView(COLS, rows, SPACING_X, SPACING_Z);
+        toast(count + ' vehicles rendered in 3D');
+        window.__fleetReady = true;
+      }
+    }, undefined, err => {
+      console.warn('Failed to load', spec.file, err);
+      if (++done === count) frameView(COLS, rows, SPACING_X, SPACING_Z);
+    });
+  });
+}
+
+function frameView(cols, rows, spX, spZ) {
+  const spanX = cols * spX;
+  const spanZ = rows * spZ;
+  const dist = Math.max(spanX, spanZ) * 0.95 + 10;
+  camera.position.set(0, dist * 0.65, dist * 0.85);
+  camera.lookAt(0, 1.2, 0);
+  controls.target.set(0, 1.2, 0);
+}
+
+// Simple Orbit Controls
+const controls = {
+  target: new THREE.Vector3(0, 1.2, 0),
+  isDown: false, button: 0,
+  lastX: 0, lastY: 0
+};
+window.addEventListener('mousedown', e => {
+  controls.isDown = true;
+  controls.button = e.button;
+  controls.lastX = e.clientX;
+  controls.lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => { controls.isDown = false; });
+window.addEventListener('mousemove', e => {
+  if (!controls.isDown) return;
+  const dx = e.clientX - controls.lastX;
+  const dy = e.clientY - controls.lastY;
+  controls.lastX = e.clientX;
+  controls.lastY = e.clientY;
+
+  if (controls.button === 0) { // Rotate
+    const rotSpeed = 0.005;
+    const offset = camera.position.clone().sub(controls.target);
+    const radius = offset.length();
+    let theta = Math.atan2(offset.x, offset.z);
+    let phi = Math.acos(Math.max(-1, Math.min(1, offset.y / radius)));
+    theta -= dx * rotSpeed;
+    phi = Math.max(0.05, Math.min(Math.PI / 2 - 0.05, phi + dy * rotSpeed));
+    camera.position.x = controls.target.x + radius * Math.sin(phi) * Math.sin(theta);
+    camera.position.y = controls.target.y + radius * Math.cos(phi);
+    camera.position.z = controls.target.z + radius * Math.sin(phi) * Math.cos(theta);
+    camera.lookAt(controls.target);
+  } else { // Pan
+    const panSpeed = 0.03;
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    controls.target.addScaledVector(right, -dx * panSpeed);
+    controls.target.addScaledVector(up, dy * panSpeed);
+    camera.position.addScaledVector(right, -dx * panSpeed);
+    camera.position.addScaledVector(up, dy * panSpeed);
+    camera.lookAt(controls.target);
+  }
+});
+window.addEventListener('wheel', e => {
+  const zoomFactor = e.deltaY > 0 ? 1.08 : 0.92;
+  const offset = camera.position.clone().sub(controls.target);
+  offset.multiplyScalar(zoomFactor);
+  camera.position.copy(controls.target).add(offset);
+  camera.lookAt(controls.target);
+});
+
+// UI Event Handlers
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadCategory(btn.getAttribute('data-cat'));
+  });
+});
+
+// Toggle openable doors / carjacking gates
+document.getElementById('btn-doors').addEventListener('click', function() {
+  doorsOpen = !doorsOpen;
+  this.classList.toggle('active', doorsOpen);
+  this.textContent = doorsOpen ? '🚪 Close Doors' : '🚪 Open Doors & Gates';
+  const targetAngle = doorsOpen ? 0.95 : 0.0; // ~55 degrees
+
+  loadedVehicles.forEach(v => {
+    v.doors.forEach(d => {
+      const isLeft = /_FL$|_RL$/i.test(d.name);
+      const isRight = /_FR$|_RR$/i.test(d.name);
+      const sign = isLeft ? 1 : (isRight ? -1 : 1);
+      d.node.rotation.y = d.origRot.y + targetAngle * sign;
+    });
+  });
+  toast(doorsOpen ? 'Opened doors & gates on all models' : 'Closed all vehicle doors');
+});
+
+// Toggle colliders
+document.getElementById('btn-colliders').addEventListener('click', function() {
+  collidersVisible = !collidersVisible;
+  this.classList.toggle('active', collidersVisible);
+  loadedVehicles.forEach(v => {
+    v.colliders.forEach(c => { c.visible = collidersVisible; });
+  });
+  toast(collidersVisible ? 'Convex colliders visible' : 'Colliders hidden');
+});
+
+// Auto spin
+document.getElementById('btn-spin').addEventListener('click', function() {
+  autoSpin = !autoSpin;
+  this.classList.toggle('active', autoSpin);
+  toast(autoSpin ? 'Auto-turntable enabled' : 'Auto-turntable stopped');
+});
+
+// Wireframe toggle
+document.getElementById('btn-wireframe').addEventListener('click', function() {
+  wireframeMode = !wireframeMode;
+  this.classList.toggle('active', wireframeMode);
+  scene.traverse(o => {
+    if (o.isMesh && o.material && !/^collider/i.test(o.name)) {
+      o.material.wireframe = wireframeMode;
+    }
+  });
+  toast(wireframeMode ? 'Wireframe enabled' : 'Solid shaded PBR enabled');
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// Render Loop
+let lastT = performance.now();
+function animate(t) {
+  requestAnimationFrame(animate);
+  const dt = (t - lastT) * 0.001;
+  lastT = t;
+
+  if (autoSpin) {
+    const rotSpeed = 0.25 * dt;
+    const offset = camera.position.clone().sub(controls.target);
+    const radius = offset.length();
+    let theta = Math.atan2(offset.x, offset.z) + rotSpeed;
+    const phi = Math.acos(Math.max(-1, Math.min(1, offset.y / radius)));
+    camera.position.x = controls.target.x + radius * Math.sin(phi) * Math.sin(theta);
+    camera.position.z = controls.target.z + radius * Math.sin(phi) * Math.cos(theta);
+    camera.lookAt(controls.target);
+  }
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+// Initial load
+loadCategory('all');
+</script>
+</body>
+</html>

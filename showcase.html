@@ -1,0 +1,3444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brow City — 3D Asset & Landmark Showcase</title>
+<style>
+  :root {
+    --bg-base: #0c1017;
+    --bg-panel: #131b26;
+    --bg-card: #1a2535;
+    --bg-card-hover: #223247;
+    --border: #26384e;
+    --border-bright: #3d5878;
+    --accent: #00d2ff;
+    --accent-glow: #00d2ff44;
+    --accent-green: #2ecc71;
+    --accent-orange: #ff9f43;
+    --accent-red: #ff5252;
+    --accent-purple: #9b59b6;
+    --text-main: #f0f4f8;
+    --text-muted: #8b9eb5;
+    --text-dim: #5c7087;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-main);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* Header Bar */
+  header {
+    height: 58px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    z-index: 100;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    box-shadow: 0 2px 10px var(--accent-glow);
+  }
+  .brand-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .brand-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Nav Tabs */
+  .nav-tabs {
+    display: flex;
+    background: var(--bg-base);
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    gap: 4px;
+  }
+  .nav-tab {
+    padding: 7px 15px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.15s ease;
+  }
+  .nav-tab:hover {
+    color: var(--text-main);
+    background: var(--bg-card);
+  }
+  .nav-tab.active {
+    color: #fff;
+    background: var(--accent);
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+
+  /* Header Actions */
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn-action {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .btn-action:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+  }
+  .btn-action.active {
+    background: var(--accent);
+    color: #0c1017;
+    border-color: var(--accent);
+  }
+
+  /* Main Workspace */
+  .workspace {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Left Sidebar */
+  aside.sidebar {
+    width: 320px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+
+  .sidebar-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-box {
+    width: 100%;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-main);
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+
+  .category-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .pill-filter {
+    font-size: 11px;
+    padding: 4px 9px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .pill-filter:hover { color: var(--text-main); border-color: var(--border-bright); }
+  .pill-filter.active { background: var(--accent); color: #0c1017; border-color: var(--accent); font-weight: 600; }
+
+  .item-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+  }
+  .item-list::-webkit-scrollbar { width: 6px; }
+  .item-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .asset-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    background: var(--bg-card);
+    border: 1px solid transparent;
+    border-radius: 9px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .asset-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-bright);
+    transform: translateY(-1px);
+  }
+  .asset-card.active {
+    background: #193147;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+  .card-icon {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    background: var(--bg-base);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card-info { flex: 1; min-width: 0; }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2px;
+  }
+  .card-badge {
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--bg-base);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* 3D Viewport */
+  .viewport-container {
+    flex: 1;
+    position: relative;
+    background: radial-gradient(circle at center, #1b2636 0%, #0a0d13 100%);
+  }
+  #threeCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .viewport-overlay {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .hud-badge {
+    background: rgba(12, 16, 23, 0.85);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hud-badge b { color: var(--accent); }
+
+  .viewport-controls-bottom {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(19, 27, 38, 0.9);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    padding: 6px 14px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 20;
+  }
+  .palette-swatches {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s;
+  }
+  .swatch:hover { transform: scale(1.2); }
+  .swatch.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+
+  /* Right Inspector */
+  aside.inspector {
+    width: 380px;
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 10;
+    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  aside.inspector.expanded {
+    width: 580px;
+  }
+  aside.inspector::-webkit-scrollbar { width: 6px; }
+  aside.inspector::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .insp-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  /* Inspector Tabs */
+  .insp-tabs {
+    display: flex;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 4px;
+  }
+  .insp-tab {
+    flex: 1;
+    padding: 7px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .insp-tab:hover {
+    color: var(--text-main);
+    background: var(--bg-card);
+  }
+  .insp-tab.active {
+    color: #fff;
+    background: var(--bg-card);
+    border-color: var(--border-bright);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+  .tab-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    background: rgba(0, 210, 255, 0.2);
+    color: var(--accent);
+    border-radius: 3px;
+    font-weight: 700;
+  }
+  .insp-title {
+    font-size: 19px;
+    font-weight: 700;
+  }
+  .insp-subtitle {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .insp-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 9px 12px;
+    border-radius: 8px;
+  }
+  .stat-label {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-top: 2px;
+  }
+
+  .features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .feature-item {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border-left: 3px solid var(--accent);
+    padding: 7px 10px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* Landmark Controls in Inspector */
+  .floor-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .btn-floor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-floor:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-bright);
+  }
+  .btn-floor.active {
+    background: #1a3c56;
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .room-quick-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .btn-room {
+    padding: 5px 10px;
+    font-size: 11px;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-room:hover {
+    color: #fff;
+    border-color: var(--accent);
+    background: var(--bg-card);
+  }
+
+  .staff-badge-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .staff-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--bg-base);
+    border-radius: 6px;
+    font-size: 11.5px;
+  }
+  .staff-role-pill {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .role-doctor { background: #1b4332; color: #74c69d; }
+  .role-police { background: #183059; color: #70a1ff; }
+  .role-gun { background: #4a2800; color: #ffa94d; }
+
+  /* Gallery Mode */
+  .gallery-grid {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-base);
+    overflow-y: auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 20px;
+    z-index: 50;
+  }
+  .gallery-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+  }
+  .gallery-img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: #000;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .gallery-img:hover { transform: scale(1.02); }
+  .gallery-card-body {
+    padding: 14px 18px;
+  }
+  .gallery-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .gallery-card-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+
+  /* Procedural Code Editor Section */
+  .code-editor-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  .code-editor-header {
+    background: #0d141e;
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .code-editor-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text-main);
+  }
+  .code-badge {
+    font-size: 9.5px;
+    padding: 2px 6px;
+    background: rgba(0, 210, 255, 0.15);
+    color: var(--accent);
+    border-radius: 4px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .code-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-code-icon {
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11.5px;
+    padding: 4px 7px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-code-icon:hover {
+    color: #fff;
+    border-color: var(--accent);
+    background: var(--bg-card-hover);
+  }
+
+  .code-editor-toolbar {
+    background: #101723;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+  }
+  .auto-run-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    font-size: 11px;
+  }
+  .auto-run-label input {
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  .code-editor-container {
+    position: relative;
+    background: #080c12;
+  }
+  #vehicleCodeEditor {
+    width: 100%;
+    height: calc(100vh - 440px);
+    min-height: 250px;
+    max-height: 540px;
+    background: #080c12;
+    color: #c9d1d9;
+    border: none;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    tab-size: 2;
+    resize: vertical;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+    outline: none;
+    display: block;
+    box-sizing: border-box;
+  }
+  #vehicleCodeEditor:focus {
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .code-editor-footer {
+    background: #0d141e;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    gap: 8px;
+  }
+  .code-status {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .status-ok { color: var(--accent-green); font-weight: 500; }
+  .status-err { color: var(--accent-red); font-weight: 600; }
+
+  .btn-code-apply {
+    background: linear-gradient(135deg, #00d2ff, #0088cc);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 210, 255, 0.3);
+    transition: all 0.15s;
+  }
+  .btn-code-apply:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 3px 10px rgba(0, 210, 255, 0.5);
+  }
+  .btn-code-apply:active {
+    transform: translateY(1px);
+  }
+
+  .btn-code-save {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-code-save:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.5);
+  }
+  .btn-code-save:active {
+    transform: translateY(1px);
+  }
+  .btn-code-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .code-snippets {
+    padding: 8px 12px;
+    background: #090e15;
+    border-top: 1px dashed var(--border);
+  }
+  .snippet-title {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+  }
+  .snippet-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .snippet-pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 10.5px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  /* AI Custom Design & Prompt Assistant */
+  .prompt-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  .prompt-header {
+    background: #111422;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .prompt-header-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .prompt-badge {
+    font-size: 9.5px;
+    padding: 2px 7px;
+    background: rgba(155, 89, 182, 0.25);
+    color: #b388ff;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .prompt-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #0c1018;
+    overflow-y: auto;
+    max-height: calc(100vh - 360px);
+  }
+  .prompt-instruction-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .prompt-presets-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .prompt-preset-chip {
+    padding: 5px 9px;
+    font-size: 11px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .prompt-preset-chip:hover {
+    color: #fff;
+    border-color: #b388ff;
+    background: rgba(155, 89, 182, 0.15);
+  }
+  .prompt-preset-chip.active {
+    color: #fff;
+    background: #6c5ce7;
+    border-color: #a29bfe;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
+  }
+  .prompt-custom-textarea {
+    width: 100%;
+    min-height: 56px;
+    background: #070a0f;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: var(--text-main);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .prompt-custom-textarea:focus {
+    border-color: #b388ff;
+    box-shadow: 0 0 0 1px rgba(179, 136, 255, 0.3);
+  }
+  .prompt-mode-switch {
+    display: flex;
+    background: #090e16;
+    border-bottom: 1px solid var(--border);
+    padding: 5px;
+    gap: 5px;
+  }
+  .prompt-mode-btn {
+    flex: 1;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .prompt-mode-btn:hover {
+    color: #fff;
+    background: var(--bg-card);
+  }
+  .prompt-mode-btn.active {
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0.35), rgba(142, 68, 173, 0.35));
+    border-color: #a29bfe;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+  }
+  .scratchpad-card {
+    border-color: rgba(162, 155, 254, 0.4) !important;
+    background: linear-gradient(135deg, rgba(20, 26, 38, 0.9), rgba(30, 24, 52, 0.9)) !important;
+  }
+  .scratchpad-card:hover {
+    border-color: #a29bfe !important;
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3) !important;
+  }
+  .prompt-preview-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .prompt-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .prompt-preview-box {
+    width: 100%;
+    height: 180px;
+    min-height: 120px;
+    background: #06090e;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #c0cce0;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    user-select: text;
+    box-sizing: border-box;
+  }
+  .prompt-footer {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn-copy-prompt {
+    background: linear-gradient(135deg, #8e44ad, #6c5ce7);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(142, 68, 173, 0.35);
+    transition: all 0.15s;
+  }
+  .btn-copy-prompt:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 3px 12px rgba(142, 68, 173, 0.55);
+  }
+  .btn-copy-prompt:active {
+    transform: translateY(1px);
+  }
+  .btn-apply-prompt-code {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-apply-prompt-code:hover {
+    border-color: var(--accent);
+    color: #fff;
+    background: var(--bg-card-hover);
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="brand">
+    <div class="brand-logo">🗽</div>
+    <div>
+      <div class="brand-title">Brow City <span style="color:var(--accent)">Showcase</span></div>
+      <div class="brand-subtitle">High-Fidelity 3D Vehicles & Multi-Floor Landmark Architecture</div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tabVehicles" onclick="switchMode('vehicles')">
+      🚗 Vehicles (28)
+    </button>
+    <button class="nav-tab" id="tabLandmarks" onclick="switchMode('landmarks')">
+      🏢 Multi-Floor Landmarks
+    </button>
+    <button class="nav-tab" id="tabLineup" onclick="switchMode('lineup')">
+      🅿️ Showroom Concourse
+    </button>
+    <button class="nav-tab" id="tabGallery" onclick="switchMode('gallery')">
+      📸 In-Game Gallery
+    </button>
+  </div>
+
+  <div class="header-actions">
+    <button class="btn-action" id="btnAutoRotate" onclick="toggleAutoRotate()">
+      🔄 Auto-Rotate
+    </button>
+    <button class="btn-action" id="btnWireframe" onclick="toggleWireframe()">
+      🕸️ Wireframe
+    </button>
+    <button class="btn-action" id="btnLighting" onclick="cycleLighting()">
+      ☀️ Noon
+    </button>
+    <button class="btn-action" onclick="resetCamera()">
+      📷 Reset View
+    </button>
+  </div>
+</header>
+
+<!-- Workspace -->
+<div class="workspace">
+
+  <!-- Left Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header" id="sidebarHeader">
+      <input type="text" class="search-box" id="searchInput" placeholder="Search vehicles or features..." oninput="filterAssets()">
+      <div class="category-filter" id="categoryPills">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+    <div class="item-list" id="itemList">
+      <!-- Injected dynamically -->
+    </div>
+  </aside>
+
+  <!-- 3D Viewport -->
+  <div class="viewport-container" id="viewportContainer">
+    <div class="viewport-overlay">
+      <div class="hud-badge" id="hudAssetInfo">
+        <span>Model: <b id="hudTitle">Sentinel</b></span>
+        <span>Triangles: <b id="hudTris">2,516</b></span>
+      </div>
+      <div class="hud-badge" style="font-size:11px; color:var(--text-muted)">
+        Left-drag: Orbit · Right-drag: Pan · Scroll: Zoom
+      </div>
+    </div>
+
+    <canvas id="threeCanvas"></canvas>
+
+    <!-- Bottom Controls (Palette for Vehicles) -->
+    <div class="viewport-controls-bottom" id="viewportBottomControls">
+      <span style="font-size:12px; font-weight:600; color:var(--text-muted)">Body Paint:</span>
+      <div class="palette-swatches" id="paletteSwatches">
+        <!-- Color swatches injected -->
+      </div>
+      <input type="color" id="customColorPicker" value="#d62828" onchange="applyCustomColor(this.value)" style="width:24px;height:24px;border:none;background:transparent;cursor:pointer">
+    </div>
+  </div>
+
+  <!-- Right Inspector -->
+  <aside class="inspector" id="inspector">
+    <div class="insp-header">
+      <div class="insp-title" id="inspTitle">Sentinel (Sedan)</div>
+      <div class="insp-subtitle" id="inspSub">Executive 4-Door Sedan</div>
+      <div class="insp-desc" id="inspDesc">
+        Upgraded executive luxury sedan featuring double-slat chrome grille with emblem, quad projector headlamps, aerodynamic side mirrors, recessed door handles, sharkfin antenna, and dual chrome exhausts.
+      </div>
+    </div>
+
+    <!-- Inspector Tabs -->
+    <div class="insp-tabs" id="inspTabs">
+      <button class="insp-tab active" id="inspTabCode" onclick="switchInspectorTab('code')">
+        💻 Procedural Code <span class="tab-badge" id="tabCodeBadge">Live</span>
+      </button>
+      <button class="insp-tab" id="inspTabPrompt" onclick="switchInspectorTab('prompt')">
+        🤖 AI Design Prompt <span class="tab-badge" style="background:rgba(155, 89, 182, 0.25);color:#b388ff">Design</span>
+      </button>
+      <button class="insp-tab" id="inspTabSpecs" onclick="switchInspectorTab('specs')">
+        📊 Specs & Craftsmanship
+      </button>
+    </div>
+
+    <!-- Dynamic Section: Vehicle Stats or Landmark Controls -->
+    <div id="inspectorDynamicContent" class="hidden">
+      <!-- Injected -->
+    </div>
+
+    <!-- Procedural Model Code & Live Editor Section -->
+    <div class="code-editor-section" id="codeEditorSection">
+      <div class="code-editor-header">
+        <div class="code-editor-title">
+          <span>💻 Procedural Model Code</span>
+          <span class="code-badge" id="codeEditorBadge">Live Mode</span>
+        </div>
+        <div class="code-header-actions">
+          <button class="btn-code-icon" onclick="switchInspectorTab('prompt')" title="Open AI Model Redesign Prompt Assistant">✨ Prompt</button>
+          <button class="btn-code-icon" id="btnSaveCodeHeader" onclick="saveVehicleCodeToDisk()" title="Save to Project Files & Rebuild 3D Model (Ctrl+S)">💾</button>
+          <button class="btn-code-icon" onclick="exportVehicleCodeFile()" title="Export / Download .js File">📥</button>
+          <button class="btn-code-icon" id="btnExpandCode" onclick="toggleExpandCodeEditor()" title="Expand / Collapse Width">⛶</button>
+          <button class="btn-code-icon" onclick="copyVehicleCode()" title="Copy Code to Clipboard">📋</button>
+          <button class="btn-code-icon" onclick="resetVehicleCode()" title="Reset to Stock Generator Code">↺</button>
+        </div>
+      </div>
+
+      <div class="code-editor-toolbar">
+        <span style="font-size:11px;color:var(--text-dim)">Function: <code style="color:var(--accent)" id="codeFnName">buildSedan(g, s)</code></span>
+        <label class="auto-run-label">
+          <input type="checkbox" id="autoApplyCheckbox" checked onchange="toggleAutoApply(this.checked)">
+          <span>Auto-Apply</span>
+        </label>
+      </div>
+
+      <div class="code-snippets">
+        <div class="snippet-title">💡 Quick Mod Snippets:</div>
+        <div class="snippet-pills">
+          <button class="snippet-pill" style="color:var(--accent);border-color:rgba(0,210,255,0.4);font-weight:600" onclick="insertFromScratchTemplate()">✨ From-Scratch Starter</button>
+          <button class="snippet-pill" onclick="insertSnippet('spoiler')">+ GT Spoiler</button>
+          <button class="snippet-pill" onclick="insertSnippet('lightbar')">+ Lightbar</button>
+          <button class="snippet-pill" onclick="insertSnippet('pushbar')">+ Pushbar</button>
+          <button class="snippet-pill" onclick="insertSnippet('hoodscoop')">+ Hood Scoop</button>
+          <button class="snippet-pill" onclick="insertSnippet('exhaust')">+ Quad Exhaust</button>
+        </div>
+      </div>
+
+      <div class="code-editor-container">
+        <textarea id="vehicleCodeEditor" spellcheck="false" autocomplete="off" autocapitalize="off"
+          oninput="onVehicleCodeInput()"
+          onkeydown="handleCodeEditorKey(event)"
+          placeholder="// Procedural generator code..."></textarea>
+      </div>
+
+      <div class="code-editor-footer">
+        <div class="code-status" id="codeEditorStatus">
+          <span class="status-ok">● Live Synchronized</span>
+        </div>
+        <button class="btn-code-apply" id="btnApplyCode" onclick="runVehicleLiveCode()" title="Apply edits to 3D view (Ctrl+Enter)">
+          ▶ Rebuild
+        </button>
+        <button class="btn-code-save" id="btnSaveCode" onclick="saveVehicleCodeToDisk()" title="Save to project files and recompile binary .glb model (Ctrl+S)">
+          💾 Save to Disk
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Custom Design & Improvement Prompt Section -->
+    <div class="prompt-section hidden" id="promptSection">
+      <div class="prompt-header">
+        <div class="prompt-header-title">
+          <span>🤖 AI Vehicle Design Studio</span>
+          <span class="prompt-badge" id="promptTargetBadge">From Scratch</span>
+        </div>
+        <button class="btn-code-icon" onclick="copyAIPrompt()" title="Copy Complete Prompt">📋 Copy Prompt</button>
+      </div>
+
+      <div class="prompt-mode-switch" id="promptModeSwitch">
+        <button class="prompt-mode-btn active" id="btnPromptModeScratch" onclick="setPromptMode('scratch')">
+          🎨 Design From Scratch (Zero Baseline)
+        </button>
+        <button class="prompt-mode-btn" id="btnPromptModeModify" onclick="setPromptMode('modify')">
+          🔧 Modify Stock Model
+        </button>
+      </div>
+
+      <div class="prompt-body">
+        <div class="prompt-instruction-label">
+          <span id="promptPresetsLabel">🚀 Select From-Scratch Vehicle Archetype:</span>
+        </div>
+        <div class="prompt-presets-bar" id="promptPresetsBar">
+          <!-- Dynamically populated based on mode -->
+        </div>
+
+        <div>
+          <div class="prompt-instruction-label" style="margin-bottom:5px">
+            <span id="promptCustomInputLabel">📝 Custom Design Vision & Instructions:</span>
+          </div>
+          <textarea id="promptCustomInput" class="prompt-custom-textarea"
+            placeholder="E.g., Design a low-slung futuristic gullwing supercar with twin dorsal intake scoops, giant rear diffuser, and carbon GT wing..."
+            oninput="onPromptCustomInput()"></textarea>
+        </div>
+
+        <div class="prompt-preview-container">
+          <div class="prompt-preview-header">
+            <span>📋 Generated AI Prompt (Ready for Antigravity, Claude, ChatGPT, Gemini):</span>
+            <span style="font-size:10px;color:var(--text-dim)" id="promptPreviewSub">Full Architectural Toolkit</span>
+          </div>
+          <div class="prompt-preview-box" id="promptPreviewBox"></div>
+        </div>
+
+        <div class="prompt-footer">
+          <button class="btn-copy-prompt" id="btnCopyPrompt" onclick="copyAIPrompt()">
+            📋 Copy Complete AI Prompt
+          </button>
+          <button class="btn-apply-prompt-code" onclick="switchInspectorTab('code')" title="Back to Procedural Code Editor">
+            💻 Open Code Editor
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- In-Game Gallery Overlay -->
+  <div class="gallery-grid hidden" id="galleryOverlay">
+    <div class="gallery-card">
+      <img src="screenshot_vehicles_variety.png" class="gallery-img" alt="Vehicles Lineup">
+      <div class="gallery-card-body">
+        <div class="gallery-card-title">🚗 Vehicle Fleet Variety in Brow City</div>
+        <div class="gallery-card-desc">
+          Lineup of ordinary and sports cars running in Brow City. Shown from left: executive Sedan, sports Coupe, muscle car with shaker hood scoop, cyan exotic Supercar, estate Wagon, rugged SUV, compact commuter, and family Minivan.
+        </div>
+      </div>
+    </div>
+
+    <div class="gallery-card">
+      <img src="screenshot_hospital_interior.png" class="gallery-img" alt="Hospital Interior">
+      <div class="gallery-card-body">
+        <div class="gallery-card-title">🏥 Bellevue Hospital — 2nd Floor ICU & Diagnostics</div>
+        <div class="gallery-card-desc">
+          Cutaway view inside Bellevue Hospital's second floor featuring patient recovery beds with vitals monitors, physician diagnostics bullpen, and Dr. Patel attending patients.
+        </div>
+      </div>
+    </div>
+
+    <div class="gallery-card">
+      <img src="screenshot_police_hq.png" class="gallery-img" alt="Police HQ Interior">
+      <div class="gallery-card-body">
+        <div class="gallery-card-title">🚓 NYPD 1st Precinct — Multi-Floor Interior & Detectives</div>
+        <div class="gallery-card-desc">
+          Interior view of the 3-floor NYPD 1st Precinct. On the ground floor: central booking desk and holding cell block. On the second floor: Detective Bureau bullpen with desks, lamps, and the Syndicate corkboard evidence board.
+        </div>
+      </div>
+    </div>
+
+    <div class="gallery-card">
+      <img src="screenshot_ammunation.png" class="gallery-img" alt="Ammu-Nation Interior">
+      <div class="gallery-card-body">
+        <div class="gallery-card-title">🎯 Ammu-Nation — 2nd Floor VIP Tactical & Bank Vault</div>
+        <div class="gallery-card-desc">
+          Second floor tactical gear showroom displaying Kevlar body armor mannequins, master gunsmith workbench with weapon vices, and a 40cm thick reinforced steel vault door.
+        </div>
+      </div>
+    </div>
+
+    <div class="gallery-card">
+      <img src="screenshot_crosswalk_peds.png" class="gallery-img" alt="Pedestrian Crosswalk Safety">
+      <div class="gallery-card-body">
+        <div class="gallery-card-title">🚶 Pedestrian Crosswalk & Curb Safety AI</div>
+        <div class="gallery-card-desc">
+          Pedestrian AI looking both ways at intersections, holding at curbs until vehicles pass, and crossing strictly within white zebra crosswalk stripes.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Local Three.js & GLTFLoader & Procedural Vehicle Generator -->
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/GLTFLoader.js"></script>
+<script src="js/vehicle-generator-core.js"></script>
+
+<script>
+// =============================================================================
+// GLOBAL STATE & CONSTANTS
+// =============================================================================
+let currentMode = 'vehicles';
+let currentAssetId = 'sedan';
+let currentLandmarkId = 'hospital';
+let currentFloor = 'all';
+let currentPaint = 0xd62828;
+let autoRotate = true;
+let wireframe = false;
+let lightingMode = 0; // 0: Noon, 1: Sunset, 2: Night
+
+const PAINTS = [
+  { name: 'Torino Red', hex: 0xd62828 },
+  { name: 'Cobalt Blue', hex: 0x1e56a0 },
+  { name: 'Amber Orange', hex: 0xf77f00 },
+  { name: 'Emerald Teal', hex: 0x2a9d8f },
+  { name: 'Pearl White', hex: 0xf5f5f7 },
+  { name: 'Steel Blue', hex: 0x457b9d },
+  { name: 'Slate Grey', hex: 0x5c677d },
+  { name: 'Cherry Red', hex: 0xe63946 },
+  { name: 'Forest Green', hex: 0x2b9348 },
+  { name: 'Bronze Tan', hex: 0xd4a373 },
+  { name: 'Royal Purple', hex: 0x7b2cbf },
+  { name: 'Silver Chrome', hex: 0xadb5bd }
+];
+
+const VEHICLE_SPECS = {
+  custom_vehicle: { name: 'Custom Design', category: 'custom', catName: 'From-Scratch Canvas', L: 4.60, W: 2.15, H: 1.25, top: '200 mph', accel: '3.2s', hp: 550, tris: 572, desc: 'Full-scratch procedural design canvas. Build original 3D vehicle geometry from zero using bilateral lofts, raked glass quads, boxes, and engine helpers.' },
+  sedan: { name: 'Sentinel', category: 'cars', catName: 'Ordinary Cars', L: 4.70, W: 2.24, H: 1.35, top: '155 mph', accel: '4.8s', hp: 120, tris: 1466, desc: 'Executive luxury sports sedan featuring two-tone Gloss Black contrast roof, double-slat chrome grille with emblem, chrome window surround, dark rocker side skirts, and dual chrome exhausts.' },
+  coupe: { name: 'Banshee', category: 'cars', catName: 'Ordinary Cars', L: 4.60, W: 2.24, H: 1.05, top: '175 mph', accel: '3.9s', hp: 100, tris: 1770, desc: 'High-performance sports coupe with bold White center racing stripe down hood and decklid, Satin Black aero canopy, front chin splitter, rear lip spoiler, and dual chrome exhausts.' },
+  hatchback: { name: 'Blista', category: 'cars', catName: 'Ordinary Cars', L: 4.10, W: 2.20, H: 1.45, top: '140 mph', accel: '5.2s', hp: 110, tris: 1378, desc: 'Euro hot-hatch with two-tone Gloss Black contrast roof, extended aerodynamic roof spoiler wing, sport Red front grille surround accent, and dual center-exit exhausts.' },
+  compact: { name: 'Dilettante', category: 'cars', catName: 'Ordinary Cars', L: 3.72, W: 2.04, H: 1.48, top: '130 mph', accel: '5.6s', hp: 100, tris: 680, desc: 'Modern eco commuter with two-tone Alpine White contrast roof, vertical C-pillar taillights, White aerodynamic roof spoiler, and chrome exhaust tip.' },
+  wagon: { name: 'Regina', category: 'cars', catName: 'Ordinary Cars', L: 4.92, W: 2.24, H: 1.50, top: '145 mph', accel: '5.4s', hp: 125, tris: 708, desc: 'Classic estate station wagon featuring silver chrome roof rails, charcoal lower protective rocker cladding, rear chrome bumper step, and dual chrome exhausts.' },
+  muscle: { name: 'Sabre', category: 'cars', catName: 'Ordinary Cars', L: 4.92, W: 2.28, H: 1.30, top: '165 mph', accel: '4.2s', hp: 110, tris: 1732, desc: 'Classic American muscle car with dual Alpine White racing stripes running across hood, roof, and trunk, satin black hood shaker scoop, chrome bumpers, and wide-bore dual exhausts.' },
+  minivan: { name: 'Moonbeam', category: 'cars', catName: 'Ordinary Cars', L: 5.10, W: 2.40, H: 1.90, top: '125 mph', accel: '6.2s', hp: 150, tris: 1392, desc: 'Modern family minivan with two-tone charcoal lower body cladding, privacy tinted dark glass, chrome roof rack rails, and chrome grille bars.' },
+  suv: { name: 'Patriot', category: 'suv', catName: 'SUVs & Pickups', L: 4.94, W: 2.34, H: 1.85, top: '135 mph', accel: '5.5s', hp: 150, tris: 1748, desc: 'Rugged luxury SUV with two-tone Gloss Black contrast roof, charcoal lower rocker trim, chrome roof rack crossbars, and tailgate-mounted exterior spare tire with chrome cap.' },
+  pickup: { name: 'Bobcat', category: 'suv', catName: 'SUVs & Pickups', L: 5.55, W: 2.34, H: 1.65, top: '130 mph', accel: '5.8s', hp: 150, tris: 1658, desc: 'Heavy-duty crew-cab pickup with textured matte black inner bedliner, chrome tubular rollbar with dual fog lamps, chrome grille guard, and dual exhausts.' },
+  offroad: { name: 'Rancher', category: 'suv', catName: 'SUVs & Pickups', L: 4.62, W: 2.34, H: 1.75, top: '128 mph', accel: '5.7s', hp: 165, tris: 3588, desc: 'Expedition 4x4 with two-tone safari styling: primary paint lower hull + Alpine White removable hardtop, tubular front bullbar with dual yellow fog lamps, black snorkel, and rear spare tire.' },
+  supercar: { name: 'Infernus', category: 'sports', catName: 'Exotics & Sports', L: 4.32, W: 2.15, H: 1.10, top: '215 mph', accel: '2.8s', hp: 110, tris: 1378, desc: 'Mid-engine exotic hypercar with Jet Black aero canopy and rear deck, transparent rear glass revealing silver V10 engine block with bright Red valve covers, carbon chin splitter, and rear wing.' },
+  taxi: { name: 'Cabbie', category: 'emergency', catName: 'Service & Emergency', L: 4.70, W: 2.24, H: 1.48, top: '140 mph', accel: '5.4s', hp: 120, tris: 1514, desc: 'NYC medallion yellow cab with two-tone Crisp White roof, checkered black-and-white waistline stripe, illuminated yellow rooftop taxi medallion, and chrome bumper accents.' },
+  police: { name: 'Cruiser', category: 'emergency', catName: 'Service & Emergency', L: 4.85, W: 2.24, H: 1.55, top: '160 mph', accel: '4.6s', hp: 170, tris: 1506, desc: 'Classic NYPD Black & White patrol cruiser with white doors and roof, gloss black hood and trunk, navy blue police stripe, tactical front pushbar, and rooftop red/blue LED strobe lightbar.' },
+  police_suv: { name: 'Interceptor', category: 'emergency', catName: 'Service & Emergency', L: 5.07, W: 2.34, H: 2.00, top: '150 mph', accel: '4.9s', hp: 190, tris: 1700, desc: 'Police Interceptor SUV in deep Navy Blue with crisp White tactical roof and doors, heavy pushbar, and roof strobe lightbar.' },
+  police_enforcer: { name: 'Enforcer', category: 'emergency', catName: 'Service & Emergency', L: 5.20, W: 2.30, H: 2.20, top: '135 mph', accel: '5.6s', hp: 260, tris: 1772, desc: 'Armored SWAT tactical carrier with dark navy ballistic hull, white roof tactical identification stripe, steel riot window shields, and ram pushbar.' },
+  ambulance: { name: 'Ambulance', category: 'emergency', catName: 'Service & Emergency', L: 5.50, W: 2.25, H: 2.55, top: '135 mph', accel: '5.7s', hp: 180, tris: 1576, desc: 'Emergency paramedic unit in pure white with bold high-visibility Red side stripe, red medical crosses on flanks, rear patient loading doors, and roof emergency lightbar.' },
+  firetruck: { name: 'Fire Truck', category: 'emergency', catName: 'Service & Emergency', L: 6.84, W: 2.42, H: 2.53, top: '115 mph', accel: '6.5s', hp: 240, tris: 1498, desc: 'FDNY heavy engine in cherry fire red with brushed silver/chrome diamond-plate pump panels, safety yellow roof rescue ladder, chrome front bumper, and rooftop lightbar.' },
+  limo: { name: 'Stretch', category: 'cars', catName: 'Ordinary Cars', L: 8.40, W: 2.24, H: 1.50, top: '120 mph', accel: '6.8s', hp: 170, tris: 1674, desc: 'Executive luxury stretch limousine with two-tone Black vinyl roof, full-length chrome waistline trim, chrome bumpers, and privacy glass.' },
+  van: { name: 'Burrito', category: 'commercial', catName: 'Commercial & Heavy', L: 5.75, W: 2.40, H: 2.50, top: '115 mph', accel: '6.4s', hp: 160, tris: 474, desc: 'Commercial cargo delivery van with dark protective lower rocker trim, sliding side door track, and rear twin loading doors.' },
+  bus: { name: 'Coach', category: 'commercial', catName: 'Commercial & Heavy', L: 11.76, W: 3.04, H: 3.10, top: '95 mph', accel: '7.8s', hp: 250, tris: 1701, desc: 'MTA city transit bus in authentic two-tone livery: Transit Blue lower hull + Crisp White upper roof and window band, with illuminated Amber LED destination route display.' },
+  schoolbus: { name: 'School Bus', category: 'commercial', catName: 'Commercial & Heavy', L: 10.34, W: 2.94, H: 2.90, top: '90 mph', accel: '7.9s', hp: 240, tris: 540, desc: 'American school bus in golden yellow with black horizontal rub rails, black hood cowl and grille, and rooftop amber/red flasher lamps.' },
+  truck: { name: 'Mule', category: 'commercial', catName: 'Commercial & Heavy', L: 7.65, W: 2.74, H: 3.35, top: '100 mph', accel: '7.2s', hp: 220, tris: 522, desc: 'Commercial freight truck with Primary Paint cab, large Crisp White cargo container box, silver aluminum roll-up door, and chrome fuel tanks.' },
+  semi: { name: 'Roadtrain', category: 'commercial', catName: 'Commercial & Heavy', L: 15.83, W: 2.90, H: 3.80, top: '85 mph', accel: '8.5s', hp: 300, tris: 2066, desc: 'Heavy highway tractor-trailer with twin tall chrome vertical exhaust smokestacks, chrome fuel tanks, and large white/silver freight trailer.' },
+  garbage: { name: 'Trashmaster', category: 'commercial', catName: 'Commercial & Heavy', L: 7.30, W: 2.60, H: 3.00, top: '85 mph', accel: '8.2s', hp: 260, tris: 472, desc: 'Municipal waste truck in forest green with heavy galvanized steel compactor hopper, side underrun bars, and rear packing blade.' },
+  towtruck: { name: 'Tow Truck', category: 'suv', catName: 'SUVs & Pickups', L: 5.70, W: 2.44, H: 2.05, top: '110 mph', accel: '6.8s', hp: 185, tris: 664, desc: 'Recovery wrecker with Primary Paint cab, high-visibility Safety Yellow hydraulic boom and flatbed, red hazard warning chevrons, and amber warning beacon.' },
+  motorcycle: { name: 'Faggio', category: 'twowheeler', catName: 'Two-Wheelers', L: 2.18, W: 0.74, H: 1.15, top: '145 mph', accel: '3.6s', hp: 80, tris: 298, desc: 'Two-tone sport motorcycle with primary paint fuel tank, satin black chassis and leather seat, chrome exhaust pipe, and tinted windscreen.' },
+  scooter: { name: 'Zippo', category: 'twowheeler', catName: 'Two-Wheelers', L: 1.90, W: 0.72, H: 1.30, top: '90 mph', accel: '5.1s', hp: 70, tris: 226, desc: 'Urban moped with two-tone styling: primary paint engine cowl + Crisp White front legshield, black seat, and chrome rear luggage rack.' },
+  speedboat: { name: 'Speedboat', category: 'twowheeler', catName: 'Marine Craft', L: 6.20, W: 2.10, H: 1.40, top: '65 kts', accel: '4.1s', hp: 150, tris: 136, desc: 'Offshore performance powerboat with crisp white V-hull, dual ocean blue & red racing stripes, warm teak-wood cockpit deck, and twin chrome outdrives.' }
+};
+
+const LANDMARKS_DATA = {
+  hospital: {
+    name: 'Bellevue Hospital',
+    subtitle: '3 Explorable Floors + Rooftop Helipad · 11 Stationed Staff',
+    desc: 'Manhattan’s premier medical center overhauled with full multi-floor interiors: Floor 1 ER lobby & trauma bays, Floor 2 Intensive Care Unit & full-scale MRI diagnostic scanner, Floor 3 Surgical operating theaters & Chief Medical Director suite, and a rooftop Helipad with glowing aviation beacons.',
+    stats: { floors: '3 + Helipad', staff: '11 Stationed', rooms: '8 Dedicated Suites', height: '19.5 meters' },
+    floors: [
+      { id: 'all', name: 'All Floors (Full Structure)' },
+      { id: 'exploded', name: 'Exploded Stack View' },
+      { id: 'fl1', name: 'Floor 1: ER Lobby & Trauma' },
+      { id: 'fl2', name: 'Floor 2: ICU & MRI Diagnostic' },
+      { id: 'fl3', name: 'Floor 3: Surgical & Executive' },
+      { id: 'roof', name: 'Rooftop: Helipad' }
+    ],
+    rooms: [
+      { name: 'ER Triage Counter', floor: 'fl1', pos: [0, 1.2, -8] },
+      { name: 'Trauma Bay 1 & 2', floor: 'fl1', pos: [-6, 1.2, 0] },
+      { name: 'Ambulance ER Bay', floor: 'fl1', pos: [5, 1.2, -14] },
+      { name: 'ICU Recovery Ward', floor: 'fl2', pos: [-6, 7.2, 0] },
+      { name: 'MRI Diagnostic Suite', floor: 'fl2', pos: [7, 7.2, 2] },
+      { name: 'Physician Workstation', floor: 'fl2', pos: [0, 7.2, 0] },
+      { name: 'Operating Theater OR-1', floor: 'fl3', pos: [-6, 13.2, 0] },
+      { name: 'Operating Theater OR-2', floor: 'fl3', pos: [-6, 13.2, 6] },
+      { name: 'Chief Executive Office', floor: 'fl3', pos: [7, 13.2, 2] },
+      { name: 'Rooftop Helipad', floor: 'roof', pos: [0, 19.2, 0] }
+    ],
+    staff: [
+      { name: 'Dr. Mercer', role: 'Chief ER Physician', floor: 'Floor 1 (Triage)', type: 'doctor' },
+      { name: 'Nurse Clara', role: 'Head Triage Nurse', floor: 'Floor 1 (Desk)', type: 'doctor' },
+      { name: 'Orderly Mike', role: 'Transport Orderly', floor: 'Floor 1 (Lounge)', type: 'doctor' },
+      { name: 'EMT Martinez', role: 'Paramedic', floor: 'Floor 1 (Ambulance)', type: 'doctor' },
+      { name: 'Dr. Patel', role: 'ICU Specialist', floor: 'Floor 2 (ICU Ward)', type: 'doctor' },
+      { name: 'Nurse Jackson', role: 'Critical Care Nurse', floor: 'Floor 2 (ICU)', type: 'doctor' },
+      { name: 'Dr. Vance', role: 'Chief Radiologist', floor: 'Floor 2 (MRI Suite)', type: 'doctor' },
+      { name: 'Nurse Chloe', role: 'Diagnostic Prep', floor: 'Floor 2 (Radiology)', type: 'doctor' },
+      { name: 'Dr. Chen', role: 'Chief Trauma Surgeon', floor: 'Floor 3 (OR-1)', type: 'doctor' },
+      { name: 'Nurse Lisa', role: 'Surgical Tech Nurse', floor: 'Floor 3 (OR-1)', type: 'doctor' },
+      { name: 'Dr. Ramirez', role: 'Medical Director', floor: 'Floor 3 (Chief Office)', type: 'doctor' }
+    ]
+  },
+  police: {
+    name: 'NYPD 1st Precinct (Police HQ)',
+    subtitle: '3 Explorable Floors + Rooftop Watchtower · 13 Stationed Staff',
+    desc: 'Downtown Manhattan headquarters with 3 explorable levels: Floor 1 Lobby, front desk sergeant, holding cell block, and booking mugshot wall; Floor 2 Detective Bureau bullpen, Syndicate corkboard investigation room, and interrogation rooms; Floor 3 Precinct Captain suite, SWAT briefing room, and tactical armory; plus a fortified rooftop watchtower.',
+    stats: { floors: '3 + Watchtower', staff: '13 Stationed', rooms: '9 Dedicated Suites', height: '19.5 meters' },
+    floors: [
+      { id: 'all', name: 'All Floors (Full Structure)' },
+      { id: 'exploded', name: 'Exploded Stack View' },
+      { id: 'fl1', name: 'Floor 1: Lobby & Lockup' },
+      { id: 'fl2', name: 'Floor 2: Detectives Bullpen' },
+      { id: 'fl3', name: 'Floor 3: Captain & SWAT' },
+      { id: 'roof', name: 'Rooftop: Watchtower' }
+    ],
+    rooms: [
+      { name: 'Desk Sergeant Counter', floor: 'fl1', pos: [0, 1.2, -8] },
+      { name: 'Holding Cell Block', floor: 'fl1', pos: [-10, 1.2, 0] },
+      { name: 'Mugshot & Booking Wall', floor: 'fl1', pos: [10, 1.2, 0] },
+      { name: 'Detective Bureau Bullpen', floor: 'fl2', pos: [-8, 7.2, 0] },
+      { name: 'Syndicate Evidence Corkboard', floor: 'fl2', pos: [10, 7.2, 0] },
+      { name: 'Interrogation Room', floor: 'fl2', pos: [10, 7.2, 8] },
+      { name: 'Precinct Captain Suite', floor: 'fl3', pos: [-8, 13.2, 0] },
+      { name: 'SWAT Briefing Hologram Table', floor: 'fl3', pos: [10, 13.2, 0] },
+      { name: 'Tactical Armory & Weapons Cage', floor: 'fl3', pos: [10, 13.2, 8] },
+      { name: 'Rooftop Watchtower', floor: 'roof', pos: [0, 19.2, 0] }
+    ],
+    staff: [
+      { name: 'Sgt. Callahan', role: 'Front Desk Sergeant', floor: 'Floor 1 (Desk)', type: 'police' },
+      { name: 'Officer Davis', role: 'Intake & Records', floor: 'Floor 1 (Desk)', type: 'police' },
+      { name: 'Officer Miller', role: 'Lockup Guard', floor: 'Floor 1 (Holding Cells)', type: 'police' },
+      { name: 'Officer Brooks', role: 'Booking Processing', floor: 'Floor 1 (Mugshot)', type: 'police' },
+      { name: 'Officer Vance', role: 'Motor Pool Cruiser', floor: 'Floor 1 (Exterior)', type: 'police' },
+      { name: 'Officer Martinez', role: 'Perimeter Patrol', floor: 'Floor 1 (Exterior)', type: 'police' },
+      { name: 'Detective Rossi', role: 'Senior Syndicate Lead', floor: 'Floor 2 (Desk 1)', type: 'police' },
+      { name: 'Detective Murphy', role: 'Homicide Investigator', floor: 'Floor 2 (Desk 2)', type: 'police' },
+      { name: 'Detective Cole', role: 'Evidence Investigator', floor: 'Floor 2 (Corkboard)', type: 'police' },
+      { name: 'Officer Kowalski', role: 'Interrogation Guard', floor: 'Floor 2 (Interrogation)', type: 'police' },
+      { name: 'Capt. Higgins', role: 'Precinct Commander', floor: 'Floor 3 (Captain Office)', type: 'police' },
+      { name: 'Lt. Vance', role: 'SWAT Commander', floor: 'Floor 3 (SWAT Briefing)', type: 'police' },
+      { name: 'Officer Briggs', role: 'Armory Quartermaster', floor: 'Floor 3 (Tactical Armory)', type: 'police' }
+    ]
+  },
+  gunshop: {
+    name: 'Ammu-Nation',
+    subtitle: '2 Explorable Floors + Indoor Shooting Range + Bank Vault · 4 Staff',
+    desc: 'Premier firearms & tactical gear store with 2 multi-room floors: Floor 1 retail showroom with glass cases, weapon wall pegboards, and an indoor 4-lane shooting range; Floor 2 VIP tactical gear showroom, Kevlar mannequins, master gunsmith workshop with vices, and a 40cm thick reinforced steel bank vault door.',
+    stats: { floors: '2 Explorable', staff: '4 Stationed', rooms: '6 Dedicated Suites', height: '11.2 meters' },
+    floors: [
+      { id: 'all', name: 'All Floors (Full Structure)' },
+      { id: 'exploded', name: 'Exploded Stack View' },
+      { id: 'fl1', name: 'Floor 1: Retail & Shooting Range' },
+      { id: 'fl2', name: 'Floor 2: VIP Tactical & Vault' }
+    ],
+    rooms: [
+      { name: 'Retail Counter & Glass Cases', floor: 'fl1', pos: [0, 1.2, -6] },
+      { name: 'Wall Weapon Pegboard Display', floor: 'fl1', pos: [-10, 1.2, 0] },
+      { name: '4-Lane Indoor Shooting Range', floor: 'fl1', pos: [14, 1.2, 0] },
+      { name: 'VIP Tactical Showroom', floor: 'fl2', pos: [-8, 6.5, 0] },
+      { name: 'Kevlar Body Armor Mannequins', floor: 'fl2', pos: [-12, 6.5, -4] },
+      { name: 'Master Gunsmith Workbench', floor: 'fl2', pos: [8, 6.5, 6] },
+      { name: 'Reinforced Steel Armory Vault', floor: 'fl2', pos: [12, 6.5, 0] }
+    ],
+    staff: [
+      { name: 'Ammu-Nation Clerk', role: 'Retail Gun Clerk', floor: 'Floor 1 (Counter)', type: 'gun' },
+      { name: 'Range Master Frank', role: 'Range Safety Officer', floor: 'Floor 1 (Shooting Range)', type: 'gun' },
+      { name: 'Tactical Specialist Cole', role: 'VIP Defense Consultant', floor: 'Floor 2 (VIP Showroom)', type: 'gun' },
+      { name: 'Master Armorer Marcus', role: 'Master Gunsmith', floor: 'Floor 2 (Workbench / Vault)', type: 'gun' }
+    ]
+  }
+};
+
+// =============================================================================
+// THREE.JS SETUP
+// =============================================================================
+const canvas = document.getElementById('threeCanvas');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0c1017);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 800);
+camera.position.set(7, 4.5, 9);
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+sunLight.position.set(25, 45, 20);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.left = -40; sunLight.shadow.camera.right = 40;
+sunLight.shadow.camera.top = 40; sunLight.shadow.camera.bottom = -40;
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x70a1ff, 0.35);
+fillLight.position.set(-20, 20, -20);
+scene.add(fillLight);
+
+// Ground Plane
+const groundGeo = new THREE.PlaneGeometry(300, 300);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.85, metalness: 0.1 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.01;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Grid Helper
+const grid = new THREE.GridHelper(100, 50, 0x00d2ff, 0x223247);
+grid.position.y = 0;
+scene.add(grid);
+
+// Object Anchor Groups
+const vehicleGroup = new THREE.Group();
+scene.add(vehicleGroup);
+
+const landmarkGroup = new THREE.Group();
+scene.add(landmarkGroup);
+
+const lineupGroup = new THREE.Group();
+scene.add(lineupGroup);
+
+// GLTF Loader & Material
+const gltfLoader = new THREE.GLTFLoader();
+
+function makeCarMaterial(paintHex) {
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const paintCol = new THREE.Color(paintHex !== undefined ? paintHex : currentPaint);
+  mat.userData.uPaintColor = { value: paintCol };
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uPaintColor = mat.userData.uPaintColor;
+    shader.vertexShader = 'uniform vec3 uPaintColor;\nvarying float vIsTaillight;\nvarying float vIsHeadlight;\n' + shader.vertexShader.replace(
+      '#include <color_vertex>',
+      `#include <color_vertex>
+      #ifdef USE_COLOR
+      if (color.r > 0.94 && color.g > 0.94 && color.b > 0.94) {
+        vColor.xyz *= uPaintColor;
+      }
+      #endif
+      vIsTaillight = (color.r > 0.82 && color.g < 0.25 && color.b < 0.25 && position.z > 0.0) ? 1.0 : 0.0;
+      vIsHeadlight = (color.r > 0.92 && color.g > 0.92 && color.b > 0.70 && color.b < 0.88 && position.z < 0.0) ? 1.0 : 0.0;`
+    );
+    shader.fragmentShader = 'varying float vIsTaillight;\nvarying float vIsHeadlight;\n' + shader.fragmentShader.replace(
+      '#include <dithering_fragment>',
+      `#include <dithering_fragment>
+      if (vIsTaillight > 0.5) {
+        gl_FragColor.rgb = vec3(1.0, 0.03, 0.03) * 2.5;
+      } else if (vIsHeadlight > 0.5) {
+        gl_FragColor.rgb = vec3(1.0, 0.98, 0.85) * 2.2;
+      }`
+    );
+  };
+  return mat;
+}
+
+// Orbit Camera State
+let isDragging = false;
+let isRightDragging = false;
+let prevMouseX = 0, prevMouseY = 0;
+let camTarget = new THREE.Vector3(0, 1.0, 0);
+let camDistance = 8.5;
+let camPhi = 0.55, camTheta = 0.65;
+
+function updateCameraPos() {
+  const x = camTarget.x + camDistance * Math.sin(camPhi) * Math.sin(camTheta);
+  const y = camTarget.y + camDistance * Math.cos(camPhi);
+  const z = camTarget.z + camDistance * Math.sin(camPhi) * Math.cos(camTheta);
+  camera.position.set(x, y, z);
+  camera.lookAt(camTarget);
+}
+updateCameraPos();
+
+// Mouse / Touch Controls
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) isDragging = true;
+  if (e.button === 2) isRightDragging = true;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+});
+window.addEventListener('mouseup', () => { isDragging = false; isRightDragging = false; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging && !isRightDragging) return;
+  const dx = e.clientX - prevMouseX;
+  const dy = e.clientY - prevMouseY;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+
+  if (isDragging) {
+    camTheta -= dx * 0.007;
+    camPhi = Math.max(0.08, Math.min(Math.PI / 2 - 0.02, camPhi - dy * 0.007));
+  } else if (isRightDragging) {
+    const forward = new THREE.Vector3().subVectors(camTarget, camera.position).normalize();
+    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+    const panSpeed = camDistance * 0.0015;
+    camTarget.addScaledVector(right, -dx * panSpeed);
+    camTarget.addScaledVector(up, dy * panSpeed);
+  }
+  updateCameraPos();
+});
+
+canvas.addEventListener('wheel', e => {
+  camDistance = Math.max(1.8, Math.min(180, camDistance + e.deltaY * 0.015));
+  updateCameraPos();
+  e.preventDefault();
+}, { passive: false });
+
+// Window Resize
+window.addEventListener('resize', () => {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+});
+
+// Animation Loop
+let clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  if (autoRotate && !isDragging && !isRightDragging) {
+    camTheta += dt * 0.25;
+    updateCameraPos();
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// =============================================================================
+// MODE SWITCHING & UI LOGIC
+// =============================================================================
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('galleryOverlay').classList.add('hidden');
+  document.getElementById('sidebar').classList.remove('hidden');
+  document.getElementById('inspector').classList.remove('hidden');
+  document.getElementById('viewportBottomControls').classList.remove('hidden');
+
+  const inspTabs = document.getElementById('inspTabs');
+  const tabCode = document.getElementById('inspTabCode');
+  const tabSpecs = document.getElementById('inspTabSpecs');
+  if (inspTabs) {
+    if (mode === 'vehicles' || mode === 'landmarks') {
+      inspTabs.classList.remove('hidden');
+      if (tabCode) tabCode.style.display = (mode === 'vehicles') ? '' : 'none';
+      if (tabSpecs) tabSpecs.innerHTML = (mode === 'vehicles') ? '📊 Specs & Craftsmanship' : '🏢 Cutaway & Levels';
+      if (mode === 'landmarks' && currentInspectorTab === 'code') {
+        switchInspectorTab('specs');
+      } else {
+        switchInspectorTab(currentInspectorTab);
+      }
+    } else {
+      inspTabs.classList.add('hidden');
+      const codeSec = document.getElementById('codeEditorSection');
+      if (codeSec) codeSec.classList.add('hidden');
+      const promptSec = document.getElementById('promptSection');
+      if (promptSec) promptSec.classList.add('hidden');
+      const dynSec = document.getElementById('inspectorDynamicContent');
+      if (dynSec) dynSec.classList.remove('hidden');
+    }
+  }
+
+  vehicleGroup.visible = false;
+  landmarkGroup.visible = false;
+  lineupGroup.visible = false;
+
+  if (mode === 'vehicles') {
+    document.getElementById('tabVehicles').classList.add('active');
+    vehicleGroup.visible = true;
+    camTarget.set(0, 0.9, 0);
+    camDistance = 7.8;
+    buildVehicleSidebar();
+    loadVehicle(currentAssetId);
+  } else if (mode === 'landmarks') {
+    document.getElementById('tabLandmarks').classList.add('active');
+    landmarkGroup.visible = true;
+    document.getElementById('viewportBottomControls').classList.add('hidden');
+    buildLandmarkSidebar();
+    loadLandmark(currentLandmarkId);
+  } else if (mode === 'lineup') {
+    document.getElementById('tabLineup').classList.add('active');
+    lineupGroup.visible = true;
+    document.getElementById('viewportBottomControls').classList.add('hidden');
+    buildLineupMode();
+  } else if (mode === 'gallery') {
+    document.getElementById('tabGallery').classList.add('active');
+    document.getElementById('galleryOverlay').classList.remove('hidden');
+  }
+
+  updateCameraPos();
+}
+
+function toggleAutoRotate() {
+  autoRotate = !autoRotate;
+  document.getElementById('btnAutoRotate').classList.toggle('active', autoRotate);
+}
+
+function toggleWireframe() {
+  wireframe = !wireframe;
+  document.getElementById('btnWireframe').classList.toggle('active', wireframe);
+  scene.traverse(o => {
+    if (o.isMesh && o.material) o.material.wireframe = wireframe;
+  });
+}
+
+function cycleLighting() {
+  lightingMode = (lightingMode + 1) % 3;
+  const btn = document.getElementById('btnLighting');
+  if (lightingMode === 0) {
+    btn.textContent = '☀️ Noon';
+    scene.background.set(0x0c1017);
+    sunLight.color.set(0xffffff);
+    sunLight.intensity = 1.2;
+    ambientLight.color.set(0xffffff);
+    ambientLight.intensity = 0.55;
+  } else if (lightingMode === 1) {
+    btn.textContent = '🌅 Sunset';
+    scene.background.set(0x1a0f1a);
+    sunLight.color.set(0xff7733);
+    sunLight.intensity = 1.4;
+    ambientLight.color.set(0xff99bb);
+    ambientLight.intensity = 0.45;
+  } else {
+    btn.textContent = '🌃 Night';
+    scene.background.set(0x040609);
+    sunLight.color.set(0x224488);
+    sunLight.intensity = 0.4;
+    ambientLight.color.set(0x00d2ff);
+    ambientLight.intensity = 0.35;
+  }
+}
+
+function resetCamera() {
+  if (currentMode === 'vehicles') {
+    camTarget.set(0, 0.9, 0);
+    camDistance = 7.8;
+    camPhi = 0.55; camTheta = 0.65;
+  } else if (currentMode === 'landmarks') {
+    camTarget.set(0, 7.0, 0);
+    camDistance = 42;
+    camPhi = 0.72; camTheta = 0.78;
+  } else if (currentMode === 'lineup') {
+    camTarget.set(0, 2.5, 0);
+    camDistance = 60;
+    camPhi = 0.65; camTheta = 0.5;
+  }
+  updateCameraPos();
+}
+
+// =============================================================================
+// VEHICLE MODE LOGIC
+// =============================================================================
+let currentGLTFScene = null;
+
+function buildVehicleSidebar() {
+  const pList = [
+    { id: 'all', label: 'All (29)' },
+    { id: 'custom', label: '✨ Scratch (1)' },
+    { id: 'cars', label: 'Ordinary (7)' },
+    { id: 'suv', label: 'SUVs & Trucks (4)' },
+    { id: 'sports', label: 'Exotics (7)' },
+    { id: 'emergency', label: 'Emergency (6)' },
+    { id: 'commercial', label: 'Heavy (4)' },
+    { id: 'twowheeler', label: 'Bikes & Boats (3)' }
+  ];
+
+  const catContainer = document.getElementById('categoryPills');
+  catContainer.innerHTML = pList.map(p => `
+    <span class="pill-filter ${p.id === 'all' ? 'active' : ''}" onclick="filterCategory('${p.id}', this)">${p.label}</span>
+  `).join('');
+
+  renderVehicleList(Object.keys(VEHICLE_SPECS));
+  buildPaletteSwatches();
+}
+
+function buildPaletteSwatches() {
+  const container = document.getElementById('paletteSwatches');
+  container.innerHTML = PAINTS.map(p => `
+    <div class="swatch ${p.hex === currentPaint ? 'active' : ''}" style="background:#${p.hex.toString(16).padStart(6,'0')}" title="${p.name}" onclick="applyPresetPaint(${p.hex}, this)"></div>
+  `).join('');
+}
+
+function applyPresetPaint(hex, el) {
+  currentPaint = hex;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('customColorPicker').value = '#' + hex.toString(16).padStart(6, '0');
+  updateVehicleMaterialColor();
+}
+
+function applyCustomColor(hexStr) {
+  currentPaint = parseInt(hexStr.replace('#', ''), 16);
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  updateVehicleMaterialColor();
+}
+
+function updateVehicleMaterialColor() {
+  if (!currentGLTFScene) return;
+  const col = new THREE.Color(currentPaint);
+  currentGLTFScene.traverse(o => {
+    if (o.isMesh && o.material && o.material.userData && o.material.userData.uPaintColor) {
+      o.material.userData.uPaintColor.value.copy(col);
+    }
+  });
+}
+
+function renderVehicleList(ids) {
+  const list = document.getElementById('itemList');
+  list.innerHTML = ids.map(id => {
+    const spec = VEHICLE_SPECS[id];
+    const isCustom = (id === 'custom_vehicle');
+    return `
+      <div class="asset-card ${id === currentAssetId ? 'active' : ''} ${isCustom ? 'scratchpad-card' : ''}" onclick="loadVehicle('${id}')">
+        <div class="card-icon">${isCustom ? '✨' : '🚗'}</div>
+        <div class="card-info">
+          <div class="card-title">${spec.name}</div>
+          <div class="card-sub">
+            <span>${spec.catName}</span>
+            <span class="card-badge" ${isCustom ? 'style="background:rgba(108,92,231,0.25);color:#a29bfe;border-color:#6c5ce7"' : ''}>${spec.tris.toLocaleString()} tris</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterCategory(catId, el) {
+  document.querySelectorAll('.pill-filter').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+
+  const keys = Object.keys(VEHICLE_SPECS).filter(id => {
+    if (catId === 'all') return true;
+    return VEHICLE_SPECS[id].category === catId;
+  });
+  renderVehicleList(keys);
+}
+
+function filterAssets() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const keys = Object.keys(VEHICLE_SPECS).filter(id => {
+    const s = VEHICLE_SPECS[id];
+    return s.name.toLowerCase().includes(q) || id.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q);
+  });
+  renderVehicleList(keys);
+}
+
+function loadVehicle(id) {
+  currentAssetId = id;
+  document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+
+  const spec = VEHICLE_SPECS[id];
+  document.getElementById('hudTitle').textContent = spec.name;
+
+  // Clear previous
+  while (vehicleGroup.children.length > 0) {
+    vehicleGroup.remove(vehicleGroup.children[0]);
+  }
+
+  // Update Inspector
+  document.getElementById('inspTitle').textContent = `${spec.name} (${id.toUpperCase()})`;
+  document.getElementById('inspSub').textContent = spec.catName;
+  document.getElementById('inspDesc').textContent = spec.desc;
+
+  const dyn = document.getElementById('inspectorDynamicContent');
+  dyn.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Dimensions (L × W × H)</div>
+        <div class="stat-val">${spec.L}m × ${spec.W}m × ${spec.H}m</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Top Speed</div>
+        <div class="stat-val">${spec.top}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">0-60 mph</div>
+        <div class="stat-val">${spec.accel}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Hull Strength</div>
+        <div class="stat-val">${spec.hp} HP</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px">Detailed Craftsmanship</h3>
+      <div class="features-list">
+        <div class="feature-item">🛞 Steel brake rotors with red Brembo sport calipers and 5-spoke wheels</div>
+        <div class="feature-item">🪞 Aerodynamic side mirrors: driver reflective glass (+Z) & amber blinkers (-Z)</div>
+        <div class="feature-item">🚪 Recessed door handle pockets with chrome pull levers</div>
+        <div class="feature-item">💨 Chrome-tipped exhaust pipes with dark hollow bores</div>
+        <div class="feature-item">💡 Quad projector headlights & wrap-around LED taillight lenses</div>
+      </div>
+    </div>
+  `;
+
+  // Update code editor with vehicle builder code
+  switchInspectorTab(currentInspectorTab);
+  updateCodeEditorForVehicle(id);
+
+  // Render vehicle model live in Three.js
+  runVehicleLiveCode();
+  updatePromptPreview();
+}
+
+// =============================================================================
+// PROCEDURAL VEHICLE ENGINE & LIVE CODE EDITOR
+// =============================================================================
+let currentInspectorTab = 'code';
+
+function switchInspectorTab(tab) {
+  currentInspectorTab = tab;
+  const tabCode = document.getElementById('inspTabCode');
+  const tabPrompt = document.getElementById('inspTabPrompt');
+  const tabSpecs = document.getElementById('inspTabSpecs');
+  if (tabCode) tabCode.classList.toggle('active', tab === 'code');
+  if (tabPrompt) tabPrompt.classList.toggle('active', tab === 'prompt');
+  if (tabSpecs) tabSpecs.classList.toggle('active', tab === 'specs');
+
+  const codeSec = document.getElementById('codeEditorSection');
+  const promptSec = document.getElementById('promptSection');
+  const dynSec = document.getElementById('inspectorDynamicContent');
+
+  if (tab === 'code') {
+    if (codeSec) codeSec.classList.remove('hidden');
+    if (promptSec) promptSec.classList.add('hidden');
+    if (dynSec) dynSec.classList.add('hidden');
+  } else if (tab === 'prompt') {
+    if (codeSec) codeSec.classList.add('hidden');
+    if (promptSec) promptSec.classList.remove('hidden');
+    if (dynSec) dynSec.classList.add('hidden');
+    renderPromptPresets();
+    updatePromptPreview();
+  } else {
+    if (codeSec) codeSec.classList.add('hidden');
+    if (promptSec) promptSec.classList.add('hidden');
+    if (dynSec) dynSec.classList.remove('hidden');
+  }
+}
+
+// =============================================================================
+// AI VEHICLE DESIGN STUDIO & MODEL IMPROVEMENT PROMPT GENERATOR
+// =============================================================================
+let promptMode = 'scratch'; // 'scratch' (from zero) or 'modify' (stock tuning)
+let currentPromptPreset = 'hypercar';
+
+const SCRATCH_PRESETS = {
+  hypercar: {
+    label: "🏎️ Hypercar",
+    name: "Mid-Engine Exotic Hypercar",
+    specs: { L: 4.45, W: 2.18, H: 1.12, wb: 2.65, wheel: 0.35, kind: 'custom' },
+    instructions: "Design an aggressive mid-engine exotic hypercar from scratch: ultra-low wedge profile, twin front air splitter dams, steeply raked panoramic cockpit canopy, side intercooler radiator ducts, transparent rear engine bay deck exposing an engine block, quad rear carbon diffusers, and an integrated high-downforce GT wing spoiler."
+  },
+  truck: {
+    label: "🛻 Trophy Truck",
+    name: "Trophy Desert / Heavy Crew-Cab Pickup",
+    specs: { L: 5.60, W: 2.38, H: 1.95, wb: 3.40, wheel: 0.44, kind: 'custom' },
+    instructions: "Design a rugged desert trophy / heavy-duty crew-cab pickup truck from scratch: high ground clearance suspension, muscular flared fenders with hexagonal wheel arches, heavy tubular front bullbar with quad amber offroad pods, recessed cargo bed with dark liner, tailgate step, and dual side-exit exhaust tips."
+  },
+  muscle: {
+    label: "🏁 Muscle Car",
+    name: "Classic American Fastback Muscle",
+    specs: { L: 4.95, W: 2.28, H: 1.30, wb: 2.92, wheel: 0.36, kind: 'custom' },
+    instructions: "Design an iconic 1970s American muscle car from scratch: long aggressive hood with protruding twin shaker intake scoop, recessed dual round headlights behind a black egg-crate grille, fastback roofline sloping into a short rear decklid, chrome front and rear bumpers, and wide-bore dual exhausts."
+  },
+  formula: {
+    label: "⚡ Formula Racer",
+    name: "Open-Cockpit Formula Track Racer",
+    specs: { L: 4.80, W: 2.10, H: 0.98, wb: 3.10, wheel: 0.36, kind: 'custom' },
+    instructions: "Design a single-seat open-cockpit Formula / track racer from scratch: multi-element stepped front aero wing with endplates, needle nosecone tapering to cockpit, safety roll hoop / halo intake snorkel above driver headrest, sculpted aerodynamic sidepods, and massive rear bi-plane wing with twin vertical endplates."
+  },
+  cyber: {
+    label: "🌆 Cyberpunk",
+    name: "Cyberpunk Origami Cruiser",
+    specs: { L: 4.65, W: 2.25, H: 1.20, wb: 2.80, wheel: 0.36, kind: 'custom' },
+    instructions: "Design a retro-futuristic cyberpunk cruiser from scratch: extreme faceted stealth origami body panels, full-width horizontal neon LED front headlight blade, tinted jet-cockpit canopy, rear window solar louver slats, exposed twin side radiator turbines, and a glowing neon rear light bar."
+  },
+  van: {
+    label: "🚐 Cargo Van",
+    name: "Commercial High-Cube Cargo Van",
+    specs: { L: 5.80, W: 2.40, H: 2.50, wb: 3.60, wheel: 0.40, kind: 'custom' },
+    instructions: "Design a modern commercial cargo / delivery van from scratch: short stubby front nose transitioning smoothly into a massive high-cube cargo hull, sliding side door track molding, textured dark lower rocker cladding, high-mounted rear taillight pillars, and vertical split rear cargo doors."
+  },
+  overland: {
+    label: "🏔️ Overland 4x4",
+    name: "Expedition Overland 4x4",
+    specs: { L: 4.70, W: 2.30, H: 2.05, wb: 2.85, wheel: 0.42, kind: 'custom' },
+    instructions: "Design an expedition overland 4x4 SUV from scratch: boxy safari silhouette, heavy-duty winch bumper with dual recovery D-rings, raised safari snorkel along right A-pillar, roof rack cargo basket with overland jerry cans and storage crates, and tailgate-mounted exterior spare tire with chrome bracket."
+  },
+  bike: {
+    label: "🏍️ Superbike",
+    name: "High-Performance Racing Superbike",
+    specs: { L: 2.20, W: 0.78, H: 1.15, wb: 1.45, wheel: 0.32, kind: 'motorcycle' },
+    instructions: "Design an aggressive high-performance superbike from scratch: aerodynamic front fairing with twin slit LED projector eyes, compact tinted windscreen, sculpted muscular fuel tank with knee cutouts, exposed trellis frame and engine block, stepped solo racing seat with aerodynamic tail cowl, and upswept carbon exhaust canister."
+  },
+  tank: {
+    label: "🛡️ Armored APC",
+    name: "Armored SWAT Riot Tactical Carrier",
+    specs: { L: 5.40, W: 2.50, H: 2.30, wb: 3.20, wheel: 0.46, kind: 'custom' },
+    instructions: "Design a heavy armored tactical SWAT / riot suppression carrier from scratch: angled ballistic hull plates to deflect projectiles, reinforced ram push bumper, narrow slit armored riot windows with mesh grilles, rooftop tactical sniper hatch with searchlight, and rear troop deployment doors with grab handles."
+  },
+  custom: {
+    label: "✨ Custom Vision",
+    name: "Original Concept Prototype",
+    specs: { L: 4.60, W: 2.15, H: 1.25, wb: 2.75, wheel: 0.35, kind: 'custom' },
+    instructions: "Design an entirely original concept vehicle from scratch: custom proportions, innovative surface transitions, bespoke lighting signatures, and functional aerodynamic elements."
+  }
+};
+
+const PROMPT_PRESETS = {
+  aero: {
+    label: "🏎️ GT Bodykit",
+    text: "Redesign this vehicle with an aggressive aerodynamic GT bodykit: add a low-profile front chin splitter, flared side skirts with dark rocker contrast, wider rear quad diffusers, and an aerodynamic carbon GT wing spoiler with dual chrome uprights."
+  },
+  offroad: {
+    label: "🏔️ Overland Offroad",
+    text: "Convert this vehicle into a rugged expedition overland build: add heavy tubular front bumper guards with dual amber fog lamps, raised suspension clearance, a safari roof rack basket with cargo mounts, and a rear exterior spare tire."
+  },
+  emergency: {
+    label: "🚨 Emergency / Police",
+    text: "Upfit this vehicle into a high-visibility municipal / tactical emergency vehicle: add an aerodynamic dual-color LED strobe lightbar on the roof header, front heavy steel push bumper, high-mounted searchlights, and high-intensity grille strobe indicators."
+  },
+  luxury: {
+    label: "💎 Luxury VIP",
+    text: "Upgrade this vehicle into an ultra-luxury VIP executive spec: add continuous chrome window surround trim, double-slat horizontal chrome grille, flush aerodynamic side mirrors with integrated amber turn signals, recessed door handles, and quad polished chrome exhaust tips."
+  },
+  cyber: {
+    label: "🌆 Cyberpunk Mod",
+    text: "Redesign this model in a cyberpunk / retro-futuristic style: add sharp angular geometric body lines, dark tinted canopy with neon accent strips, rear window louvers, exposed twin side intercooler intakes, and an integrated ducktail blade."
+  },
+  detailing: {
+    label: "🔍 Fix Windows & Fitment",
+    text: "Refine this model's windows and fitment: ensure the windshield is raked back naturally from the cowl to the roofline (not a vertical flat sheet), side windows fit flush into the door panels, and side mirrors are aerodynamically anchored to the A-pillars without floating."
+  },
+  custom: {
+    label: "✨ Custom Mod",
+    text: ""
+  }
+};
+
+const LANDMARK_PROMPT_PRESETS = {
+  aero: {
+    label: "🏙️ Observation Deck",
+    text: "Expand this landmark architecture with an upper-level rooftop observation deck, panoramic floor-to-ceiling exterior glass curtain walls, and high-lumen architectural exterior wash floodlights."
+  },
+  offroad: {
+    label: "🛡️ Blast Fortification",
+    text: "Fortify this facility with reinforced structural blast doors, heavy concrete security bollards, high-security window grates, and tactical perimeter searchlights."
+  },
+  emergency: {
+    label: "🚁 Emergency Helipad",
+    text: "Add specialized emergency dispatch response infrastructure: add a trauma rooftop helipad with beacon lights, an interior tactical command center, and dedicated vehicle bay roll-up doors."
+  },
+  luxury: {
+    label: "💎 Executive Luxury",
+    text: "Redesign this interior and exterior with ultra-premium materials: executive marble tile floor slabs, dark polished mahogany trim reception counters, recessed ambient cove lighting, and chrome railing stairwells."
+  },
+  cyber: {
+    label: "🌆 Cyberpunk Neon",
+    text: "Overhaul this building in a high-tech cyberpunk / neon aesthetic: holographic billboard pylons, exposed conduit and cable trays, neon cyan and magenta exterior light strips, and tinted surveillance glazing."
+  },
+  detailing: {
+    label: "🔍 Interior Fitment",
+    text: "Refine the interior architectural detailing: ensure all interior room partition walls align cleanly without gaps, doors and stairwells connect smoothly between floors, and staff workstations have proper ergonomic computer desks and seating."
+  },
+  custom: {
+    label: "✨ Custom Arch",
+    text: ""
+  }
+};
+
+function setPromptMode(mode) {
+  promptMode = mode;
+  const btnScratch = document.getElementById('btnPromptModeScratch');
+  const btnModify = document.getElementById('btnPromptModeModify');
+  if (btnScratch) btnScratch.classList.toggle('active', mode === 'scratch');
+  if (btnModify) btnModify.classList.toggle('active', mode === 'modify');
+
+  const lblPresets = document.getElementById('promptPresetsLabel');
+  const lblCustom = document.getElementById('promptCustomInputLabel');
+  const subPrompt = document.getElementById('promptPreviewSub');
+
+  if (mode === 'scratch') {
+    if (lblPresets) lblPresets.textContent = '🚀 Select From-Scratch Vehicle Archetype:';
+    if (lblCustom) lblCustom.textContent = '📝 Custom Design Vision & Instructions:';
+    if (subPrompt) subPrompt.textContent = 'Full Architectural Toolkit (Zero Baseline)';
+    if (!SCRATCH_PRESETS[currentPromptPreset]) {
+      currentPromptPreset = 'hypercar';
+    }
+  } else {
+    if (lblPresets) lblPresets.textContent = '⚡ Select Model Improvement Goal:';
+    if (lblCustom) lblCustom.textContent = '📝 Custom Modification Instructions:';
+    if (subPrompt) subPrompt.textContent = 'Stock Model Enhancement Specs';
+    if (!PROMPT_PRESETS[currentPromptPreset]) {
+      currentPromptPreset = 'aero';
+    }
+  }
+
+  renderPromptPresets();
+  updatePromptPreview();
+}
+
+function renderPromptPresets() {
+  const bar = document.getElementById('promptPresetsBar');
+  if (!bar) return;
+
+  const modeSwitch = document.getElementById('promptModeSwitch');
+  if (modeSwitch) {
+    modeSwitch.style.display = (currentMode === 'landmarks') ? 'none' : 'flex';
+  }
+
+  bar.innerHTML = '';
+  let presetsObj;
+  if (currentMode === 'landmarks') {
+    presetsObj = LANDMARK_PROMPT_PRESETS;
+  } else if (promptMode === 'scratch') {
+    presetsObj = SCRATCH_PRESETS;
+  } else {
+    presetsObj = PROMPT_PRESETS;
+  }
+
+  for (const [key, val] of Object.entries(presetsObj)) {
+    const chip = document.createElement('div');
+    chip.className = 'prompt-preset-chip' + (currentPromptPreset === key ? ' active' : '');
+    chip.textContent = val.label || key;
+    chip.onclick = () => selectPromptPreset(key, chip);
+    bar.appendChild(chip);
+  }
+}
+
+function selectPromptPreset(presetKey, el) {
+  currentPromptPreset = presetKey;
+  document.querySelectorAll('.prompt-preset-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const customTa = document.getElementById('promptCustomInput');
+  if (currentMode === 'landmarks') {
+    const p = LANDMARK_PROMPT_PRESETS[presetKey];
+    if (customTa && p) customTa.value = p.text || '';
+  } else if (promptMode === 'scratch') {
+    const p = SCRATCH_PRESETS[presetKey];
+    if (p) {
+      if (customTa) customTa.value = p.instructions || '';
+      if (currentAssetId === 'custom_vehicle' && p.specs) {
+        Object.assign(VEHICLE_SPECS.custom_vehicle, p.specs);
+        if (typeof SPECS !== 'undefined' && SPECS.custom_vehicle) {
+          Object.assign(SPECS.custom_vehicle, p.specs);
+        }
+        VEHICLE_SPECS.custom_vehicle.name = p.name;
+        const hudTitle = document.getElementById('hudTitle');
+        if (hudTitle) hudTitle.textContent = p.name;
+      }
+    }
+  } else {
+    const p = PROMPT_PRESETS[presetKey];
+    if (customTa && p) customTa.value = p.text || '';
+  }
+
+  updatePromptPreview();
+}
+
+function onPromptCustomInput() {
+  updatePromptPreview();
+}
+
+function buildModelImprovementPrompt() {
+  const isLandmark = (currentMode === 'landmarks');
+  const customTa = document.getElementById('promptCustomInput');
+  const customInputVal = customTa ? customTa.value.trim() : '';
+
+  if (!isLandmark) {
+    // Check if From-Scratch mode is active
+    if (promptMode === 'scratch') {
+      const preset = SCRATCH_PRESETS[currentPromptPreset] || SCRATCH_PRESETS.hypercar;
+      const id = (currentAssetId === 'custom_vehicle') ? 'custom_vehicle' : currentAssetId;
+      const spec = (id === 'custom_vehicle') ? preset.specs : (VEHICLE_SPECS[id] || preset.specs);
+      const vehicleName = (id === 'custom_vehicle') ? preset.name : (VEHICLE_SPECS[id] ? VEHICLE_SPECS[id].name : preset.name);
+      const instructions = customInputVal || preset.instructions;
+      const fnName = (id === 'custom_vehicle') ? 'buildCustom' : ('build' + (id.charAt(0).toUpperCase() + id.slice(1)));
+
+      return `You are an expert low-poly 3D vehicle procedural geometry engineer for Brow City (Three.js WebGL game engine).
+Your task is to DESIGN AND CONSTRUCT A BRAND NEW 3D VEHICLE MODEL FROM SCRATCH for Brow City: **${vehicleName}**.
+
+### 1. TARGET ARCHETYPE & BOUNDING DIMENSIONS
+- Target Model: **${vehicleName}**
+- Generator Function Name: \`function ${fnName}(g, s)\`
+- Dimensions: Length = ${spec.L}m, Width = ${spec.W}m, Height = ${spec.H}m
+- Wheelbase: ${spec.wb || (spec.L * 0.6).toFixed(2)}m
+- Wheel Radius: ${spec.wheel || 0.34}m
+- Target Triangle Budget: ~450 to 800 triangles (Strict maximum: 1,000 tris for 60 FPS WebGL)
+
+### 2. ENGINE 3D COORDINATE SYSTEM & ANCHORS
+- Front of Vehicle: Z = -s.L / 2 (hood, front bumper, radiator grille, projector headlights)
+- Rear of Vehicle: Z = +s.L / 2 (trunk/tailgate/bed, rear bumper, taillights, dual exhaust tips)
+- Ground Road Plane: Y = 0 (bottom of tires)
+- Centerline: X = 0 (perfect bilateral symmetry across X = 0)
+- Note on Wheels: The engine automatically mounts and spins rolling wheels at Z = ±s.wb/2, Y = s.wheel. Do NOT build wheels inside the body mesh.
+
+### 3. COMPLETE PROCEDURAL GEOMETRY TOOLKIT
+You have access to the engine's optimized procedural geometry builder buffer \`g\`:
+
+1. \`loft(g, rings, color)\` — THE CORE VEHICLE HULL BUILDER:
+   Connects a sequence of cross-sectional profile rings from front to back.
+   Use \`symRing(z, [[y0, halfWidth0], [y1, halfWidth1], ...])\` to define bilaterally symmetric rings.
+   *Example Ring Architecture from front (-s.L/2) to rear (+s.L/2):*
+   - Ring 0 at front (-s.L/2): Low front chin & nosecone
+   - Ring 1 at front cowl: Front hood & wheel arch curve
+   - Ring 2 at windshield base: Cowl transition into cabin greenhouse
+   - Ring 3 at roof peak: Top height (H) and cabin width
+   - Ring 4 at rear glass / C-pillar: Raked slope down toward rear deck
+   - Ring 5 at rear (+s.L/2): Tail fascia and rear bumper
+
+2. \`quad(g, p0, p1, p2, p3, color)\` and \`tri(g, p0, p1, p2, color)\`:
+   Planar 4-vertex and 3-vertex polygonal faces. IMPORTANT: Use COUNTER-CLOCKWISE vertex winding for outward-facing normals.
+   Ideal for:
+   - Front raked windshield: Sloping backwards from cowl up to roof. (NEVER make windshield a vertical flat wall!)
+   - Bilateral side windows: Connecting cowl, roofline, C-pillar, and door waistline.
+   - Rear window / glass hatch: Sloping down from roof to rear decklid.
+   - Aerodynamic chin splitters, rear diffusers, side skirt blades, spoiler endplates.
+
+3. \`endQuad(g, z, [[x0, y0], [x1, y1], [x2, y2], [x3, y3]], color)\`:
+   Caps the front (Z = -s.L/2) or rear (Z = +s.L/2) planar opening.
+
+4. \`box(g, x, y, z, sx, sy, sz, color, rx, ry, rz)\`:
+   Adds 3D volumetric cuboids. Ideal for splitters, spoilers, hood scoops, bumper bars, emergency lightbars, mirrors, intakes.
+
+5. \`cylinderX(g, x, y, z, r, len, color, seg)\` / \`cylinderY(...)\` / \`cylinderZ(...)\`:
+   Tubular details: roll bars, pushbars, bullbars, exhausts.
+
+6. ENGINE HELPER SHORTCUTS:
+   - \`headlights(g, s, y, opts)\` / \`taillights(g, s, y, opts)\` / \`grille(g, s, y, opts)\`
+   - \`bumpers(g, s, y, opts)\` / \`mirrors(g, s, z, y, color, doorWidth)\` / \`exhaustTips(g, pts)\`
+   - \`pushBar(g, s, y)\` / \`lightbar(g, y, z, w)\` / \`roofRails(g, s, y, z0, z1)\`
+
+### 4. COLOR PALETTE CONSTANTS (\`C\`)
+- \`C.paint\`    : [1, 1, 1] — Body paint (MUST be used for main bodywork so player paint picker works!)
+- \`C.glass\`    : [0.08, 0.14, 0.20] — Tinted side/rear cabin glass
+- \`C.glassLit\` : [0.15, 0.25, 0.32] — Front windshield glass
+- \`C.black\`    : [0.04, 0.045, 0.05] — Gloss contrast aero panels, diffusers, grilles, spoilers
+- \`C.charcoal\` : [0.14, 0.15, 0.17] — Lower rocker cladding, wheel arch trim
+- \`C.trim\`     : [0.22, 0.23, 0.25] — Pillars, window surrounds, door frames
+- \`C.chrome\`   : [0.78, 0.80, 0.83] — Polished chrome mirrors, exhausts, badges, grille bars
+- \`C.head\`     : [1.0, 0.98, 0.80] — Projector headlights (triggers in-game headlight night glow)
+- \`C.tail\`     : [0.95, 0.03, 0.03] — Taillight lenses (triggers in-game braking night glow)
+- \`C.amber\`    : [1.0, 0.46, 0.02] — Turn indicators, blinkers, side markers
+
+### 5. ANATOMY & QUALITY RULES (MANDATORY)
+1. **NO STOCK WRAPPERS**: Build the vehicle entirely from scratch using the tools above. Do NOT wrap \`roadCar\` or any existing function.
+2. **True 3D Raked Windshield**: The front windshield MUST slope backwards from the hood cowl up to the roofline using \`quad(g, ...)\`.
+3. **Primary Body Tinting**: All visible exterior bodywork must use \`C.paint\`.
+4. **Bilateral Symmetry**: Mirror bilateral details across X = 0 using \`for (const side of [-1, 1])\`.
+5. **Clean Manifold Surfaces**: Maintain counter-clockwise vertex winding and outward-pointing normals.
+
+### 6. USER DESIGN VISION & CUSTOM INSTRUCTIONS
+${instructions}
+
+### 7. REQUIRED OUTPUT FORMAT
+Return ONLY the complete, executable JavaScript function with no surrounding conversation or markdown explanation, ready to paste into the Brow City Procedural Code Editor:
+\`\`\`javascript
+function ${fnName}(g, s) {
+  const front = -s.L / 2;
+  const rear = s.L / 2;
+  const W = s.W, H = s.H;
+
+  // 1. Bilateral Main Body Loft (rings from front to rear)
+  // 2. Cabin Glass (raked windshield, bilateral side windows, rear hatch)
+  // 3. Aerodynamics & Trim (splitter, skirts, diffuser, spoiler)
+  // 4. Lights & Indicators (headlights C.head, taillights C.tail)
+  // 5. Details (mirrors, exhaust tips)
+}
+\`\`\``;
+    }
+
+    // --- VEHICLE PROMPT (STOCK MODIFICATION MODE) ---
+    const id = currentAssetId || 'sedan';
+    const spec = VEHICLE_SPECS[id] || (typeof SPECS !== 'undefined' && SPECS[id]) || { name: id, L: 4.7, W: 2.2, H: 1.4, catName: 'Vehicle', desc: '' };
+    const kind = spec.kind || id;
+    const fnName = 'build' + (kind.charAt(0).toUpperCase() + kind.slice(1));
+    const currentCode = (document.getElementById('vehicleCodeEditor') && document.getElementById('vehicleCodeEditor').value) || (typeof getVehicleDefaultCode === 'function' ? getVehicleDefaultCode(id) : '// ' + fnName);
+    const preset = PROMPT_PRESETS[currentPromptPreset] || PROMPT_PRESETS.aero;
+    const instructions = customInputVal || (preset.text || preset);
+
+    return `You are an expert low-poly 3D vehicle procedural geometry engineer for Brow City (Three.js WebGL game engine).
+Your task is to redesign, improve, and customize the procedural 3D model for: **${spec.name || id} (${id})**.
+
+### 1. MODEL SPECIFICATIONS & BOUNDING DIMENSIONS
+- Vehicle Model ID: \`${id}\` (Kind: \`${kind}\`)
+- Class / Category: ${spec.catName || spec.category || 'Automobile'}
+- Dimensions: Length = ${spec.L}m, Width = ${spec.W}m, Height = ${spec.H}m
+- Wheelbase: ${spec.wb || (spec.L * 0.6).toFixed(2)}m
+- Wheel Radius: ${spec.wheel || 0.34}m
+- Target Triangle Budget: ~600 to 850 triangles (Hard maximum: 1,000 tris for 60 FPS WebGL)
+
+### 2. ENGINE COORDINATE SYSTEM & GEOMETRY CONVENTIONS
+- -Z is FRONT of vehicle (hood, front bumper, radiator grille, projector headlights)
+- +Z is REAR of vehicle (trunk/tailgate/bed, rear bumper, taillights, dual exhaust tips)
+- +Y is UP (Y = 0 is ground road contact; wheel axles are positioned at Y = spec.wheel)
+- +X is RIGHT side (passenger/driver), -X is LEFT side
+- Centerline is at X = 0 (perfect bilateral symmetry)
+- Winding Order: Counter-clockwise for outward-facing vertex normals
+
+### 3. AVAILABLE ENGINE PALETTE CONSTANTS (\`C\`)
+Use the global \`C\` color palette:
+- \`C.paint\`       : [1, 1, 1] — Instance-tinted primary body paint (responds to user paint picker)
+- \`C.glass\`       : [0.08, 0.14, 0.20] — Tinted side/rear window glass
+- \`C.glassLit\`    : [0.15, 0.25, 0.32] — Lit front windshield glass
+- \`C.rubber\`      : [0.03, 0.032, 0.038] — Tires and rubber bumper moldings
+- \`C.black\`       : [0.04, 0.045, 0.05] — Gloss contrast black roof, rear diffusers, grille backing
+- \`C.shadow\`      : [0.035, 0.038, 0.045] — Door crease lines, panel gaps, and body seam crevices
+- \`C.charcoal\`    : [0.14, 0.15, 0.17] — Lower rocker cladding, wheel arch trim, bumper guards
+- \`C.trim\`        : [0.22, 0.23, 0.25] — Window pillars, door frames, rub rails
+- \`C.chrome\`      : [0.78, 0.80, 0.83] — Polished chrome mirrors, exhaust tips, grille slats, wheels
+- \`C.metal\`       : [0.45, 0.48, 0.52] — Mechanical chassis, drive components
+- \`C.head\`        : [1.0, 0.98, 0.80] — Headlight lenses (triggers in-game headlight night glow)
+- \`C.tail\`        : [0.95, 0.03, 0.03] — Taillight lenses (triggers in-game braking night glow)
+- \`C.amber\`       : [1.0, 0.46, 0.02] — Turn indicator blinkers and side markers
+
+### 4. AVAILABLE PROCEDURAL GEOMETRY HELPERS
+- \`box(g, x, y, z, sx, sy, sz, color, rx, ry, rz)\`
+- \`cylinderX(g, x, y, z, r, len, color, seg)\` / \`cylinderY(...)\` / \`cylinderZ(...)\`
+- \`loft(g, rings, color)\` with \`symRing(z, [[y, w], ...])\`
+- \`slopedSideQuad(g, side, [[x, y, z], ...], color)\`
+- \`endQuad(g, z, [[x, y], ...], color)\`
+- \`quad(g, p0, p1, p2, p3, color)\` / \`tri(g, p0, p1, p2, color)\`
+- \`headlights(g, s, y, opts)\` / \`taillights(g, s, y, opts)\` / \`grille(g, s, y, opts)\`
+- \`bumpers(g, s, y, opts)\` / \`mirrors(g, s, z, y, color, doorWidth)\` / \`exhaustTips(g, pts)\`
+- \`pushBar(g, s, y)\` / \`lightbar(g, y, z, w)\` / \`roofRails(g, s, y, z0, z1)\`
+
+### 5. STRICT RULES & QUALITY CONDITIONS
+1. **Primary Body Tinting**: All visible primary body panels MUST use \`C.paint\` so user paint picker swatches apply seamlessly.
+2. **Realistic Raked Glass**: Front windshield and rear windows must NEVER be flat vertical planes at the bumper; slope them smoothly between cowl and roofline using 3D \`quad(g, ...)\` or \`loft\`.
+3. **Flush Glass Alignment**: Side windows must align cleanly with the door surfaces and A/B/C pillars without floating away or cutting into the roof.
+4. **Mirror Anchoring**: Side mirrors must be aerodynamically anchored to the door A-pillar base.
+5. **Centerline Symmetry**: All bilateral elements (lights, mirrors, wheels, twin exhausts) must be mirrored across \`X = 0\` using \`for (const side of [-1, 1])\`.
+6. **Geometry Hygiene**: Ensure counter-clockwise vertex winding, manifold closed surfaces, and no inverted face normals.
+7. **Output Format**: Return ONLY the complete, executable JavaScript function:
+\`\`\`javascript
+function ${fnName}(g, s) {
+  // ... your modified procedural geometry implementation ...
+}
+\`\`\`
+
+### 6. REQUESTED DESIGN MODIFICATION & INSTRUCTIONS
+${instructions}
+
+### 7. CURRENT BASELINE CODE
+\`\`\`javascript
+${currentCode}
+\`\`\``;
+  } else {
+    // --- LANDMARK PROMPT ---
+    const id = currentLandmarkId || 'hospital';
+    const lm = (typeof LANDMARKS_DATA !== 'undefined' && LANDMARKS_DATA[id]) || { name: 'Landmark', subtitle: 'Multi-Floor', desc: '', stats: { floors: 3, height: '14m', rooms: 8, staff: 12 }, floors: [], rooms: [], staff: [] };
+    const preset = LANDMARK_PROMPT_PRESETS[currentPromptPreset] || LANDMARK_PROMPT_PRESETS.aero;
+    const instructions = customInputVal || (preset.text || preset);
+
+    return `You are an expert architectural 3D geometry engineer for Brow City (Three.js WebGL procedural city engine).
+Your task is to redesign and enhance the multi-floor architecture for: **${lm.name} (${lm.subtitle})**.
+
+### 1. LANDMARK SPECIFICATIONS
+- Landmark ID: \`${id}\`
+- Architecture Type: ${lm.name} (${lm.subtitle})
+- Vertical Levels: ${lm.stats ? lm.stats.floors : 3} floors (${lm.stats ? lm.stats.height : '14m'} total height)
+- Rooms / Zones: ${lm.rooms ? lm.rooms.length : 8} functional rooms
+- Active Stationed Staff: ${lm.staff ? lm.staff.length : 12} personnel
+- Available Floors: ${lm.floors ? lm.floors.map(f => f.name).join(', ') : 'Ground Floor, 2nd Floor, Rooftop'}
+
+### 2. ARCHITECTURAL ENGINE RULES & CONVENTIONS
+- Y = 0 is street level sidewalk; each floor level is typically 3.5m to 4.2m in height.
+- Structural Pillars: Positioned on regular grid intervals (e.g., 6m to 8m spans).
+- Floor Slabs: Reinforced 0.25m thick slabs with beveled perimeter fascias.
+- Partition Walls: Interior room walls must align cleanly with door openings.
+- Stairwells & Elevators: Vertical access cores spanning all floor levels.
+- Lighting: Warm interior downlights (3000K-4000K), emergency exit signage, and rooftop warning beacons.
+
+### 3. STRICT CONDITIONS
+1. Multi-floor cutaway visibility: All interior elements must belong to their respective floor Group for individual floor isolation.
+2. Clean manifold geometry: No coplanar z-fighting surfaces between floor slabs and ceilings.
+3. Functional navigation: Ensure door openings and walkways remain unobstructed for AI pathfinding.
+4. Triangle efficiency: Keep complex interior props under 3,500 total tris per floor level.
+
+### 4. REQUESTED ARCHITECTURAL IMPROVEMENTS
+${instructions}
+
+### 5. PROMPT GOAL
+Generate improved Three.js procedural generation code or structural layouts for this landmark building.`;
+  }
+}
+
+function updatePromptPreview() {
+  const promptBox = document.getElementById('promptPreviewBox');
+  const badge = document.getElementById('promptTargetBadge');
+  if (promptBox) {
+    promptBox.textContent = buildModelImprovementPrompt();
+  }
+  if (badge) {
+    if (currentMode === 'landmarks') {
+      const lm = typeof LANDMARKS_DATA !== 'undefined' && LANDMARKS_DATA[currentLandmarkId];
+      badge.textContent = lm ? lm.name : 'Landmark';
+      badge.style.background = 'rgba(46, 204, 113, 0.25)';
+      badge.style.color = '#2ecc71';
+    } else {
+      if (promptMode === 'scratch') {
+        const p = SCRATCH_PRESETS[currentPromptPreset] || SCRATCH_PRESETS.hypercar;
+        badge.textContent = p.label || 'From Scratch';
+        badge.style.background = 'rgba(108, 92, 231, 0.3)';
+        badge.style.color = '#a29bfe';
+      } else {
+        const spec = VEHICLE_SPECS[currentAssetId];
+        badge.textContent = spec ? spec.name : 'Vehicle';
+        badge.style.background = 'rgba(155, 89, 182, 0.25)';
+        badge.style.color = '#b388ff';
+      }
+    }
+  }
+}
+
+function copyAIPrompt() {
+  const promptText = buildModelImprovementPrompt();
+  const btn = document.getElementById('btnCopyPrompt');
+  navigator.clipboard.writeText(promptText).then(() => {
+    if (btn) {
+      const prev = btn.innerHTML;
+      btn.innerHTML = '✓ Copied AI Prompt to Clipboard!';
+      btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      setTimeout(() => {
+        btn.innerHTML = prev;
+        btn.style.background = 'linear-gradient(135deg, #8e44ad, #6c5ce7)';
+      }, 2500);
+    }
+  }).catch(() => {
+    const box = document.getElementById('promptPreviewBox');
+    if (box) {
+      const range = document.createRange();
+      range.selectNodeContents(box);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('copy');
+      if (btn) {
+        btn.innerHTML = '✓ Copied!';
+      }
+    }
+  });
+}
+
+const userVehicleCodes = {};
+let autoApplyCode = true;
+let codeInputDebounce = null;
+
+function geomToBufferGeometry(g) {
+  const bg = new THREE.BufferGeometry();
+  bg.setAttribute('position', new THREE.Float32BufferAttribute(g.p, 3));
+  bg.setAttribute('normal', new THREE.Float32BufferAttribute(g.n, 3));
+  bg.setAttribute('color', new THREE.Float32BufferAttribute(g.c, 3));
+  bg.setIndex(g.i);
+  return bg;
+}
+
+function assembleVehicleMesh(id, spec, customBuilderFn) {
+  const root = new THREE.Group();
+  root.name = id;
+  const bodyGeom = geom();
+
+  if (typeof customBuilderFn === 'function') {
+    customBuilderFn(bodyGeom, spec);
+  } else if (BUILDERS[spec.kind || id]) {
+    BUILDERS[spec.kind || id](bodyGeom, spec);
+  }
+
+  const bodyBufferGeo = geomToBufferGeometry(bodyGeom);
+  const bodyMesh = new THREE.Mesh(bodyBufferGeo, makeCarMaterial(currentPaint));
+  bodyMesh.name = 'Body';
+  bodyMesh.castShadow = true;
+  bodyMesh.receiveShadow = true;
+  bodyMesh.material.wireframe = wireframe;
+  root.add(bodyMesh);
+
+  let totalTris = bodyGeom.i.length / 3;
+  let wheelCount = 0;
+  let singleWheelTris = 0;
+
+  if (spec.wheel > 0) {
+    const wheelGeom = wheelGeometry(spec.wheel, Math.max(0.18, spec.W * 0.12));
+    const wheelBufferGeo = geomToBufferGeometry(wheelGeom);
+    singleWheelTris = wheelGeom.i.length / 3;
+    const isTwoWheeler = spec.kind === 'motorcycle' || spec.kind === 'scooter';
+
+    if (isTwoWheeler) {
+      wheelCount = 2;
+      const fz = spec.kind === 'motorcycle' ? -0.77 : -0.62;
+      const rz = spec.kind === 'motorcycle' ? 0.77 : 0.62;
+      for (const [name, z] of [['Wheel_Front', fz], ['Wheel_Rear', rz]]) {
+        const wMesh = new THREE.Mesh(wheelBufferGeo, makeCarMaterial(currentPaint));
+        wMesh.name = name;
+        wMesh.position.set(0, spec.wheel, z);
+        wMesh.castShadow = true;
+        wMesh.receiveShadow = true;
+        wMesh.material.wireframe = wireframe;
+        root.add(wMesh);
+        totalTris += singleWheelTris;
+      }
+    } else {
+      wheelCount = 4;
+      const axles = AXLES[id] || [-spec.wb / 2, spec.wb / 2];
+      const wx = spec.W / 2 - Math.max(0.18, spec.W * 0.12) * 0.40;
+      for (const [name, x, z] of [
+        ['Wheel_FL', -wx, axles[0]], ['Wheel_FR', wx, axles[0]],
+        ['Wheel_RL', -wx, axles[1]], ['Wheel_RR', wx, axles[1]]
+      ]) {
+        const wMesh = new THREE.Mesh(wheelBufferGeo, makeCarMaterial(currentPaint));
+        wMesh.name = name;
+        wMesh.position.set(x, spec.wheel, z);
+        wMesh.castShadow = true;
+        wMesh.receiveShadow = true;
+        wMesh.material.wireframe = wireframe;
+        root.add(wMesh);
+        totalTris += singleWheelTris;
+      }
+    }
+  }
+
+  return {
+    root,
+    totalTris,
+    bodyTris: bodyGeom.i.length / 3,
+    wheelTris: singleWheelTris * wheelCount
+  };
+}
+
+const VEHICLE_STORAGE_KEY_PREFIX = 'brow_vehicle_code_';
+const VEHICLE_SAVED_FLAG_PREFIX = 'brow_vehicle_saved_';
+
+function getVehicleDefaultCode(id) {
+  const spec = SPECS[id];
+  const kind = spec ? (spec.kind || id) : id;
+  const fn = BUILDERS[kind];
+  if (!fn) return '// No generator function found for ' + id;
+  return fn.toString();
+}
+
+function updateCodeEditorForVehicle(id) {
+  const spec = SPECS[id];
+  const kind = spec ? (spec.kind || id) : id;
+  const fnName = 'build' + (kind.charAt(0).toUpperCase() + kind.slice(1));
+  const elFnName = document.getElementById('codeFnName');
+  if (elFnName) elFnName.textContent = `${fnName}(g, s)`;
+
+  const editor = document.getElementById('vehicleCodeEditor');
+  if (!editor) return;
+
+  const defaultCode = getVehicleDefaultCode(id);
+  const storedCode = localStorage.getItem(VEHICLE_STORAGE_KEY_PREFIX + id);
+  const code = userVehicleCodes[id] || storedCode || defaultCode;
+  if (storedCode && !userVehicleCodes[id]) {
+    userVehicleCodes[id] = storedCode;
+  }
+  editor.value = code;
+
+  const isCustom = code.trim() !== defaultCode.trim();
+  const isDiskSaved = Boolean(localStorage.getItem(VEHICLE_SAVED_FLAG_PREFIX + id));
+  const badge = document.getElementById('codeEditorBadge');
+  if (badge) {
+    if (!isCustom) {
+      badge.textContent = 'Stock Mode';
+      badge.style.background = 'rgba(0, 210, 255, 0.15)';
+      badge.style.color = 'var(--accent)';
+    } else if (isDiskSaved) {
+      badge.textContent = 'Saved (Disk)';
+      badge.style.background = 'rgba(16, 185, 129, 0.2)';
+      badge.style.color = '#10b981';
+    } else {
+      badge.textContent = 'Modified (Local)';
+      badge.style.background = 'rgba(255, 159, 67, 0.2)';
+      badge.style.color = 'var(--accent-orange)';
+    }
+  }
+}
+
+function runVehicleLiveCode() {
+  const editor = document.getElementById('vehicleCodeEditor');
+  const statusEl = document.getElementById('codeEditorStatus');
+  if (!editor || !statusEl) return;
+
+  const t0 = performance.now();
+  const code = editor.value;
+  const id = currentAssetId;
+  const spec = SPECS[id];
+
+  if (!spec) {
+    statusEl.innerHTML = `<span class="status-err">⚠️ Spec missing for "${id}"</span>`;
+    return;
+  }
+
+  const defaultCode = getVehicleDefaultCode(id);
+  const isCustom = Boolean(userVehicleCodes[id] && code.trim() !== defaultCode.trim());
+
+  if (!isCustom) {
+    // Load native 3D GLB model from disk
+    const glbPath = `assets/models/gta/vehicles/${id}.glb`;
+    gltfLoader.load(glbPath, (gltf) => {
+      while (vehicleGroup.children.length > 0) {
+        vehicleGroup.remove(vehicleGroup.children[0]);
+      }
+      currentGLTFScene = gltf.scene;
+      let totalTris = 0;
+      gltf.scene.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+          o.material.wireframe = wireframe;
+          if (o.geometry) {
+            const count = o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count;
+            totalTris += count / 3;
+          }
+          if (o.name === 'Body' || o.name === 'WheelMesh' || o.name === id) {
+            o.material = makeCarMaterial(currentPaint);
+          }
+        }
+      });
+      vehicleGroup.add(gltf.scene);
+      updateVehicleMaterialColor();
+      document.getElementById('hudTris').textContent = Math.round(totalTris).toLocaleString();
+      const badge = document.getElementById('codeEditorBadge');
+      if (badge) {
+        badge.textContent = 'Stock Mode';
+        badge.style.background = 'rgba(0, 210, 255, 0.15)';
+        badge.style.color = 'var(--accent)';
+      }
+      const elapsed = (performance.now() - t0).toFixed(1);
+      statusEl.innerHTML = `<span class="status-ok">● Loaded 3D Model: <b>${Math.round(totalTris).toLocaleString()}</b> tris (in ${elapsed}ms)</span>`;
+    }, undefined, (err) => {
+      console.warn('Fallback to procedural for ' + id + ':', err);
+      mountProcedural();
+    });
+    return;
+  }
+
+  mountProcedural();
+
+  function mountProcedural() {
+    try {
+      let builderFn;
+      const trimmed = code.trim();
+      if (trimmed.startsWith('function') || trimmed.startsWith('(')) {
+        builderFn = new Function('return (' + trimmed + '\n)')();
+      } else {
+        builderFn = new Function('g', 's', trimmed);
+      }
+
+      while (vehicleGroup.children.length > 0) {
+        vehicleGroup.remove(vehicleGroup.children[0]);
+      }
+
+      const result = assembleVehicleMesh(id, spec, builderFn);
+      currentGLTFScene = result.root;
+      vehicleGroup.add(result.root);
+
+      const badge = document.getElementById('codeEditorBadge');
+      if (code.trim() !== defaultCode.trim()) {
+        userVehicleCodes[id] = code;
+        localStorage.setItem(VEHICLE_STORAGE_KEY_PREFIX + id, code);
+        const isDiskSaved = Boolean(localStorage.getItem(VEHICLE_SAVED_FLAG_PREFIX + id));
+        if (badge) {
+          badge.textContent = isDiskSaved ? 'Saved (Disk)' : 'Modified (Local)';
+          badge.style.background = isDiskSaved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 159, 67, 0.2)';
+          badge.style.color = isDiskSaved ? '#10b981' : 'var(--accent-orange)';
+        }
+      } else {
+        delete userVehicleCodes[id];
+        localStorage.removeItem(VEHICLE_STORAGE_KEY_PREFIX + id);
+        localStorage.removeItem(VEHICLE_SAVED_FLAG_PREFIX + id);
+        if (badge) {
+          badge.textContent = 'Stock Mode';
+          badge.style.background = 'rgba(0, 210, 255, 0.15)';
+          badge.style.color = 'var(--accent)';
+        }
+      }
+
+      document.getElementById('hudTris').textContent = result.totalTris.toLocaleString();
+      const elapsed = (performance.now() - t0).toFixed(1);
+      statusEl.innerHTML = `<span class="status-ok">● Rebuilt in ${elapsed}ms: <b>${result.totalTris.toLocaleString()}</b> tris (${result.bodyTris} body + ${result.wheelTris} wheels)</span>`;
+    } catch (err) {
+      console.error('Vehicle code error:', err);
+      statusEl.innerHTML = `<span class="status-err" title="${err.stack}">⚠️ ${err.name}: ${err.message}</span>`;
+    }
+  }
+}
+
+async function saveVehicleCodeToDisk() {
+  const editor = document.getElementById('vehicleCodeEditor');
+  const statusEl = document.getElementById('codeEditorStatus');
+  const saveBtn = document.getElementById('btnSaveCode');
+  const saveHeaderBtn = document.getElementById('btnSaveCodeHeader');
+  if (!editor || !statusEl) return;
+
+  const id = currentAssetId;
+  const code = editor.value;
+
+  // Re-run code locally to ensure valid compile
+  runVehicleLiveCode();
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '⏳ Saving...';
+  }
+  if (saveHeaderBtn) {
+    saveHeaderBtn.disabled = true;
+  }
+  statusEl.innerHTML = `<span>⏳ Saving to project files & compiling binary 3D .glb...</span>`;
+
+  try {
+    const resp = await fetch('/api/save-vehicle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, code })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.success) {
+      throw new Error(data.error || 'Server error (' + resp.status + ')');
+    }
+
+    // Update local state and flags
+    userVehicleCodes[id] = code;
+    localStorage.setItem(VEHICLE_STORAGE_KEY_PREFIX + id, code);
+    localStorage.setItem(VEHICLE_SAVED_FLAG_PREFIX + id, 'true');
+
+    const badge = document.getElementById('codeEditorBadge');
+    if (badge) {
+      badge.textContent = 'Saved to Disk';
+      badge.style.background = 'rgba(16, 185, 129, 0.2)';
+      badge.style.color = '#10b981';
+    }
+
+    statusEl.innerHTML = `<span class="status-ok">💾 Saved to disk & compiled .glb in ${data.elapsed}ms (${data.fnName})!</span>`;
+  } catch (err) {
+    console.warn('API save to disk error, preserved in browser storage:', err);
+    localStorage.setItem(VEHICLE_STORAGE_KEY_PREFIX + id, code);
+    statusEl.innerHTML = `<span style="color:var(--accent-orange)">⚠️ Saved in browser storage (${err.message})</span>`;
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '💾 Save to Disk';
+    }
+    if (saveHeaderBtn) {
+      saveHeaderBtn.disabled = false;
+    }
+  }
+}
+
+function exportVehicleCodeFile() {
+  const editor = document.getElementById('vehicleCodeEditor');
+  if (!editor) return;
+  const id = currentAssetId;
+  const code = editor.value;
+  const blob = new Blob([code], { type: 'text/javascript;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${id}-generator.js`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const statusEl = document.getElementById('codeEditorStatus');
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="status-ok">📥 Exported file: <b>${id}-generator.js</b></span>`;
+  }
+}
+
+function onVehicleCodeInput() {
+  // Clear saved flag if user edited code after last disk save
+  const id = currentAssetId;
+  localStorage.removeItem(VEHICLE_SAVED_FLAG_PREFIX + id);
+
+  if (!autoApplyCode) return;
+  clearTimeout(codeInputDebounce);
+  codeInputDebounce = setTimeout(() => {
+    runVehicleLiveCode();
+  }, 350);
+}
+
+function handleCodeEditorKey(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.currentTarget;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    ta.value = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = start + 2;
+    onVehicleCodeInput();
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runVehicleLiveCode();
+  } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    saveVehicleCodeToDisk();
+  }
+}
+
+function resetVehicleCode() {
+  const id = currentAssetId;
+  delete userVehicleCodes[id];
+  localStorage.removeItem(VEHICLE_STORAGE_KEY_PREFIX + id);
+  localStorage.removeItem(VEHICLE_SAVED_FLAG_PREFIX + id);
+  updateCodeEditorForVehicle(id);
+  runVehicleLiveCode();
+  const badge = document.getElementById('codeEditorBadge');
+  if (badge) {
+    badge.textContent = 'Stock Mode';
+    badge.style.background = 'rgba(0, 210, 255, 0.15)';
+    badge.style.color = 'var(--accent)';
+  }
+  const statusEl = document.getElementById('codeEditorStatus');
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="status-ok">↺ Reset to factory generator code</span>`;
+  }
+}
+
+function copyVehicleCode() {
+  const editor = document.getElementById('vehicleCodeEditor');
+  if (!editor) return;
+  navigator.clipboard.writeText(editor.value).then(() => {
+    const statusEl = document.getElementById('codeEditorStatus');
+    if (statusEl) {
+      const prev = statusEl.innerHTML;
+      statusEl.innerHTML = `<span class="status-ok">📋 Code copied to clipboard!</span>`;
+      setTimeout(() => { statusEl.innerHTML = prev; }, 2000);
+    }
+  }).catch(() => {
+    editor.select();
+    document.execCommand('copy');
+    const statusEl = document.getElementById('codeEditorStatus');
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="status-ok">📋 Code copied!</span>`;
+    }
+  });
+}
+
+function toggleAutoApply(val) {
+  autoApplyCode = val;
+}
+
+function toggleExpandCodeEditor() {
+  const insp = document.getElementById('inspector');
+  const btn = document.getElementById('btnExpandCode');
+  insp.classList.toggle('expanded');
+  const isExpanded = insp.classList.contains('expanded');
+  btn.textContent = isExpanded ? '🗗' : '⛶';
+  btn.title = isExpanded ? 'Collapse Inspector width' : 'Expand Inspector width';
+  setTimeout(() => {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }, 260);
+}
+
+function insertSnippet(type) {
+  const editor = document.getElementById('vehicleCodeEditor');
+  if (!editor) return;
+  let snippet = '';
+  if (type === 'spoiler') {
+    snippet = `\n  // Racing GT Wing Spoiler\n  box(g, 0, s.H + 0.28, s.L / 2 - 0.18, s.W * 0.88, 0.03, 0.22, C.black);\n  for (const side of [-1, 1]) box(g, side * s.W * 0.32, s.H + 0.14, s.L / 2 - 0.18, 0.04, 0.28, 0.05, C.chrome);\n`;
+  } else if (type === 'lightbar') {
+    snippet = `\n  // Emergency Strobe Lightbar\n  lightbar(g, s.H + 0.06, 0.10, 1.15);\n`;
+  } else if (type === 'pushbar') {
+    snippet = `\n  // Heavy Tactical Pushbar\n  pushBar(g, s, 0.40);\n`;
+  } else if (type === 'hoodscoop') {
+    snippet = `\n  // Aggressive Hood Shaker Scoop\n  box(g, 0, 0.96, -s.L * 0.28, 0.34, 0.08, 0.42, C.black);\n`;
+  } else if (type === 'exhaust') {
+    snippet = `\n  // Quad Chrome Exhaust Tips\n  exhaustTips(g, [\n    { x: -s.W * 0.34, y: 0.28, z: s.L / 2 + 0.06 },\n    { x: -s.W * 0.25, y: 0.28, z: s.L / 2 + 0.06 },\n    { x:  s.W * 0.25, y: 0.28, z: s.L / 2 + 0.06 },\n    { x:  s.W * 0.34, y: 0.28, z: s.L / 2 + 0.06 }\n  ]);\n`;
+  }
+
+  const val = editor.value;
+  const lastBrace = val.lastIndexOf('}');
+  if (lastBrace !== -1) {
+    editor.value = val.substring(0, lastBrace) + snippet + val.substring(lastBrace);
+  } else {
+    editor.value += snippet;
+  }
+  runVehicleLiveCode();
+}
+
+function insertFromScratchTemplate() {
+  const editor = document.getElementById('vehicleCodeEditor');
+  if (!editor) return;
+  const id = (currentAssetId === 'custom_vehicle') ? 'custom_vehicle' : currentAssetId;
+  const spec = VEHICLE_SPECS[id] || (typeof SPECS !== 'undefined' && SPECS[id]) || { L: 4.60, W: 2.15, H: 1.25 };
+  const kind = spec.kind || id;
+  const fnName = (id === 'custom_vehicle') ? 'buildCustom' : ('build' + (kind.charAt(0).toUpperCase() + kind.slice(1)));
+
+  editor.value = `function ${fnName}(g, s) {
+  const front = -s.L / 2;
+  const rear = s.L / 2;
+  const W = s.W, H = s.H;
+
+  // 1. Aerodynamic Bilateral Body Loft (Hull)
+  loft(g, [
+    symRing(front, [
+      [0.18, W * 0.20],
+      [0.55, W * 0.36],
+      [0.90, W * 0.36]
+    ]),
+    symRing(front + 0.55, [
+      [0.20, W * 0.44],
+      [0.72, W * 0.48],
+      [1.08, W * 0.46]
+    ]),
+    symRing(front + 1.25, [
+      [0.22, W * 0.48],
+      [0.85, W * 0.50],
+      [H, W * 0.42]
+    ]),
+    symRing(rear - 0.75, [
+      [0.22, W * 0.48],
+      [0.90, W * 0.50],
+      [H, W * 0.42]
+    ]),
+    symRing(rear - 0.20, [
+      [0.22, W * 0.46],
+      [0.85, W * 0.48],
+      [0.98, W * 0.44]
+    ]),
+    symRing(rear, [
+      [0.26, W * 0.42],
+      [0.78, W * 0.46],
+      [0.92, W * 0.42]
+    ])
+  ], C.paint);
+
+  // 2. Front Raked Windshield Glass
+  const cowlZ = front + 1.25, cowlY = 0.85;
+  const roofZ = front + 1.65, roofY = H;
+  quad(g,
+    [-W * 0.42, cowlY, cowlZ],
+    [ W * 0.42, cowlY, cowlZ],
+    [ W * 0.38, roofY, roofZ],
+    [-W * 0.38, roofY, roofZ],
+    C.glassLit
+  );
+
+  // 3. Bilateral Side Glass
+  for (const side of [-1, 1]) {
+    quad(g,
+      [side * W * 0.42, cowlY, cowlZ],
+      [side * W * 0.38, roofY, roofZ],
+      [side * W * 0.38, roofY, rear - 0.75],
+      [side * W * 0.44, 0.90, rear - 0.75],
+      C.glass
+    );
+  }
+
+  // 4. Rear Glass Hatch
+  quad(g,
+    [-W * 0.38, roofY, rear - 0.75],
+    [ W * 0.38, roofY, rear - 0.75],
+    [ W * 0.40, 0.90, rear - 0.20],
+    [-W * 0.40, 0.90, rear - 0.20],
+    C.glass
+  );
+
+  // 5. Front Chin Splitter & Rear Carbon Diffuser
+  box(g, 0, 0.12, front + 0.08, W * 0.92, 0.04, 0.30, C.black);
+  box(g, 0, 0.14, rear - 0.08, W * 0.88, 0.06, 0.30, C.black);
+
+  // 6. Projector Headlights & LED Taillights & Mirrors
+  for (const side of [-1, 1]) {
+    box(g, side * W * 0.35, 0.65, front + 0.02, 0.18, 0.12, 0.06, C.head);
+    box(g, side * W * 0.34, 0.72, rear - 0.02, 0.22, 0.10, 0.06, C.tail);
+    box(g, side * (W * 0.50 + 0.10), 0.88, cowlZ + 0.15, 0.16, 0.10, 0.06, C.paint);
+  }
+
+  // 7. Dual Chrome Exhaust Tips
+  exhaustTips(g, [
+    { x: -W * 0.28, y: 0.22, z: rear + 0.04 },
+    { x:  W * 0.28, y: 0.22, z: rear + 0.04 }
+  ]);
+
+  // Note: All bilateral elements mirrored across X=0.
+  // Wheels and suspension are automatically mounted at Z = ±s.wb/2, Y = s.wheel.
+}`;
+
+  runVehicleLiveCode();
+}
+
+// =============================================================================
+// MULTI-FLOOR LANDMARKS LOGIC
+// =============================================================================
+let landmarkFloorGroups = {};
+
+function buildLandmarkSidebar() {
+  document.getElementById('categoryPills').innerHTML = '';
+  document.getElementById('searchInput').placeholder = 'Search rooms or staff...';
+
+  const lms = Object.keys(LANDMARKS_DATA);
+  const list = document.getElementById('itemList');
+  list.innerHTML = lms.map(id => {
+    const lm = LANDMARKS_DATA[id];
+    return `
+      <div class="asset-card ${id === currentLandmarkId ? 'active' : ''}" onclick="loadLandmark('${id}')">
+        <div class="card-icon">${id === 'hospital' ? '🏥' : (id === 'police' ? '🚓' : '🎯')}</div>
+        <div class="card-info">
+          <div class="card-title">${lm.name}</div>
+          <div class="card-sub">
+            <span>${lm.stats.floors}</span>
+            <span class="card-badge">${lm.stats.staff}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function loadLandmark(id) {
+  currentLandmarkId = id;
+  currentFloor = 'all';
+  document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+
+  const lm = LANDMARKS_DATA[id];
+  document.getElementById('hudTitle').textContent = lm.name;
+  document.getElementById('hudTris').textContent = lm.stats.rooms;
+
+  // Clear previous meshes
+  while (landmarkGroup.children.length > 0) {
+    landmarkGroup.remove(landmarkGroup.children[0]);
+  }
+  landmarkFloorGroups = {};
+
+  // Build landmark 3D model
+  if (id === 'hospital') buildHospital3D();
+  else if (id === 'police') buildPolice3D();
+  else if (id === 'gunshop') buildGunShop3D();
+
+  // Reset camera to fit building
+  camTarget.set(0, 7.0, 0);
+  camDistance = 46;
+  camPhi = 0.72; camTheta = 0.78;
+  updateCameraPos();
+
+  // Update Inspector
+  document.getElementById('inspTitle').textContent = lm.name;
+  document.getElementById('inspSub').textContent = lm.subtitle;
+  document.getElementById('inspDesc').textContent = lm.desc;
+
+  renderLandmarkInspectorControls(lm);
+  updatePromptPreview();
+}
+
+function renderLandmarkInspectorControls(lm) {
+  const dyn = document.getElementById('inspectorDynamicContent');
+  dyn.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Levels</div>
+        <div class="stat-val">${lm.stats.floors}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Building Height</div>
+        <div class="stat-val">${lm.stats.height}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Rooms</div>
+        <div class="stat-val">${lm.stats.rooms}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Stationed Staff</div>
+        <div class="stat-val">${lm.stats.staff}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px">Floor Cutaway & Isolation</h3>
+      <div class="floor-selector">
+        ${lm.floors.map(f => `
+          <button class="btn-floor ${f.id === currentFloor ? 'active' : ''}" onclick="setLandmarkFloor('${f.id}', this)">
+            <span>${f.name}</span>
+            <span style="font-size:10px;opacity:0.7">VIEW</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px">Fly to Specific Room</h3>
+      <div class="room-quick-nav">
+        ${lm.rooms.map((r, i) => `
+          <button class="btn-room" onclick="flyToRoom(${r.pos[0]}, ${r.pos[1]}, ${r.pos[2]}, '${r.floor}')">
+            ${r.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px">Stationed Staff (${lm.staff.length})</h3>
+      <div class="staff-badge-list">
+        ${lm.staff.map(s => `
+          <div class="staff-item">
+            <div>
+              <b style="color:var(--text-main)">${s.name}</b>
+              <div style="font-size:10px;color:var(--text-muted)">${s.role}</div>
+            </div>
+            <span class="staff-role-pill role-${s.type}">${s.floor}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function setLandmarkFloor(floorId, btn) {
+  currentFloor = floorId;
+  document.querySelectorAll('.btn-floor').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const groups = landmarkFloorGroups;
+  const isExploded = (floorId === 'exploded');
+
+  for (const fKey in groups) {
+    const grp = groups[fKey];
+    if (isExploded) {
+      grp.visible = true;
+      if (fKey === 'fl1') grp.position.y = 0;
+      else if (fKey === 'fl2') grp.position.y = 6.0;
+      else if (fKey === 'fl3') grp.position.y = 12.0;
+      else if (fKey === 'roof') grp.position.y = 18.0;
+    } else {
+      grp.position.y = 0;
+      if (floorId === 'all') {
+        grp.visible = true;
+      } else {
+        grp.visible = (fKey === floorId);
+      }
+    }
+  }
+
+  // Adjust camera height for single floor focus
+  if (floorId === 'fl1') { camTarget.set(0, 1.5, 0); camDistance = 24; }
+  else if (floorId === 'fl2') { camTarget.set(0, 7.5, 0); camDistance = 24; }
+  else if (floorId === 'fl3') { camTarget.set(0, 13.5, 0); camDistance = 24; }
+  else if (floorId === 'roof') { camTarget.set(0, 19.5, 0); camDistance = 24; }
+  else if (isExploded) { camTarget.set(0, 18.0, 0); camDistance = 65; }
+  else { camTarget.set(0, 7.0, 0); camDistance = 46; }
+  updateCameraPos();
+}
+
+function flyToRoom(rx, ry, rz, floorId) {
+  setLandmarkFloor(floorId, null);
+  document.querySelectorAll('.btn-floor').forEach(b => {
+    if (b.textContent.includes(floorId.toUpperCase())) b.classList.add('active');
+  });
+
+  camTarget.set(rx, ry, rz);
+  camDistance = 14;
+  camPhi = 0.55;
+  camTheta = 0.75;
+  updateCameraPos();
+}
+
+// -----------------------------------------------------------------------------
+// PROCEDURAL LANDMARK MESH GENERATION (Centered around origin)
+// -----------------------------------------------------------------------------
+function addBox(grp, x, y, z, sx, sy, sz, colorHex, opts = {}) {
+  const geo = new THREE.BoxGeometry(sx, sy, sz);
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorHex,
+    roughness: opts.roughness !== undefined ? opts.roughness : 0.75,
+    metalness: opts.metalness !== undefined ? opts.metalness : 0.1,
+    wireframe: wireframe
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y + sy / 2, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  grp.add(mesh);
+  return mesh;
+}
+
+function addStaffPed(grp, name, x, y, z, shirtCol, pantsCol) {
+  const ped = new THREE.Group();
+  ped.position.set(x, y, z);
+  
+  // Torso
+  addBox(ped, 0, 0.45, 0, 0.38, 0.52, 0.22, shirtCol);
+  // Head
+  addBox(ped, 0, 0.98, 0, 0.22, 0.22, 0.22, 0xf5d0b5);
+  // Legs
+  addBox(ped, -0.1, 0, 0, 0.16, 0.45, 0.18, pantsCol);
+  addBox(ped, 0.1, 0, 0, 0.16, 0.45, 0.18, pantsCol);
+
+  grp.add(ped);
+  return ped;
+}
+
+function buildHospital3D() {
+  const fl1 = new THREE.Group();
+  const fl2 = new THREE.Group();
+  const fl3 = new THREE.Group();
+  const roof = new THREE.Group();
+
+  landmarkGroup.add(fl1); landmarkGroup.add(fl2); landmarkGroup.add(fl3); landmarkGroup.add(roof);
+  landmarkFloorGroups = { fl1, fl2, fl3, roof };
+
+  // Floor 1 (Y: 0 - 5.8m)
+  addBox(fl1, 0, 0, 0, 34, 0.2, 50, 0xe8edf2); // Floor slab
+  addBox(fl1, -16.5, 0.2, 0, 0.8, 5.6, 50, 0xd0d8e0); // West wall
+  addBox(fl1, 16.5, 0.2, 0, 0.8, 5.6, 50, 0xd0d8e0);  // East wall
+  addBox(fl1, 0, 0.2, 24.5, 34, 5.6, 0.8, 0xd0d8e0);  // North wall
+  addBox(fl1, 0, 0.2, -24.5, 34, 5.6, 0.8, 0xd0d8e0); // South wall
+  // Triage reception desk
+  addBox(fl1, 0, 0.2, -10, 8, 1.1, 1.4, 0x2c3e50);
+  // Trauma bays & beds
+  for (let i = 0; i < 4; i++) {
+    const zPos = -4 + i * 5;
+    addBox(fl1, -11, 0.2, zPos, 3.2, 0.7, 1.6, 0x3498db); // Bed base
+    addBox(fl1, -11, 0.9, zPos, 3.0, 0.2, 1.4, 0xffffff); // Mattress
+    addBox(fl1, -13, 0.2, zPos, 0.4, 1.8, 0.4, 0x95a5a6); // IV pole
+  }
+  // Staff
+  addStaffPed(fl1, 'Dr. Mercer', -1.5, 0.2, -11.2, 0xffffff, 0x2c3e50);
+  addStaffPed(fl1, 'Nurse Clara', 1.5, 0.2, -11.2, 0x3498db, 0x3498db);
+  addStaffPed(fl1, 'Orderly Mike', 8.0, 0.2, -8.0, 0x7f8c8d, 0x34495e);
+  addStaffPed(fl1, 'EMT Martinez', 10.0, 0.2, -16.0, 0xe67e22, 0x2c3e50);
+
+  // Floor 2 (Y: 6.0 - 11.8m)
+  addBox(fl2, 0, 6.0, 0, 34, 0.2, 50, 0xdfe6ed); // Floor slab
+  addBox(fl2, -16.5, 6.2, 0, 0.8, 5.6, 50, 0xc5d1dc);
+  addBox(fl2, 16.5, 6.2, 0, 0.8, 5.6, 50, 0xc5d1dc);
+  addBox(fl2, 0, 6.2, 24.5, 34, 5.6, 0.8, 0xc5d1dc);
+  addBox(fl2, 0, 6.2, -24.5, 34, 5.6, 0.8, 0xc5d1dc);
+  // ICU Beds
+  for (let i = 0; i < 4; i++) {
+    const zPos = -4 + i * 5;
+    addBox(fl2, -11, 6.2, zPos, 3.2, 0.7, 1.6, 0x2980b9);
+    addBox(fl2, -11, 6.9, zPos, 3.0, 0.2, 1.4, 0xffffff);
+  }
+  // Full-scale MRI Scanner
+  addBox(fl2, 9, 6.2, 4, 4.2, 3.2, 3.8, 0xf0f3f5);
+  addBox(fl2, 9, 7.2, 4, 1.8, 1.8, 4.4, 0x1a252f); // Core bore
+  addBox(fl2, 9, 6.2, 1, 1.2, 0.8, 3.6, 0xbdc3c7); // Patient slide bed
+  // Staff
+  addStaffPed(fl2, 'Dr. Patel', -6.0, 6.2, 0, 0xffffff, 0x2c3e50);
+  addStaffPed(fl2, 'Nurse Jackson', -8.0, 6.2, 4, 0x16a085, 0x16a085);
+  addStaffPed(fl2, 'Dr. Vance', 9.0, 6.2, -2, 0xffffff, 0x34495e);
+  addStaffPed(fl2, 'Nurse Chloe', 12.0, 6.2, 2, 0x3498db, 0x3498db);
+
+  // Floor 3 (Y: 12.0 - 17.8m)
+  addBox(fl3, 0, 12.0, 0, 34, 0.2, 50, 0xdfe6ed); // Floor slab
+  addBox(fl3, -16.5, 12.2, 0, 0.8, 5.6, 50, 0xc5d1dc);
+  addBox(fl3, 16.5, 12.2, 0, 0.8, 5.6, 50, 0xc5d1dc);
+  addBox(fl3, 0, 12.2, 24.5, 34, 5.6, 0.8, 0xc5d1dc);
+  addBox(fl3, 0, 12.2, -24.5, 34, 5.6, 0.8, 0xc5d1dc);
+  // Operating Theaters
+  addBox(fl3, -9, 12.2, -2, 3.0, 0.9, 1.5, 0x7f8c8d); // Surgical table
+  addBox(fl3, -9, 14.8, -2, 1.4, 0.2, 1.4, 0xf1c40f); // Articulated surgical lamp
+  addBox(fl3, -9, 12.2, 8, 3.0, 0.9, 1.5, 0x7f8c8d);
+  addBox(fl3, -9, 14.8, 8, 1.4, 0.2, 1.4, 0xf1c40f);
+  // Chief Medical Office
+  addBox(fl3, 8, 12.2, 2, 3.4, 0.9, 1.8, 0x5c3a21); // Executive mahogany desk
+  // Staff
+  addStaffPed(fl3, 'Dr. Chen', -7.0, 12.2, -2, 0x27ae60, 0x27ae60);
+  addStaffPed(fl3, 'Nurse Lisa', -9.0, 12.2, 0, 0x3498db, 0x3498db);
+  addStaffPed(fl3, 'Dr. Ramirez', 8.0, 12.2, 0, 0xffffff, 0x2c3e50);
+
+  // Rooftop Helipad (Y: 18.0m)
+  addBox(roof, 0, 18.0, 0, 34, 0.4, 50, 0x34495e); // Roof slab
+  addBox(roof, 0, 18.4, 0, 22, 0.05, 22, 0x2c3e50); // Helipad circle base
+  addBox(roof, 0, 18.46, 0, 2, 0.04, 10, 0xf1c40f); // H stem 1
+  addBox(roof, -3.5, 18.46, 0, 2, 0.04, 10, 0xf1c40f);
+  addBox(roof, 3.5, 18.46, 0, 2, 0.04, 10, 0xf1c40f);
+  addBox(roof, 0, 18.46, 0, 8, 0.04, 2, 0xf1c40f); // H cross
+  // Beacons
+  addBox(roof, -11, 18.4, -11, 0.6, 1.2, 0.6, 0xe74c3c);
+  addBox(roof, 11, 18.4, -11, 0.6, 1.2, 0.6, 0xe74c3c);
+  addBox(roof, -11, 18.4, 11, 0.6, 1.2, 0.6, 0xe74c3c);
+  addBox(roof, 11, 18.4, 11, 0.6, 1.2, 0.6, 0xe74c3c);
+}
+
+function buildPolice3D() {
+  const fl1 = new THREE.Group();
+  const fl2 = new THREE.Group();
+  const fl3 = new THREE.Group();
+  const roof = new THREE.Group();
+
+  landmarkGroup.add(fl1); landmarkGroup.add(fl2); landmarkGroup.add(fl3); landmarkGroup.add(roof);
+  landmarkFloorGroups = { fl1, fl2, fl3, roof };
+
+  // Floor 1 (Lobby & Lockup)
+  addBox(fl1, 0, 0, 0, 48, 0.2, 48, 0x2c3e50);
+  addBox(fl1, -23.5, 0.2, 0, 0.8, 5.6, 48, 0x1f2c39);
+  addBox(fl1, 23.5, 0.2, 0, 0.8, 5.6, 48, 0x1f2c39);
+  addBox(fl1, 0, 0.2, 23.5, 48, 5.6, 0.8, 0x1f2c39);
+  addBox(fl1, 0, 0.2, -23.5, 48, 5.6, 0.8, 0x1f2c39);
+  // Elevated Front Desk
+  addBox(fl1, 0, 0.2, -10, 10, 1.3, 1.6, 0x1a252f);
+  // Holding Cells with Steel Bars
+  for (let i = 0; i < 3; i++) {
+    const zPos = -6 + i * 7;
+    addBox(fl1, -14, 0.2, zPos, 12, 0.1, 6, 0x34495e);
+    // Bars
+    for (let b = 0; b < 6; b++) {
+      addBox(fl1, -8, 0.2, zPos - 2.5 + b, 0.1, 5.6, 0.1, 0x95a5a6);
+    }
+  }
+  // Booking photo height chart wall
+  addBox(fl1, 14, 0.2, -6, 8, 4.0, 0.2, 0xecf0f1);
+  // Staff
+  addStaffPed(fl1, 'Sgt. Callahan', -1.5, 0.2, -11.5, 0x183059, 0x102030);
+  addStaffPed(fl1, 'Officer Davis', 1.5, 0.2, -11.5, 0x183059, 0x102030);
+  addStaffPed(fl1, 'Officer Miller', -7.0, 0.2, 0, 0x183059, 0x102030);
+  addStaffPed(fl1, 'Officer Brooks', 12.0, 0.2, -4, 0x183059, 0x102030);
+
+  // Floor 2 (Detectives Bullpen & Syndicate Wall)
+  addBox(fl2, 0, 6.0, 0, 48, 0.2, 48, 0x34495e);
+  addBox(fl2, -23.5, 6.2, 0, 0.8, 5.6, 48, 0x22313f);
+  addBox(fl2, 23.5, 6.2, 0, 0.8, 5.6, 48, 0x22313f);
+  addBox(fl2, 0, 6.2, 23.5, 48, 5.6, 0.8, 0x22313f);
+  addBox(fl2, 0, 6.2, -23.5, 48, 5.6, 0.8, 0x22313f);
+  // 4 Detective Desks
+  addBox(fl2, -10, 6.2, -6, 3.2, 0.9, 1.8, 0x4a3219);
+  addBox(fl2, -10, 6.2, 4, 3.2, 0.9, 1.8, 0x4a3219);
+  addBox(fl2, -4, 6.2, -6, 3.2, 0.9, 1.8, 0x4a3219);
+  addBox(fl2, -4, 6.2, 4, 3.2, 0.9, 1.8, 0x4a3219);
+  // Syndicate Case Corkboard Evidence Wall
+  addBox(fl2, 12, 7.0, 0, 0.2, 3.2, 12, 0xb89772);
+  // Staff
+  addStaffPed(fl2, 'Detective Rossi', -9.0, 6.2, -6, 0x2c3e50, 0x1a252f);
+  addStaffPed(fl2, 'Detective Murphy', -9.0, 6.2, 4, 0x34495e, 0x1a252f);
+  addStaffPed(fl2, 'Detective Cole', 11.0, 6.2, 0, 0x7f8c8d, 0x2c3e50);
+  addStaffPed(fl2, 'Officer Kowalski', 11.0, 6.2, 8, 0x183059, 0x102030);
+
+  // Floor 3 (Captain & SWAT Command)
+  addBox(fl3, 0, 12.0, 0, 48, 0.2, 48, 0x34495e);
+  addBox(fl3, -23.5, 12.2, 0, 0.8, 5.6, 48, 0x22313f);
+  addBox(fl3, 23.5, 12.2, 0, 0.8, 5.6, 48, 0x22313f);
+  addBox(fl3, 0, 12.2, 23.5, 48, 5.6, 0.8, 0x22313f);
+  addBox(fl3, 0, 12.2, -23.5, 48, 5.6, 0.8, 0x22313f);
+  // Captain Office Desk
+  addBox(fl3, -10, 12.2, 0, 4.0, 1.0, 2.0, 0x2c1d11);
+  // SWAT Hologram Briefing Table
+  addBox(fl3, 10, 12.2, 0, 5.0, 0.9, 3.5, 0x1a252f);
+  addBox(fl3, 10, 13.15, 0, 4.6, 0.05, 3.1, 0x00d2ff);
+  // Tactical Armory Lockers
+  addBox(fl3, 10, 12.2, 8, 8.0, 2.8, 1.2, 0x11161d);
+  // Staff
+  addStaffPed(fl3, 'Capt. Higgins', -9.0, 12.2, 0, 0x183059, 0x102030);
+  addStaffPed(fl3, 'Lt. Vance', 9.0, 12.2, 0, 0x2c3e50, 0x1a252f);
+  addStaffPed(fl3, 'Officer Briggs', 9.0, 12.2, 8, 0x11161d, 0x11161d);
+
+  // Rooftop Watchtower (Y: 18.0m)
+  addBox(roof, 0, 18.0, 0, 48, 0.4, 48, 0x1f2c39);
+  addBox(roof, 0, 18.4, 0, 8, 4.2, 8, 0x34495e);
+  addBox(roof, 0, 22.6, 0, 1.0, 8.0, 1.0, 0x95a5a6);
+}
+
+function buildGunShop3D() {
+  const fl1 = new THREE.Group();
+  const fl2 = new THREE.Group();
+
+  landmarkGroup.add(fl1); landmarkGroup.add(fl2);
+  landmarkFloorGroups = { fl1, fl2 };
+
+  // Floor 1 (Retail Showroom & Shooting Range)
+  addBox(fl1, 0, 0, 0, 46, 0.2, 38, 0x3e2723);
+  addBox(fl1, -22.5, 0.2, 0, 0.8, 5.0, 38, 0x2d1a16);
+  addBox(fl1, 22.5, 0.2, 0, 0.8, 5.0, 38, 0x2d1a16);
+  addBox(fl1, 0, 0.2, 18.5, 46, 5.0, 0.8, 0x2d1a16);
+  addBox(fl1, 0, 0.2, -18.5, 46, 5.0, 0.8, 0x2d1a16);
+  // Glass Display Counter
+  addBox(fl1, -6, 0.2, -4, 12, 1.1, 1.5, 0x11161d);
+  addBox(fl1, -6, 0.8, -4, 11.6, 0.4, 1.3, 0x00d2ff, { roughness: 0.1 });
+  // Wall Weapon Pegboard
+  addBox(fl1, -21.8, 1.5, -4, 0.3, 3.2, 16, 0x5d4037);
+  // 4-Lane Shooting Range
+  addBox(fl1, 13, 0.2, 0, 14, 0.1, 28, 0x212121);
+  for (let lane = 0; lane < 4; lane++) {
+    const zLane = -9 + lane * 6;
+    addBox(fl1, 7, 0.2, zLane, 0.1, 2.4, 5.0, 0x424242);
+    addBox(fl1, 18, 2.0, zLane, 0.05, 1.5, 1.0, 0xffffff);
+  }
+  // Staff
+  addStaffPed(fl1, 'Gun Clerk', -6.0, 0.2, -6.0, 0x4a2800, 0x212121);
+  addStaffPed(fl1, 'Range Master', 8.0, 0.2, -4.0, 0xc0392b, 0x212121);
+
+  // Floor 2 (VIP Tactical & Bank Vault)
+  addBox(fl2, 0, 5.2, 0, 46, 0.2, 38, 0x263238);
+  addBox(fl2, -22.5, 5.4, 0, 0.8, 5.2, 38, 0x1c242b);
+  addBox(fl2, 22.5, 5.4, 0, 0.8, 5.2, 38, 0x1c242b);
+  addBox(fl2, 0, 5.4, 18.5, 46, 5.2, 0.8, 0x1c242b);
+  addBox(fl2, 0, 5.4, -18.5, 46, 5.2, 0.8, 0x1c242b);
+  // VIP Tactical Mannequins
+  addBox(fl2, -12, 5.4, -4, 0.8, 1.9, 0.8, 0x11161d);
+  addBox(fl2, -9, 5.4, -4, 0.8, 1.9, 0.8, 0x11161d);
+  // Master Gunsmith Workbench with vices
+  addBox(fl2, -6, 5.4, 6, 5.0, 1.0, 2.0, 0x5d4037);
+  // Bank Armory Vault
+  addBox(fl2, 12, 5.4, 0, 12, 4.8, 14, 0x37474f);
+  addBox(fl2, 6, 5.4, 0, 0.8, 4.2, 4.0, 0x78909c);
+  addBox(fl2, 6.2, 6.8, 0, 0.4, 3.2, 3.2, 0xb0bec5);
+  // Staff
+  addStaffPed(fl2, 'Tactical Specialist', -7.0, 5.4, -2.0, 0x11161d, 0x11161d);
+  addStaffPed(fl2, 'Master Armorer', -4.0, 5.4, 6.0, 0x546e7a, 0x263238);
+}
+
+// =============================================================================
+// SHOWROOM CONCOURSE LINEUP
+// =============================================================================
+function buildLineupMode() {
+  while (lineupGroup.children.length > 0) lineupGroup.remove(lineupGroup.children[0]);
+
+  const keys = Object.keys(VEHICLE_SPECS);
+  const cols = 7;
+  const spacingX = 8.0;
+  const spacingZ = 12.0;
+
+  keys.forEach((id, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const posX = (col - (cols - 1) / 2) * spacingX;
+    const posZ = (row - 1.5) * spacingZ;
+
+    gltfLoader.load(`assets/models/gta/vehicles/${id}.glb`, gltf => {
+      const v = gltf.scene;
+      v.position.set(posX, 0, posZ);
+      const colHex = PAINTS[i % PAINTS.length].hex;
+      v.traverse(o => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+          o.material = makeCarMaterial(colHex);
+        }
+      });
+      lineupGroup.add(v);
+    });
+  });
+
+  camTarget.set(0, 2.5, 0);
+  camDistance = 58;
+  camPhi = 0.65; camTheta = 0.5;
+  updateCameraPos();
+}
+
+// =============================================================================
+// INITIALIZATION
+// =============================================================================
+switchMode('vehicles');
+</script>
+</body>
+</html>

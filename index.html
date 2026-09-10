@@ -4,17 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BrowOS</title>
-    <link rel="stylesheet" href="css/style.css?v=20260524-2">
+    <link rel="stylesheet" href="css/style.css?v=20260910-3">
     <link rel="stylesheet" href="css/desktop.css?v=20260518-2">
     <link rel="stylesheet" href="css/window.css?v=20260524-2">
     <link rel="stylesheet" href="css/widgets.css?v=20260524-1">
-    <link rel="stylesheet" href="css/apps.css?v=20260518-2">
+    <link rel="stylesheet" href="css/apps.css?v=20260909-1">
     <link rel="stylesheet" href="css/filepicker.css?v=20260520-1">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap">
+    <link rel="stylesheet" href="css/spotlight.css?v=20260904-1">
+    <link rel="stylesheet" href="css/browcut.css?v=20260904-2">
+    <link rel="stylesheet" href="css/macos.css?v=20260906-1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap"></noscript>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <link rel="stylesheet" href="css/terminal.css?v=20260518-2">
-    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <link rel="stylesheet" href="css/controls.css?v=20260906-2">
+    <link rel="stylesheet" href="css/spaces.css?v=20260907-1">
+    <link rel="stylesheet" href="css/clock.css?v=20260907-1">
+    <link rel="stylesheet" href="css/theme.css?v=20260908-2">
     <style>
         #boot-screen {
             position: fixed;
@@ -25,7 +33,7 @@
             align-items: center;
             justify-content: center;
             z-index: 100000;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.2s ease;
         }
         #boot-screen.fade-out {
             opacity: 0;
@@ -53,7 +61,7 @@
             width: 0%;
             background: #fff;
             border-radius: 2px;
-            transition: width 0.3s ease;
+            transition: width 0.1s ease;
         }
         #crash-screen {
             position: fixed;
@@ -306,6 +314,12 @@
             </div>
             <div class="menu-item">BrowOS</div>
             <div class="status-bar">
+                <div class="status-spotlight-btn" id="status-spotlight-btn" title="Spotlight Search (Ctrl+Space / Cmd+K)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
                 <span id="clock"></span>
             </div>
         </div>
@@ -316,10 +330,6 @@
             <div class="dock-apps">
                 <div class="dock-app" data-app="filebrow" data-title="FileBrow">
                     <img src="assets/icons/filebrow.svg" alt="FileBrow">
-                    <div class="minimized-dot"></div>
-                </div>
-                <div class="dock-app" data-app="safari" data-title="BrowOSer">
-                    <img src="assets/icons/safari.svg" alt="BrowOSer">
                     <div class="minimized-dot"></div>
                 </div>
                 <div class="dock-app" data-app="messages" data-title="Messages">
@@ -350,9 +360,12 @@
                     <img src="assets/icons/apps/starship.svg" alt="Void Tactics">
                     <div class="minimized-dot"></div>
                 </div>
-            </div>
-                <div class="dock-app" data-app="codebrow" data-title="CodeBrow">
-                    <img src="assets/icons/codebrow.svg" alt="CodeBrow">
+                <div class="dock-app" data-app="snake" data-title="Snake 3D">
+                    <img src="assets/icons/apps/snake.svg" alt="Snake 3D">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="terrario" data-title="Terrario">
+                    <img src="assets/icons/apps/terrario.svg" alt="Terrario">
                     <div class="minimized-dot"></div>
                 </div>
                 <div class="dock-app" data-app="music" data-title="Brow Music">
@@ -365,6 +378,13 @@
         <!-- Launchpad Overlay -->
         <div id="launchpad-overlay" class="launchpad-overlay">
             <div class="launchpad-panel">
+                <div class="launchpad-head">
+                    <div>
+                        <span class="launchpad-kicker">BROWOS / APP INDEX</span>
+                        <h2>Applications</h2>
+                    </div>
+                    <span class="launchpad-status">SYSTEM READY</span>
+                </div>
                 <div class="launchpad-search">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="rgba(255,255,255,0.5)"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242.156a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
                     <input type="text" id="launchpad-search-input" placeholder="Search apps...">
@@ -381,6 +401,7 @@
     <script>
         window.BrowOS = {
             shutdown: function() {
+                try { window.BrowSettings?.audio?.play('shutdown'); } catch (e) {}
                 const crashScreen = document.getElementById('crash-screen');
                 const shutdownOverlay = document.getElementById('shutdown-overlay');
                 const poweredOffScreen = document.getElementById('powered-off-screen');
@@ -438,18 +459,17 @@
     <script>
         (function() {
             const BOOT_STEPS = [
-                { id: 'icons', label: 'icons.js' },
-                { id: 'apps', label: 'apps.js' },
-                { id: 'desktop', label: 'desktop.js' },
-                { id: 'window', label: 'window.js' },
-                { id: 'filebrow', label: 'filebrow.js' },
-                { id: 'filesystem', label: 'filesystem.js' },
-                { id: 'shell', label: 'shell.js' },
-                { id: 'xterm', label: 'xterm.js' },
-                { id: 'wallpapers', label: 'wallpapers' },
-                { id: 'dock-icons', label: 'dock icons' },
-                { id: 'starship', label: 'starship.js' },
-                { id: 'racer', label: 'racer.js' },
+                { id: 'icons', label: 'icons.js', critical: true },
+                { id: 'apps', label: 'apps.js', critical: true },
+                { id: 'desktop', label: 'desktop.js', critical: true },
+                { id: 'window', label: 'window.js', critical: true },
+                { id: 'filesystem', label: 'filesystem.js', critical: true },
+                { id: 'filepicker', label: 'filepicker.js', critical: false },
+                { id: 'filebrow', label: 'filebrow.js', critical: false },
+                { id: 'shell', label: 'shell.js', critical: false },
+                { id: 'xterm', label: 'xterm.js', critical: false },
+                { id: 'wallpapers', label: 'wallpapers', critical: false },
+                { id: 'dock-icons', label: 'dock icons', critical: false }
             ];
 
             const progressFill = document.getElementById('boot-progress-fill');
@@ -458,34 +478,51 @@
             const crashErrorText = document.getElementById('crash-error-text');
             const desktop = document.getElementById('desktop');
 
-            let completed = 0;
+            const completedSteps = new Set();
             const total = BOOT_STEPS.length;
-            const failed = [];
+            const criticalFailures = [];
+            let isBooted = false;
+
+            // Boot watchdog: Force completion if network, fonts, or CDNs hang
+            const bootWatchdog = setTimeout(() => {
+                if (!isBooted) {
+                    console.warn('[Boot Resilience] Watchdog safeguard triggered (3500ms). Forcing boot complete.');
+                    bootComplete();
+                }
+            }, 3500);
 
             function updateProgress() {
-                const pct = Math.round((completed / total) * 100);
-                progressFill.style.width = pct + '%';
+                const pct = Math.round((completedSteps.size / total) * 100);
+                progressFill.style.width = Math.min(pct, 100) + '%';
             }
 
             function markStep(id, success, error) {
-                completed++;
+                if (completedSteps.has(id)) return;
+                completedSteps.add(id);
+
+                const stepDef = BOOT_STEPS.find(s => s.id === id);
                 if (!success) {
-                    failed.push({ id, error: error || 'Unknown' });
+                    if (stepDef && stepDef.critical) {
+                        criticalFailures.push({ id, error: error || 'Unknown' });
+                    } else {
+                        console.warn(`[Boot Resilience] Non-critical step failed or delayed: ${id}`, error);
+                        window._degradedApps = window._degradedApps || new Set();
+                        window._degradedApps.add(id);
+                    }
                 }
                 updateProgress();
 
-                if (completed >= total) {
-                    setTimeout(() => {
-                        if (failed.length > 0) {
-                            showCrash(failed);
-                        } else {
-                            bootComplete();
-                        }
-                    }, 400);
+                if (completedSteps.size >= total) {
+                    if (criticalFailures.length > 0) {
+                        showCrash(criticalFailures);
+                    } else {
+                        bootComplete();
+                    }
                 }
             }
 
             function showCrash(failures) {
+                clearTimeout(bootWatchdog);
                 const msgs = failures.map(f => `[${f.id}] ${f.error}`).join('\n');
                 crashErrorText.textContent = msgs;
                 bootScreen.style.display = 'none';
@@ -493,52 +530,87 @@
             }
 
             function bootComplete() {
+                if (isBooted) return;
+                isBooted = true;
+                clearTimeout(bootWatchdog);
+
+                try { window.BrowSettings?.audio?.play('boot'); } catch (e) {}
                 bootScreen.classList.add('fade-out');
                 desktop.style.display = '';
+
+                // Gracefully degrade any non-critical components that failed
+                if (window._degradedApps && window._degradedApps.size > 0) {
+                    window._degradedApps.forEach(appId => {
+                        const dockEl = document.querySelector(`.dock-app[data-app="${appId}"]`);
+                        if (dockEl) {
+                            dockEl.style.opacity = '0.4';
+                            dockEl.title = `${appId} (Degraded / Offline)`;
+                        }
+                    });
+                }
+
                 setTimeout(() => {
                     bootScreen.style.display = 'none';
-                }, 500);
+                }, 200);
             }
 
             window._bootStep = markStep;
             window._bootFail = function(id, err) { markStep(id, false, err); };
         })();
     </script>
+    <script src="js/settings.js?v=20260909-2"></script>
+    <!-- Universal shortcut layer — must load before apps bind keys -->
+    <script src="js/shortcuts.js?v=20260910-2"></script>
     <script src="js/icons.js?v=20260518-2" onload="window._bootStep('icons', true)" onerror="window._bootFail('icons', 'Failed to load icons.js')"></script>
     <script src="js/apps.js?v=20260520-1" onload="window._bootStep('apps', true)" onerror="window._bootFail('apps', 'Failed to load apps.js')"></script>
-    <script src="js/desktop.js?v=20260524-4" onload="window._bootStep('desktop', true)" onerror="window._bootFail('desktop', 'Failed to load desktop.js')"></script>
-    <script src="js/window.js?v=20260524-2" onload="window._bootStep('window', true)" onerror="window._bootFail('window', 'Failed to load window.js')"></script>
+    <script src="js/fuzzy.js?v=20260904-1"></script>
+    <script src="js/clock.js?v=20260907-1"></script>
+    <script src="js/widgets.js?v=20260910-3"></script>
+    <script src="js/widgets-builtin.js?v=20260910-2"></script>
+    <script src="js/weather.js?v=20260908-1"></script>
+    <script src="js/calendar.js?v=20260908-1"></script>
+    <script src="js/monitor.js?v=20260908-1"></script>
+    <!-- Filesystem must be available before Desktop subscribes to mount/state events. -->
+    <script src="js/filesystem.js?v=20260906-3" onload="Promise.resolve(window.filesystem?.initPromise).then(() => window._bootStep('filesystem', true)).catch(error => window._bootFail('filesystem', error?.message || 'Filesystem initialization failed'))" onerror="window._bootFail('filesystem', 'Failed to load filesystem.js')"></script>
+    <script src="js/desktop.js?v=20260910-1" onload="Promise.resolve(window.desktop?.initialDesktopLoad).then(() => window._bootStep('desktop', true)).catch(error => window._bootFail('desktop', error?.message || 'Desktop initialization failed'))" onerror="window._bootFail('desktop', 'Failed to load desktop.js')"></script>
+
+    <!-- Modular App Registry and UI Subsystems -->
+    <script src="js/apps/registry.js?v=20260910-1"></script>
+    <script src="js/apps/messages.js?v=20260910-1"></script>
+    <script src="js/apps/settings.js?v=20260910-1"></script>
+    <script src="js/apps/brownote.js?v=20260910-1"></script>
+    <script src="js/apps/calculator.js?v=20260910-1"></script>
+    <script src="js/apps/camera.js?v=20260910-1"></script>
+    <script src="js/apps/music.js?v=20260910-1"></script>
+    <script src="js/apps/photos.js?v=20260910-1"></script>
+
+    <script src="js/window.js?v=20260910-1" onload="window._bootStep('window', true)" onerror="window._bootFail('window', 'Failed to load window.js')"></script>
     <script src="js/filepicker.js?v=20260520-1" onload="window._bootStep('filepicker', true)" onerror="window._bootFail('filepicker', 'Failed to load filepicker.js')"></script>
-    <script src="js/filebrow.js?v=20260518-2" onload="window._bootStep('filebrow', true)" onerror="window._bootFail('filebrow', 'Failed to load filebrow.js')"></script>
-    <script src="js/filesystem.js?v=20260518-2" onload="window._bootStep('filesystem', true)" onerror="window._bootFail('filesystem', 'Failed to load filesystem.js')"></script>
-    <script src="js/starship.js" onload="window._bootStep('starship', true)" onerror="window._bootFail('starship', 'Failed to load starship.js')"></script>
-    <script src="js/racer.js?v=20260524-1" onload="window._bootStep('racer', true)" onerror="window._bootFail('racer', 'Failed to load racer.js')"></script>
-    <script src="js/shell.js?v=20260518-2" type="module" onload="window._bootStep('shell', true)" onerror="window._bootFail('shell', 'Failed to load shell.js')"></script>
+    <script src="js/filebrow.js?v=20260909-2" onload="window._bootStep('filebrow', true)" onerror="window._bootFail('filebrow', 'Failed to load filebrow.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="js/shell.js?v=20260910-3" onload="window._bootStep('shell', true)" onerror="window._bootFail('shell', 'Failed to load shell.js')"></script>
+    <script src="js/codebrow.js?v=20260910-3"></script>
+    <script src="js/spotlight.js?v=20260910-2"></script>
+    <script src="js/browcut.js?v=20260904-2"></script>
+    <script src="js/spaces.js?v=20260910-3"></script>
     <script>
         (function() {
             if (typeof Terminal !== 'undefined') {
                 window._bootStep('xterm', true);
             } else {
-                window._bootFail('xterm', 'xterm.js not loaded');
+                console.warn('[Boot Resilience] xterm.js CDN failed or offline. Terminal will run in fallback mode.');
+                window._bootStep('xterm', true);
             }
+            window._bootStep('wallpapers', true);
+            window._bootStep('dock-icons', true);
         })();
     </script>
-    <script>
-        (function() {
-            const testImgs = ['assets/wallpapers/sonoma.svg', 'assets/icons/filebrow.svg', 'assets/icons/safari.svg'];
-            let loaded = 0;
-            testImgs.forEach(src => {
-                const img = new Image();
-                img.onload = img.onerror = function() {
-                    loaded++;
-                    if (loaded >= testImgs.length) {
-                        window._bootStep('wallpapers', true);
-                        window._bootStep('dock-icons', true);
-                    }
-                };
-                img.src = src;
-            });
-        })();
-    </script>
+    <!-- BrowMacOS: macOS-style desktop features (menu bar, app switcher) -->
+    <script src="js/macos/core.js?v=20260910-1"></script>
+    <script src="js/macos/menubar.js?v=20260910-2"></script>
+    <script src="js/macos/appswitch.js?v=20260910-1"></script>
+    <script src="js/macos/init.js?v=20260906-1"></script>
+    <script src="js/controls.js?v=20260906-2"></script>
 </body>
 </html>

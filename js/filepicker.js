@@ -22,8 +22,13 @@ class FilePicker {
     }
     
     static async open(options = {}) {
-        if (!window.filesystem || !window.filesystem.isMounted()) {
-            const success = await window.filesystem.mount();
+        if (!window.filesystem || !window.filesystem.isReady()) {
+            let success = false;
+            if (window.filesystem && window.filesystem.getState() === 'needs_permission') {
+                success = await window.filesystem.requestAccess();
+            } else if (window.filesystem) {
+                success = await window.filesystem.mount();
+            }
             if (!success) {
                 return null;
             }
@@ -49,6 +54,16 @@ class FilePicker {
 
         const entries = await window.filesystem.list(path);
         const parentPath = path === '/' ? null : path.substring(0, path.lastIndexOf('/')) || '/';
+        const listItems = (entries || []).map(entry => {
+            const isDir = entry.kind === 'directory' || entry.type === 'directory';
+            if (this.options.mode === 'folder' && !isDir) return '';
+            return `
+                <div class="filepicker-item" data-path="${path === '/' ? '' : path}/${entry.name}" data-isdir="${isDir}">
+                    <img src="${isDir ? BrowOSIcons.folder : this.getIconForFile(entry.name)}" alt="${entry.name}" />
+                    <span>${entry.name}</span>
+                </div>
+            `;
+        }).join('');
 
         container.innerHTML = `
             <div class="filepicker-toolbar">
@@ -56,16 +71,7 @@ class FilePicker {
                 <span class="filepicker-path">${path}</span>
             </div>
             <div class="filepicker-list">
-                ${entries.map(entry => {
-                    const isDir = entry.kind === 'directory' || entry.type === 'directory';
-                    if (this.options.mode === 'folder' && !isDir) return '';
-                    return `
-                        <div class="filepicker-item" data-path="${path === '/' ? '' : path}/${entry.name}" data-isdir="${isDir}">
-                            <img src="${isDir ? BrowOSIcons.folder : this.getIconForFile(entry.name)}" alt="${entry.name}" />
-                            <span>${entry.name}</span>
-                        </div>
-                    `;
-                }).join('')}
+                ${listItems || '<div style="padding: 20px; color: rgba(255,255,255,0.5); text-align: center;">Folder is empty</div>'}
             </div>
             <div class="filepicker-footer">
                 <button class="filepicker-btn-cancel">Cancel</button>

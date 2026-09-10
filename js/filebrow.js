@@ -13,6 +13,28 @@ class FileBrow {
         if (window.filesystem && window.filesystem.initPromise) {
             await window.filesystem.initPromise;
         }
+        if (window.filesystem && typeof window.filesystem.on === 'function') {
+            window.filesystem.on('change', async () => {
+                if (this.container && this.container.offsetParent !== null) {
+                    await this.render();
+                }
+            });
+            window.filesystem.on('statechange', async () => {
+                if (this.container) {
+                    await this.render();
+                }
+            });
+            window.filesystem.on('mount', async () => {
+                if (this.container) {
+                    await this.render();
+                }
+            });
+            window.filesystem.on('unmount', async () => {
+                if (this.container) {
+                    await this.render();
+                }
+            });
+        }
         await this.render();
     }
 
@@ -148,6 +170,7 @@ class FileBrow {
                 if (confirmed) {
                     const success = await window.filesystem.delete(targetPath);
                     if (success) {
+                        try { window.BrowSettings?.audio?.play('trash'); } catch (e) {}
                         await this.render();
                         if (this.currentPath === 'Desktop' || this.currentPath === '/Desktop') {
                             if (window.desktop) window.desktop.refreshDesktopIcons();
@@ -207,9 +230,30 @@ class FileBrow {
                     else await window.BrowDialog.alert('Error', 'Failed to create file.');
                 }
                 break;
-            case 'info':
-                await window.BrowDialog.alert('Get Info', `Name: ${name || this.currentPath}\nType: ${type || 'directory'}`);
+            case 'info': {
+                try {
+                    const infoPath = targetPath || this.currentPath;
+                    const infoName = name || this.getPathName(this.currentPath);
+                    const meta = window.filesystem.getMetadata ? await window.filesystem.getMetadata(infoPath) : null;
+                    const fmt = (b) => (window.filesystem.formatBytes ? window.filesystem.formatBytes(b) : `${b} bytes`);
+                    if (!meta) {
+                        await window.BrowDialog.alert('Get Info', `Name: ${infoName}\nPath: ${infoPath}\nType: ${type || 'directory'}`);
+                    } else if (meta.type === 'directory' || meta.kind === 'directory') {
+                        let count = 0;
+                        try {
+                            const kids = await window.filesystem.list(infoPath);
+                            count = (kids || []).length;
+                        } catch {}
+                        await window.BrowDialog.alert('Get Info', `Name: ${infoName}\nPath: ${infoPath}\nKind: Folder\nContains: ${count} item${count === 1 ? '' : 's'}`);
+                    } else {
+                        const mod = meta.modified ? new Date(meta.modified).toLocaleString() : 'unknown';
+                        await window.BrowDialog.alert('Get Info', `Name: ${infoName}\nPath: ${infoPath}\nKind: File\nSize: ${fmt(meta.size || 0)}\nModified: ${mod}`);
+                    }
+                } catch (e) {
+                    await window.BrowDialog.alert('Get Info', `Name: ${name || this.currentPath}\nType: ${type || 'directory'}`);
+                }
                 break;
+            }
         }
     }
 
@@ -363,6 +407,17 @@ class FileBrow {
             });
         }
 
+        const unlockBtn = root.querySelector("#unlock-local-btn, #unlock-main-btn");
+        if (unlockBtn) {
+            unlockBtn.addEventListener("click", async () => {
+                const success = await window.filesystem.requestAccess();
+                if (success) {
+                    await this.navigateTo("/");
+                    if (window.desktop) window.desktop.refreshDesktopIcons();
+                }
+            });
+        }
+
         const unmountBtn = root.querySelector("#unmount-local-btn");
         if (unmountBtn) {
             unmountBtn.addEventListener("click", async (e) => {
@@ -470,9 +525,13 @@ class FileBrow {
     async render() {
         if (!this.container) return;
 
-        let entries = await window.filesystem.list(this.currentPath);
+        const state = typeof window.filesystem.getState === 'function' ? window.filesystem.getState() : (filesystem.isMounted() ? 'ready' : 'unmounted');
+        const isReady = state === 'ready';
+        const isLocked = state === 'needs_permission';
+        const mountedName = typeof window.filesystem.getMountedName === 'function' ? window.filesystem.getMountedName() : (filesystem.handle ? filesystem.handle.name : 'BrowOS');
 
-        const mounted = filesystem.isMounted();
+        let entries = isReady ? await window.filesystem.list(this.currentPath) : null;
+
         const pathLabel = this.getPathName(this.currentPath);
         const breadcrumb = this.getBreadcrumb(this.currentPath);
 
@@ -483,10 +542,10 @@ class FileBrow {
 
                     <button class="filebrow-sidebar-item ${this.currentPath === '/' ? 'active' : ''}" data-path="/" type="button">
                         <img src="${BrowOSIcons.folder}" class="sidebar-icon" alt="Root">
-                        <span>${mounted ? filesystem.handle.name : "BrowOS"}</span>
+                        <span>${isReady ? mountedName : "BrowOS"}</span>
                     </button>
 
-                    ${mounted ? `
+                    ${isReady ? `
                         <div class="filebrow-sidebar-divider"></div>
                         <div class="filebrow-sidebar-title">Folders</div>
                         <button class="filebrow-sidebar-item ${this.currentPath === '/Documents' ? 'active' : ''}" data-path="/Documents" type="button">
@@ -513,11 +572,21 @@ class FileBrow {
                         <div style="display: flex; align-items: center; padding-right: 5px;">
                             <button class="filebrow-sidebar-item" type="button" style="flex: 1; overflow: hidden; opacity: 0.7;">
                                 <img src="${BrowOSIcons.folder}" class="sidebar-icon" alt="Local">
-                                <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${filesystem.handle.name}</span>
+                                <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${mountedName}</span>
                             </button>
                             <button id="unmount-local-btn" type="button" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.1em; opacity: 0.6; padding: 5px;" title="Disconnect" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">&#x23CF;</button>
                         </div>
+                    ` : isLocked ? `
+                        <div class="filebrow-sidebar-divider"></div>
+                        <div class="filebrow-sidebar-title">Status</div>
+                        <button class="filebrow-sidebar-item" id="unlock-local-btn" type="button" style="background: rgba(255,149,0,0.18); border: 1px solid rgba(255,149,0,0.4); color: #ff9500; border-radius: 8px;">
+                            <span>🔒 Unlock Folder</span>
+                        </button>
+                        <div style="display: flex; align-items: center; padding: 4px 8px;">
+                            <button id="unmount-local-btn" type="button" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 0.85em; opacity: 0.6; padding: 4px;" title="Disconnect">Disconnect Folder</button>
+                        </div>
                     ` : `
+                        <div class="filebrow-sidebar-divider"></div>
                         <button class="filebrow-sidebar-item" id="mount-local-btn" type="button">
                             <img src="${BrowOSIcons.folder}" class="sidebar-icon" alt="Local">
                             <span>Connect Folder</span>
@@ -571,9 +640,22 @@ class FileBrow {
 
                     ${this.viewMode === 'list' ? `
                         <div class="filebrow-list filebrow-dark-list">
-                            ${!mounted ? '<div class="empty-state">Click "Connect Folder" to mount a local directory</div>' : ''}
-                            ${mounted && entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
-                            ${mounted && entries && entries.length > 0 ? `
+                            ${isLocked ? `
+                                <div class="empty-state" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; gap:10px;">
+                                    <div style="font-size:32px;">🔒</div>
+                                    <div style="font-weight:600; font-size:15px; color:#fff;">Folder Access Locked</div>
+                                    <div style="font-size:13px; color:rgba(255,255,255,0.7); max-width:320px; text-align:center;">Browser security requires re-authorizing access to "${mountedName}" to view files.</div>
+                                    <button id="unlock-main-btn" type="button" style="background:#007aff; border:none; color:white; padding:8px 18px; border-radius:8px; font-weight:500; cursor:pointer; font-size:13px; margin-top:8px;">Unlock Access</button>
+                                </div>
+                            ` : !isReady ? `
+                                <div class="empty-state" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; gap:10px;">
+                                    <div style="font-size:32px;">📁</div>
+                                    <div style="font-weight:600; font-size:15px; color:#fff;">No Folder Connected</div>
+                                    <div style="font-size:13px; color:rgba(255,255,255,0.7); max-width:320px; text-align:center;">Connect a local directory to browse and edit real files inside BrowOS.</div>
+                                    <button id="mount-local-btn" type="button" style="background:#007aff; border:none; color:white; padding:8px 18px; border-radius:8px; font-weight:500; cursor:pointer; font-size:13px; margin-top:8px;">Connect Folder</button>
+                                </div>
+                            ` : entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
+                            ${isReady && entries && entries.length > 0 ? `
                                 <table class="filebrow-list-table">
                                     <thead>
                                         <tr>
@@ -609,9 +691,22 @@ class FileBrow {
                         </div>
                     ` : `
                         <div class="filebrow-grid filebrow-dark-grid">
-                            ${!mounted ? '<div class="empty-state">Click "Connect Folder" to mount a local directory</div>' : ''}
-                            ${mounted && entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
-                            ${mounted && entries ? entries.map((entry) => {
+                            ${isLocked ? `
+                                <div class="empty-state" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; gap:10px;">
+                                    <div style="font-size:32px;">🔒</div>
+                                    <div style="font-weight:600; font-size:15px; color:#fff;">Folder Access Locked</div>
+                                    <div style="font-size:13px; color:rgba(255,255,255,0.7); max-width:320px; text-align:center;">Browser security requires re-authorizing access to "${mountedName}" to view files.</div>
+                                    <button id="unlock-main-btn" type="button" style="background:#007aff; border:none; color:white; padding:8px 18px; border-radius:8px; font-weight:500; cursor:pointer; font-size:13px; margin-top:8px;">Unlock Access</button>
+                                </div>
+                            ` : !isReady ? `
+                                <div class="empty-state" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; gap:10px;">
+                                    <div style="font-size:32px;">📁</div>
+                                    <div style="font-weight:600; font-size:15px; color:#fff;">No Folder Connected</div>
+                                    <div style="font-size:13px; color:rgba(255,255,255,0.7); max-width:320px; text-align:center;">Connect a local directory to browse and edit real files inside BrowOS.</div>
+                                    <button id="mount-local-btn" type="button" style="background:#007aff; border:none; color:white; padding:8px 18px; border-radius:8px; font-weight:500; cursor:pointer; font-size:13px; margin-top:8px;">Connect Folder</button>
+                                </div>
+                            ` : entries && entries.length === 0 ? '<div class="empty-state">This folder is empty</div>' : ''}
+                            ${isReady && entries ? entries.map((entry) => {
                                 const ext = '.' + entry.name.split('.').pop().toLowerCase();
                                 const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tiff', '.tif'];
                                 const videoExts = ['.mp4', '.webm', '.ogg', '.ogv', '.mov', '.avi', '.mkv'];

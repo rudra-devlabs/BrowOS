@@ -1,0 +1,205 @@
+{
+  "ambulance": {
+    "modelId": "active_ambulance",
+    "url": "assets/models/gta/vehicles/ambulance.glb",
+    "name": "Ambulance",
+    "packId": "active",
+    "updatedAt": 1788767871325
+  },
+  "bus": {
+    "modelId": "active_bus",
+    "url": "assets/models/gta/vehicles/bus.glb",
+    "name": "Bus",
+    "packId": "active",
+    "updatedAt": 1788767871325
+  },
+  "compact": {
+    "modelId": "active_compact",
+    "url": "assets/models/gta/vehicles/compact.glb",
+    "name": "Compact",
+    "packId": "active",
+    "updatedAt": 1788767871325
+  },
+  "coupe": {
+    "modelId": "active_coupe",
+    "url": "assets/models/gta/vehicles/coupe.glb",
+    "name": "Coupe",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "custom_vehicle": {
+    "modelId": "active_custom_vehicle",
+    "url": "assets/models/gta/vehicles/custom_vehicle.glb",
+    "name": "Custom Vehicle",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "firetruck": {
+    "modelId": "active_firetruck",
+    "url": "assets/models/gta/vehicles/firetruck.glb",
+    "name": "Firetruck",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "garbage": {
+    "modelId": "active_garbage",
+    "url": "assets/models/gta/vehicles/garbage.glb",
+    "name": "Garbage",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "hatchback": {
+    "modelId": "active_hatchback",
+    "url": "assets/models/gta/vehicles/hatchback.glb",
+    "name": "Hatchback",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "limo": {
+    "modelId": "active_limo",
+    "url": "assets/models/gta/vehicles/limo.glb",
+    "name": "Limo",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "minivan": {
+    "modelId": "active_minivan",
+    "url": "assets/models/gta/vehicles/minivan.glb",
+    "name": "Minivan",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "motorcycle": {
+    "modelId": "active_motorcycle",
+    "url": "assets/models/gta/vehicles/motorcycle.glb",
+    "name": "Motorcycle",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "muscle": {
+    "modelId": "active_muscle",
+    "url": "assets/models/gta/vehicles/muscle.glb",
+    "name": "Muscle",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "offroad": {
+    "modelId": "active_offroad",
+    "url": "assets/models/gta/vehicles/offroad.glb",
+    "name": "Offroad",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "pickup": {
+    "modelId": "active_pickup",
+    "url": "assets/models/gta/vehicles/pickup.glb",
+    "name": "Pickup",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "police": {
+    "modelId": "active_police",
+    "url": "assets/models/gta/vehicles/police.glb",
+    "name": "Police",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "police_enforcer": {
+    "modelId": "active_police_enforcer",
+    "url": "assets/models/gta/vehicles/police_enforcer.glb",
+    "name": "Police Enforcer",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "police_suv": {
+    "modelId": "active_police_suv",
+    "url": "assets/models/gta/vehicles/police_suv.glb",
+    "name": "Police Suv",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "schoolbus": {
+    "modelId": "active_schoolbus",
+    "url": "assets/models/gta/vehicles/schoolbus.glb",
+    "name": "Schoolbus",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "scooter": {
+    "modelId": "active_scooter",
+    "url": "assets/models/gta/vehicles/scooter.glb",
+    "name": "Scooter",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "sedan": {
+    "modelId": "active_sedan",
+    "url": "assets/models/gta/vehicles/sedan.glb",
+    "name": "Sedan",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "semi": {
+    "modelId": "active_semi",
+    "url": "assets/models/gta/vehicles/semi.glb",
+    "name": "Semi",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "speedboat": {
+    "modelId": "active_speedboat",
+    "url": "assets/models/gta/vehicles/speedboat.glb",
+    "name": "Speedboat",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "supercar": {
+    "modelId": "active_supercar",
+    "url": "assets/models/gta/vehicles/supercar.glb",
+    "name": "Supercar",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "suv": {
+    "modelId": "active_suv",
+    "url": "assets/models/gta/vehicles/suv.glb",
+    "name": "Suv",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "taxi": {
+    "modelId": "active_taxi",
+    "url": "assets/models/gta/vehicles/taxi.glb",
+    "name": "Taxi",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "towtruck": {
+    "modelId": "active_towtruck",
+    "url": "assets/models/gta/vehicles/towtruck.glb",
+    "name": "Towtruck",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "truck": {
+    "modelId": "active_truck",
+    "url": "assets/models/gta/vehicles/truck.glb",
+    "name": "Truck",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "van": {
+    "modelId": "active_van",
+    "url": "assets/models/gta/vehicles/van.glb",
+    "name": "Van",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  },
+  "wagon": {
+    "modelId": "active_wagon",
+    "url": "assets/models/gta/vehicles/wagon.glb",
+    "name": "Wagon",
+    "packId": "active",
+    "updatedAt": 1788767871326
+  }
+}
