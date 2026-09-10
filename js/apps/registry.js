@@ -139,6 +139,7 @@
             title: 'Brow City (GTA)',
             needsThree: true,
             scripts: [
+                'assets/vendor/three-mesh-bvh.umd.js?v=0.7.8',
                 'js/wasm_physics.js?v=20260904-1',
                 'js/gta.js?v=20260909-44'
             ],

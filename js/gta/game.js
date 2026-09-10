@@ -167,6 +167,140 @@
             if (typeof this.resize === 'function') this.resize();
         }
 
+        openSettings(from = 'menu') {
+            this._settingsFrom = from;
+            if (this.elMenu) this.elMenu.style.display = 'none';
+            if (this.elPause) this.elPause.style.display = 'none';
+            const el = this.win.querySelector('#gta-settings');
+            if (el) {
+                el.style.display = 'flex';
+                this._refreshSettingsUI();
+            }
+        }
+
+        closeSettings() {
+            const el = this.win.querySelector('#gta-settings');
+            if (el) el.style.display = 'none';
+            if (this._settingsFrom === 'pause' && this.elPause) {
+                this.elPause.style.display = 'flex';
+            } else if (this.elMenu) {
+                this.elMenu.style.display = 'flex';
+            }
+        }
+
+        _refreshSettingsUI() {
+            const q = (s) => this.win.querySelector(s);
+            const setRange = (id, val, suffix = '%') => {
+                const input = q('#' + id);
+                const valEl = q('#' + id + '-v');
+                if (input) input.value = val;
+                if (valEl) valEl.textContent = val + suffix;
+            };
+            const setToggle = (id, on) => {
+                const btn = q('#' + id);
+                if (btn) {
+                    btn.textContent = on ? 'ON' : 'OFF';
+                    btn.classList.toggle('active', !!on);
+                }
+            };
+            setRange('gta-set-master', Math.round((SETTINGS.master ?? 1) * 100));
+            setRange('gta-set-engine', Math.round((SETTINGS.engine ?? 0.8) * 100));
+            setRange('gta-set-sfx', Math.round((SETTINGS.sfx ?? 1) * 100));
+            setRange('gta-set-music', Math.round((SETTINGS.music ?? 0.8) * 100));
+            setToggle('gta-set-mute', SETTINGS.mute);
+
+            setRange('gta-set-traffic', Math.round((SETTINGS.traffic ?? 1) * 100));
+            setRange('gta-set-peds', Math.round((SETTINGS.peds ?? 1) * 100));
+
+            setToggle('gta-set-shadows', SETTINGS.shadows);
+            setToggle('gta-set-drawdist', SETTINGS.drawDistance);
+
+            const pr = q('#gta-set-pixelratio');
+            if (pr) pr.value = SETTINGS.pixelRatio || 'high';
+            const fps = q('#gta-set-fpscap');
+            if (fps) fps.value = String(SETTINGS.fpsCap || 0);
+
+            setRange('gta-set-sens', Math.round((SETTINGS.mouseSens ?? 1) * 100));
+        }
+
+        _bindSettings() {
+            const q = (s) => this.win.querySelector(s);
+            const qa = (s) => this.win.querySelectorAll(s);
+
+            // Tab switching
+            qa('.gta-set-tab').forEach((tab) => {
+                tab.addEventListener('click', () => {
+                    qa('.gta-set-tab').forEach((t) => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const tabKey = tab.dataset.tab;
+                    qa('.gta-set-tabpage').forEach((page) => {
+                        page.hidden = page.dataset.tab !== tabKey;
+                    });
+                });
+            });
+
+            // Sliders
+            const bindSlider = (id, key, scale = 0.01) => {
+                const input = q('#' + id);
+                const valEl = q('#' + id + '-v');
+                if (!input) return;
+                input.addEventListener('input', () => {
+                    const num = parseFloat(input.value);
+                    SETTINGS[key] = num * scale;
+                    if (valEl) valEl.textContent = Math.round(num) + '%';
+                    this._applySettings();
+                });
+            };
+
+            bindSlider('gta-set-master', 'master');
+            bindSlider('gta-set-engine', 'engine');
+            bindSlider('gta-set-sfx', 'sfx');
+            bindSlider('gta-set-music', 'music');
+            bindSlider('gta-set-traffic', 'traffic');
+            bindSlider('gta-set-peds', 'peds');
+            bindSlider('gta-set-sens', 'mouseSens');
+
+            // Toggles
+            const bindToggle = (id, key) => {
+                const btn = q('#' + id);
+                if (!btn) return;
+                btn.addEventListener('click', () => {
+                    SETTINGS[key] = !SETTINGS[key];
+                    btn.textContent = SETTINGS[key] ? 'ON' : 'OFF';
+                    btn.classList.toggle('active', !!SETTINGS[key]);
+                    this._applySettings();
+                });
+            };
+
+            bindToggle('gta-set-mute', 'mute');
+            bindToggle('gta-set-shadows', 'shadows');
+            bindToggle('gta-set-drawdist', 'drawDistance');
+
+            // Selects
+            const pr = q('#gta-set-pixelratio');
+            if (pr) {
+                pr.addEventListener('change', () => {
+                    SETTINGS.pixelRatio = pr.value;
+                    this._applySettings();
+                });
+            }
+            const fps = q('#gta-set-fpscap');
+            if (fps) {
+                fps.addEventListener('change', () => {
+                    SETTINGS.fpsCap = parseInt(fps.value, 10) || 0;
+                    this._applySettings();
+                });
+            }
+
+            // Buttons
+            q('#gta-set-back')?.addEventListener('click', () => this.closeSettings());
+            q('#gta-set-defaults')?.addEventListener('click', () => {
+                Object.assign(SETTINGS, GTA_SETTINGS_DEFAULTS);
+                this._applySettings();
+                this._refreshSettingsUI();
+            });
+        }
+
         /* ---- menu / state ---------------------------------------------------- */
         bindDom() {
             const q = (s) => this.win.querySelector(s);
