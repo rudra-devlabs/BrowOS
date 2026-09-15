@@ -552,6 +552,17 @@ class TerminalSession {
                         }
                     }
 
+                    // BrowDrop & AirDrop Command
+                    if (trimmed === 'browdrop' || trimmed === 'airdrop' || trimmed === 'drop' || trimmed.startsWith('browdrop ') || trimmed.startsWith('airdrop ')) {
+                        this.term.writeln('\x1b[1;36m[BrowDrop]\x1b[0m Opening AirDrop Radar & Multiplayer Co-presence...');
+                        if (window.windowManager && typeof window.windowManager.launchApp === 'function') {
+                            window.windowManager.launchApp('browdrop');
+                        }
+                        this.isProcessing = false;
+                        this.updatePrompt();
+                        return;
+                    }
+
                     // Standard Command
                     const firstWord = trimmed.split(/\s+/)[0];
                     this.setProcessTitle(firstWord, 'gear');

@@ -27,6 +27,11 @@ class AppsManager {
                 icon: BrowOSIcons.terminal,
                 windowTitle: 'BrowShell Terminal'
             },
+            'browdrop': {
+                name: 'BrowDrop',
+                icon: BrowOSIcons.apps.browdrop,
+                windowTitle: 'BrowDrop & Multiplayer'
+            },
             'brownote': {
                 name: 'Brow Note',
                 icon: BrowOSIcons.brownote,
@@ -92,11 +97,6 @@ class AppsManager {
                 icon: BrowOSIcons.apps.browcut,
                 windowTitle: 'BrowCut — Video Studio'
             },
-            'widgets': {
-                name: 'Widgets',
-                icon: BrowOSIcons.apps.widgets,
-                windowTitle: 'Widgets'
-            },
             'weather': {
                 name: 'Weather',
                 icon: BrowOSIcons.apps.weather,
@@ -112,6 +112,11 @@ class AppsManager {
                 icon: BrowOSIcons.apps.monitor,
                 windowTitle: 'System Monitor'
             },
+            'widgets': {
+                name: 'Widgets',
+                icon: BrowOSIcons.apps.widgets,
+                windowTitle: 'Widgets'
+            },
             'showcase': {
                 name: '3D Showcase',
                 icon: BrowOSIcons.apps.gta,
@@ -121,6 +126,12 @@ class AppsManager {
     }
 
     launchApp(appName) {
+        if (appName === 'launchpad') {
+            if (window.desktop && window.desktop.toggleLaunchpad) {
+                window.desktop.toggleLaunchpad(true);
+            }
+            return;
+        }
         const app = this.apps[appName];
         if (!app) {
             console.warn(`App ${appName} not found`);

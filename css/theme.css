@@ -27,7 +27,6 @@
 #menu-bar,
 #dock .dock-background,
 .window-header,
-.desktop-widget,
 .settings-sidebar,
 .spotlight-search-bar,
 #snap-preview {
@@ -38,7 +37,6 @@
 /* ─── Reduce transparency: solid chrome, zero backdrop cost ────────────── */
 :root.theme-reduce-transparency #menu-bar,
 :root.theme-reduce-transparency #dock .dock-background,
-:root.theme-reduce-transparency .desktop-widget,
 :root.theme-reduce-transparency .settings-sidebar,
 :root.theme-reduce-transparency .spotlight-search-bar,
 :root.theme-reduce-transparency #snap-preview {
@@ -48,7 +46,6 @@
 }
 :root.theme-reduce-transparency[data-theme="light"] #menu-bar,
 :root.theme-reduce-transparency[data-theme="light"] #dock .dock-background,
-:root.theme-reduce-transparency[data-theme="light"] .desktop-widget,
 :root.theme-reduce-transparency[data-theme="light"] .settings-sidebar,
 :root.theme-reduce-transparency[data-theme="light"] .spotlight-search-bar {
     background: rgba(245, 245, 248, 0.99) !important;
@@ -59,11 +56,6 @@
 body.is-window-dragging .wallpaper-blob,
 body.is-resizing-window .wallpaper-blob {
     animation-play-state: paused !important;
-}
-
-/* ─── Widgets sidebar toggle ───────────────────────────────────────────── */
-:root.theme-hide-widgets .desktop-widgets-container {
-    display: none !important;
 }
 
 /* ─── Reduce motion: kill transitions and ambient animation ────────────── */
@@ -141,43 +133,6 @@ body.is-resizing-window .wallpaper-blob {
 /* Windows already use light chrome; keep shadows soft. */
 :root[data-theme="light"] .window {
     box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-/* ============================================================================
-   LIGHT THEME — desktop widgets (frosted white cards, dark type)
-   ============================================================================ */
-
-:root[data-theme="light"] .desktop-widget {
-    background: rgba(255, 255, 255, 0.66);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    color: #1d1d1f;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12),
-                inset 0 1px 1px rgba(255, 255, 255, 0.7);
-}
-:root[data-theme="light"] .desktop-widget:hover {
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.16),
-                inset 0 1px 1px rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.75);
-}
-:root[data-theme="light"] .widget-clock-large {
-    background: linear-gradient(135deg, #1d1d1f, #515154);
-    -webkit-background-clip: text;
-}
-:root[data-theme="light"] .widget-date-label {
-    color: rgba(60, 60, 67, 0.6);
-}
-:root[data-theme="light"] .widget-title {
-    color: rgba(60, 60, 67, 0.55);
-    border-bottom-color: rgba(0, 0, 0, 0.07);
-}
-:root[data-theme="light"] .health-status-title {
-    color: #1f9d48;
-}
-:root[data-theme="light"] .health-detail-item {
-    color: rgba(60, 60, 67, 0.75);
-}
-:root[data-theme="light"] .health-detail-item span:first-child {
-    color: rgba(60, 60, 67, 0.45);
 }
 :root[data-theme="light"] .diag-btn {
     background: rgba(0, 0, 0, 0.05);
@@ -580,3 +535,40 @@ body.is-resizing-window .wallpaper-blob {
 .bench-value.wasm,
 .bench-value.speedup { color: #34c759; }
 .bench-value.speedup { font-weight: 800; }
+
+/* Performance Monitor Theme Variables */
+.performance-panel {
+    --perf-good: #34c759;
+    --perf-medium: #ff9500;
+    --perf-poor: #ff3b30;
+}
+
+
+/* ─── Mobile Performance: Replace heavy multi-layer blur with sleek opaque glass ─── */
+@media (max-width: 768px), (pointer: coarse) {
+    #menu-bar,
+    #dock .dock-background,
+    .window-header,
+    .settings-sidebar,
+    .spotlight-search-bar,
+    #snap-preview,
+    .mac-control-center-panel,
+    .browdrop-lobby-card,
+    .browdrop-qr-modal-content {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(18, 20, 26, 0.96) !important;
+    }
+
+    :root[data-theme="light"] #menu-bar,
+    :root[data-theme="light"] #dock .dock-background,
+    :root[data-theme="light"] .window-header,
+    :root[data-theme="light"] .settings-sidebar,
+    :root[data-theme="light"] .spotlight-search-bar,
+    :root[data-theme="light"] .browdrop-lobby-card,
+    :root[data-theme="light"] .browdrop-qr-modal-content {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(246, 246, 250, 0.98) !important;
+    }
+}

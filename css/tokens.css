@@ -1,0 +1,256 @@
+/* ============================================================================
+   BrowOS Design Tokens — SINGLE SOURCE OF TRUTH for the theme palette.
+   ----------------------------------------------------------------------------
+   Loaded FIRST (before every other stylesheet) so `var(--…)` references in the
+   rest of the shell resolve against one palette instead of per-file literals.
+
+   HOW THEMING WORKS
+     • `:root`                        → dark palette (the default)
+     • `:root[data-theme="light"]`    → light palette
+   The light block uses an attribute qualifier, so its specificity (0,2,0)
+   beats the plain `:root` blocks (0,1,0) declared in any other stylesheet
+   regardless of load order. That is why the light theme does not depend on
+   theme.css being last.
+
+   `data-theme` is set in three places, all of which agree on the same rules:
+     1. the inline boot script in index.html <head>  (before first paint)
+     2. js/settings.js  applyTheme()                 (live changes + OS follow)
+   See js/settings.js for the persisted value ('light' | 'dark' | 'system').
+
+   NAMING
+     Surfaces    bg-desktop, surface-chrome, surface-1…3, surface-overlay
+     Text        text-primary, text-secondary, text-tertiary, text-on-accent
+     Lines       border-subtle, border-strong
+     Inputs      input-bg, input-text, input-border
+     Depth       shadow-window, shadow-overlay, shadow-card, scrim
+     Scrollbars  scrollbar-thumb, scrollbar-track
+   ============================================================================ */
+
+:root {
+    /* ── Surfaces ───────────────────────────────────────────────────────── */
+    --bg-desktop:       #0c1024;                    /* behind the wallpaper  */
+    --surface-chrome:   rgba(0, 0, 0, 0.70);        /* menu bar, dock, header*/
+    --surface-1:        #1a1a1e;                    /* window/app body       */
+    --surface-2:        #16161a;                    /* cards, raised rows    */
+    --surface-3:        #1e1e22;                    /* inputs, wells         */
+    --surface-window:   #1a1a1e;                    /* the .window box itself*/
+    --surface-header:   rgba(38, 38, 42, 0.92);     /* window title bars     */
+    --surface-overlay:  rgba(30, 30, 32, 0.85);     /* menus, popovers       */
+    --surface-dialog:   rgba(40, 40, 40, 0.95);     /* modal / alert dialogs */
+
+    /* ── Text ───────────────────────────────────────────────────────────── */
+    --text-primary:     #f2f2f4;
+    --text-secondary:   rgba(255, 255, 255, 0.72);
+    --text-tertiary:    rgba(255, 255, 255, 0.50);
+    --text-on-accent:   #ffffff;
+    --chrome-text:      rgba(255, 255, 255, 0.82);
+
+    /* ── Lines ──────────────────────────────────────────────────────────── */
+    --border-subtle:    rgba(255, 255, 255, 0.10);
+    --border-strong:    rgba(255, 255, 255, 0.20);
+    --chrome-border:    rgba(255, 255, 255, 0.10);
+
+    /* ── Inputs ─────────────────────────────────────────────────────────── */
+    --input-bg:         rgba(255, 255, 255, 0.08);
+    --input-text:       #ffffff;
+    --input-border:     rgba(255, 255, 255, 0.16);
+    --input-placeholder: rgba(255, 255, 255, 0.40);
+
+    /* ── Depth ──────────────────────────────────────────────────────────── */
+    --shadow-window:    0 24px 64px -12px rgba(0, 0, 0, 0.50);
+    --shadow-window-idle: 0 10px 30px -5px rgba(0, 0, 0, 0.25);
+    --shadow-overlay:   0 10px 30px rgba(0, 0, 0, 0.50);
+    --shadow-card:      0 1px 3px rgba(0, 0, 0, 0.30);
+    --scrim:            rgba(0, 0, 0, 0.45);
+
+    /* ── Scrollbars ─────────────────────────────────────────────────────── */
+    --scrollbar-thumb:  rgba(255, 255, 255, 0.20);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.34);
+    --scrollbar-track:  transparent;
+
+    /* ── Interactive state fills ────────────────────────────────────────── */
+    --surface-hover:    rgba(255, 255, 255, 0.12);  /* row/button hover     */
+    --surface-sunken:   rgba(0, 0, 0, 0.26);        /* inset wells, tracks  */
+    --border-hover:     rgba(255, 255, 255, 0.32);  /* line on hover        */
+    --scrim-strong:     rgba(8, 10, 16, 0.62);      /* mission-control veil */
+
+    /* ── Menus, popovers and shared control chrome ──────────────────────── */
+    --menu-bg:          rgba(28, 28, 32, 0.92);     /* dropdown panels      */
+    --menu-text:        #f1f1f2;
+    --menu-shortcut:    rgba(255, 255, 255, 0.45);
+    --control-grad-a:   rgba(255, 255, 255, 0.13);  /* control fill, top    */
+    --control-grad-b:   rgba(255, 255, 255, 0.055); /* control fill, bottom */
+    --control-chevron:  rgba(255, 255, 255, 0.72);
+
+    /* ── Launchpad deck ─────────────────────────────────────────────────── */
+    --lp-overlay-bg:    rgba(5, 9, 13, 0.80);
+    --lp-shell-bg:      linear-gradient(168deg, #18242c 0%, #111c23 46%, #0c151b 100%);
+    --lp-shell-hairline: linear-gradient(158deg, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.07) 44%,
+                                         rgba(255, 255, 255, 0.04) 72%, rgba(255, 255, 255, 0.16));
+    --lp-card-bg:       linear-gradient(158deg, rgba(255, 255, 255, 0.065),
+                                        rgba(255, 255, 255, 0.016) 55%, rgba(255, 255, 255, 0.038));
+    --lp-card-bg-hover: linear-gradient(158deg, rgba(255, 255, 255, 0.095),
+                                        rgba(255, 255, 255, 0.028) 55%, rgba(255, 255, 255, 0.05));
+    --lp-line-strong:   rgba(255, 255, 255, 0.16);  /* card/search hairline */
+    --lp-line:          rgba(255, 255, 255, 0.07);  /* subtle fills         */
+    --lp-line-hover:    rgba(255, 255, 255, 0.13);
+    --lp-recess-bg:     rgba(8, 14, 19, 0.90);      /* search well          */
+    --lp-recess-bg-focus: #0a1419;
+    --lp-shadow:        rgba(0, 0, 0, 0.68);
+
+    /* ── Clock popover (ink & mint) ─────────────────────────────────────── */
+    --clock-bg:         rgba(19, 25, 28, 0.97);
+    --clock-border:     rgba(255, 255, 255, 0.14);
+    --clock-line:       rgba(255, 255, 255, 0.10);
+    --clock-text:       #f3f5f4;
+    --clock-dim:        #9ca8a5;
+    --clock-well:       rgba(255, 255, 255, 0.07);
+    --clock-mint-text:  #7dd7c8;                    /* mint used as *type*  */
+    --clock-amber-text: #f7c978;                    /* amber used as *type* */
+
+    /* ── Native widget rendering (scrollbars, form controls, autofill) ──── */
+    color-scheme: dark;
+}
+
+/* ============================================================================
+   LIGHT PALETTE
+   Values are chosen so text tokens clear WCAG AA (4.5:1) against the surface
+   they sit on — the previous per-selector overrides shipped
+   rgba(60,60,67,0.6) which measured 3.44:1 and was unreadable.
+   ============================================================================ */
+:root[data-theme="light"] {
+    /* ── Surfaces ───────────────────────────────────────────────────────── */
+    --bg-desktop:       #dfe3ec;
+    --surface-chrome:   rgba(255, 255, 255, 0.72);
+    --surface-1:        #f5f5f7;
+    --surface-2:        #ffffff;
+    --surface-3:        #f2f2f7;
+    --surface-window:   #ffffff;
+    --surface-header:   rgba(246, 246, 248, 0.92);  /* unchanged light value */
+    --surface-overlay:  rgba(250, 250, 252, 0.90);
+    --surface-dialog:   rgba(252, 252, 253, 0.97);
+
+    /* ── Text (all verified >= 4.5:1 on --surface-1 / --surface-2) ──────── */
+    --text-primary:     #1d1d1f;
+    --text-secondary:   rgba(60, 60, 67, 0.75);
+    --text-tertiary:    rgba(60, 60, 67, 0.72);
+    --text-on-accent:   #ffffff;
+    --chrome-text:      #1d1d1f;
+
+    /* ── Lines ──────────────────────────────────────────────────────────── */
+    --border-subtle:    rgba(0, 0, 0, 0.08);
+    --border-strong:    rgba(0, 0, 0, 0.16);
+    --chrome-border:    rgba(0, 0, 0, 0.08);
+
+    /* ── Inputs ─────────────────────────────────────────────────────────── */
+    --input-bg:         #ffffff;
+    --input-text:       #1d1d1f;
+    --input-border:     rgba(0, 0, 0, 0.14);
+    --input-placeholder: rgba(60, 60, 67, 0.62);
+
+    /* ── Depth ──────────────────────────────────────────────────────────── */
+    --shadow-window:    0 16px 40px -10px rgba(0, 0, 0, 0.22);
+    --shadow-window-idle: 0 6px 18px -4px rgba(0, 0, 0, 0.14);
+    --shadow-overlay:   0 10px 30px rgba(0, 0, 0, 0.18);
+    --shadow-card:      0 1px 3px rgba(0, 0, 0, 0.07);
+    --scrim:            rgba(0, 0, 0, 0.28);
+
+    /* ── Scrollbars ─────────────────────────────────────────────────────── */
+    --scrollbar-thumb:  rgba(0, 0, 0, 0.24);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.38);
+    --scrollbar-track:  transparent;
+
+    /* ── Interactive state fills ────────────────────────────────────────── */
+    --surface-hover:    rgba(0, 0, 0, 0.06);
+    --surface-sunken:   rgba(0, 0, 0, 0.05);
+    --border-hover:     rgba(0, 0, 0, 0.22);
+    --scrim-strong:     rgba(236, 238, 244, 0.55);
+
+    /* ── Menus, popovers and shared control chrome ──────────────────────── */
+    --menu-bg:          rgba(250, 250, 252, 0.96);
+    --menu-text:        #1d1d1f;
+    --menu-shortcut:    rgba(60, 60, 67, 0.60);
+    --control-grad-a:   rgba(255, 255, 255, 0.94);
+    --control-grad-b:   rgba(240, 240, 245, 0.94);
+    --control-chevron:  rgba(29, 29, 31, 0.62);
+
+    /* ── Launchpad deck ─────────────────────────────────────────────────── */
+    --lp-overlay-bg:    rgba(223, 227, 236, 0.78);
+    --lp-shell-bg:      linear-gradient(168deg, #ffffff 0%, #f4f7f6 46%, #e9efee 100%);
+    --lp-shell-hairline: linear-gradient(158deg, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.05) 44%,
+                                         rgba(0, 0, 0, 0.04) 72%, rgba(0, 0, 0, 0.10));
+    --lp-card-bg:       linear-gradient(158deg, rgba(255, 255, 255, 0.95),
+                                        rgba(255, 255, 255, 0.72) 55%, rgba(255, 255, 255, 0.86));
+    --lp-card-bg-hover: linear-gradient(158deg, rgba(255, 255, 255, 1),
+                                        rgba(255, 255, 255, 0.86) 55%, rgba(255, 255, 255, 0.96));
+    --lp-line-strong:   rgba(0, 0, 0, 0.14);
+    --lp-line:          rgba(0, 0, 0, 0.06);
+    --lp-line-hover:    rgba(0, 0, 0, 0.11);
+    --lp-recess-bg:     rgba(255, 255, 255, 0.92);
+    --lp-recess-bg-focus: #ffffff;
+    --lp-shadow:        rgba(21, 32, 38, 0.28);
+
+    /* ── Clock popover (ink & mint) ─────────────────────────────────────── */
+    --clock-bg:         rgba(252, 252, 253, 0.98);
+    --clock-border:     rgba(0, 0, 0, 0.10);
+    --clock-line:       rgba(0, 0, 0, 0.08);
+    --clock-text:       #1d1d1f;
+    --clock-dim:        #5b6670;
+    --clock-well:       rgba(0, 0, 0, 0.05);
+    --clock-mint-text:  #0e7f72;
+    --clock-amber-text: #96660a;
+
+    color-scheme: light;
+}
+
+/* ─── Legacy control-layer aliases ──────────────────────────────────────────
+   css/controls.css historically declared its own --brow-control-* palette on
+   `:root`. They are re-pointed here so the shared control language (buttons,
+   selects, text inputs, scrollbars) follows the theme without every consumer
+   needing to change. Declared with the light qualifier so they beat the
+   literal `:root` block in controls.css on specificity. */
+:root[data-theme="light"] {
+    --brow-control-bg:          rgba(0, 0, 0, 0.05);
+    --brow-control-bg-hover:    rgba(0, 0, 0, 0.09);
+    --brow-control-bg-active:   rgba(var(--accent-rgb, 10, 132, 255), 0.16);
+    --brow-control-border:      rgba(0, 0, 0, 0.14);
+    --brow-control-border-strong: rgba(var(--accent-rgb, 10, 132, 255), 0.62);
+    --brow-control-text:        #1d1d1f;
+    --brow-control-muted:       rgba(60, 60, 67, 0.72);
+}
+:root[data-theme="dark"] {
+    --brow-control-bg:          rgba(255, 255, 255, 0.085);
+    --brow-control-bg-hover:    rgba(255, 255, 255, 0.14);
+    --brow-control-bg-active:   rgba(var(--accent-rgb, 10, 132, 255), 0.20);
+    --brow-control-border:      rgba(255, 255, 255, 0.16);
+    --brow-control-border-strong: rgba(138, 178, 255, 0.62);
+    --brow-control-text:        rgba(255, 255, 255, 0.92);
+    --brow-control-muted:       rgba(255, 255, 255, 0.54);
+}
+
+/* ─── Legacy BrowOS design-language aliases ────────────────────────────────
+   style.css declares its own `--brow-*` palette on `:root` (the dock rail and
+   the Launchpad deck). Dark values are mirrored here and the light values are
+   supplied for the first time, so the deck/rail stop painting dark-on-light.
+   Both use the attribute qualifier, which beats style.css's literal `:root`
+   block (0,1,0) on specificity regardless of load order. */
+:root[data-theme="dark"] {
+    --brow-ink:         #0b1116;
+    --brow-panel:       #111a20;
+    --brow-panel-raised: #17232a;
+    --brow-line:        #2b3b44;
+    --brow-muted:       #8ea2a6;
+    --brow-paper:       #edf5f1;
+    --brow-teal:        #4ed3c2;
+    --brow-amber:       #f0ad54;
+}
+:root[data-theme="light"] {
+    --brow-ink:         #0b1116;
+    --brow-panel:       #e9edf2;
+    --brow-panel-raised: #dfe4ea;
+    --brow-line:        rgba(0, 0, 0, 0.12);
+    --brow-muted:       #56616b;
+    --brow-paper:       #0b1116;
+    --brow-teal:        #0f8f80;   /* darkened so kicker type clears AA */
+    --brow-amber:       #a86a12;   /* darkened so live/amber type clears AA */
+}

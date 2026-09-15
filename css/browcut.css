@@ -1,115 +1,126 @@
-/* --- BrowCut Video Studio --- */
+/* --- BrowCut Video Studio ---
+   Flat editor surfaces: no glassmorphism, no glow, no gradients.
+   A single restrained accent marks selection and the playhead. */
+
 .browcut-app {
+    --bc-bg: #101216;
+    --bc-panel: #16191f;
+    --bc-panel-alt: #1b1f26;
+    --bc-line: rgba(255, 255, 255, 0.09);
+    --bc-line-strong: rgba(255, 255, 255, 0.16);
+    --bc-text: #dfe3ea;
+    --bc-text-dim: #8d95a3;
+    --bc-text-faint: #666e7c;
+    --bc-accent: #2ea8c4;
+    --bc-accent-soft: rgba(46, 168, 196, 0.16);
+    --bc-playhead: #e0574f;
+    --bc-audio: #6f9f5e;
+
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background: #0d0f12;
-    color: #e2e8f0;
+    background: var(--bc-bg);
+    color: var(--bc-text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
     user-select: none;
     overflow: hidden;
 }
 
+/* ── Toolbar ─────────────────────────────────────────────────────────── */
 .browcut-toolbar {
-    height: 44px;
-    background: rgba(22, 27, 34, 0.95);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    height: 46px;
+    background: var(--bc-panel);
+    border-bottom: 1px solid var(--bc-line);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 14px;
-    gap: 10px;
+    padding: 0 12px;
+    gap: 12px;
     flex-shrink: 0;
 }
-.browcut-toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.browcut-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: linear-gradient(135deg, #00f2fe, #4facfe);
-    color: #000;
-    letter-spacing: 0.5px;
-}
-.browcut-timecode {
-    font-family: 'Ubuntu Mono', monospace;
-    font-size: 13px;
-    color: #00f2fe;
-    background: #090d16;
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 242, 254, 0.2);
-}
-.browcut-toolbar-center {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.browcut-aspect-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #94a3b8;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-.browcut-aspect-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-}
-.browcut-aspect-btn.active {
-    background: #00f2fe;
-    color: #000;
-    border-color: #00f2fe;
-}
+.browcut-toolbar-left,
+.browcut-toolbar-center,
 .browcut-toolbar-right {
     display: flex;
     align-items: center;
     gap: 8px;
 }
+.browcut-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: var(--bc-accent);
+    color: #06171c;
+    letter-spacing: 0.7px;
+}
+.browcut-timecode {
+    font-family: 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    color: var(--bc-text);
+    background: #0b0d10;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--bc-line);
+}
+.browcut-meta {
+    font-size: 11px;
+    color: var(--bc-text-faint);
+    white-space: nowrap;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
 .browcut-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #f1f5f9;
-    padding: 5px 12px;
-    border-radius: 6px;
+    background: var(--bc-panel-alt);
+    border: 1px solid var(--bc-line);
+    color: var(--bc-text);
+    padding: 5px 11px;
+    border-radius: 4px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.12s ease, border-color 0.12s ease;
 }
-.browcut-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    transform: translateY(-1px);
-}
+.browcut-btn:hover:not(:disabled) { background: #232833; border-color: var(--bc-line-strong); }
+.browcut-btn:active:not(:disabled) { background: #1a1e26; }
+.browcut-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .browcut-btn-primary {
-    background: linear-gradient(135deg, #00f2fe, #4facfe);
-    color: #000;
-    border: none;
-    box-shadow: 0 2px 10px rgba(0, 242, 254, 0.3);
+    background: var(--bc-accent);
+    border-color: var(--bc-accent);
+    color: #06171c;
+    font-weight: 600;
 }
-.browcut-btn-primary:hover {
-    background: linear-gradient(135deg, #38f9d7, #4facfe);
-    color: #000;
+.browcut-btn-primary:hover:not(:disabled) { background: #37b8d4; border-color: #37b8d4; }
+
+.browcut-aspect-btn {
+    background: transparent;
+    border: 1px solid var(--bc-line);
+    color: var(--bc-text-dim);
+    padding: 4px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.browcut-aspect-btn:hover { background: var(--bc-panel-alt); color: var(--bc-text); }
+.browcut-aspect-btn.active {
+    background: var(--bc-accent-soft);
+    border-color: var(--bc-accent);
+    color: #7fd3e6;
 }
 
+/* ── Workspace ───────────────────────────────────────────────────────── */
 .browcut-workspace {
     flex: 1;
     display: flex;
     min-height: 0;
-    background: #080a0d;
+    background: var(--bc-bg);
 }
 .browcut-stage {
     flex: 1;
@@ -117,22 +128,25 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 16px;
     position: relative;
-    background: radial-gradient(circle at center, #151921 0%, #080a0d 100%);
+    background: #0b0d10;
     overflow: hidden;
+    min-width: 0;
+}
+.browcut-stage.drag-over {
+    outline: 1px dashed var(--bc-accent);
+    outline-offset: -8px;
 }
 .browcut-canvas-wrap {
     position: relative;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    overflow: hidden;
+    border: 1px solid var(--bc-line);
     background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    max-width: 92%;
-    max-height: 85%;
+    max-width: 100%;
+    max-height: 100%;
 }
 #browcut-canvas {
     display: block;
@@ -140,325 +154,505 @@
     max-height: 100%;
     object-fit: contain;
 }
-.browcut-controls-overlay {
+.browcut-empty-hint {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--bc-text-faint);
+    font-size: 11px;
+    background: var(--bc-panel);
+    border: 1px solid var(--bc-line);
+    padding: 5px 11px;
+    border-radius: 4px;
+    pointer-events: none;
+    display: none;
+}
+
+/* ── Transport ───────────────────────────────────────────────────────── */
+.browcut-transport {
     position: absolute;
     bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 30px;
-    padding: 6px 16px;
+    background: var(--bc-panel);
+    border: 1px solid var(--bc-line);
+    border-radius: 6px;
+    padding: 5px 10px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     z-index: 20;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 .browcut-ctrl-btn {
-    background: none;
-    border: none;
-    color: #e2e8f0;
-    font-size: 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--bc-text);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    transition: all 0.15s ease;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    transition: background 0.12s ease;
 }
-.browcut-ctrl-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #00f2fe;
+.browcut-ctrl-btn:hover { background: var(--bc-panel-alt); }
+.browcut-ctrl-btn.primary { background: var(--bc-accent); color: #06171c; }
+.browcut-ctrl-btn.primary:hover { background: #37b8d4; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+.browcut-sidebar {
+    width: 278px;
+    flex-shrink: 0;
+    background: var(--bc-panel);
+    border-left: 1px solid var(--bc-line);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
-.browcut-ctrl-btn.primary {
-    background: #00f2fe;
-    color: #000;
+.browcut-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--bc-line);
+    position: sticky;
+    top: 0;
+    background: var(--bc-panel);
+    z-index: 2;
 }
-.browcut-ctrl-btn.primary:hover {
-    background: #38f9d7;
+.browcut-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--bc-text-dim);
+    padding: 9px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease, border-color 0.12s ease;
+}
+.browcut-tab:hover { color: var(--bc-text); }
+.browcut-tab.active {
+    color: #7fd3e6;
+    border-bottom-color: var(--bc-accent);
 }
 
-.browcut-sidebar {
-    width: 280px;
-    background: rgba(20, 24, 33, 0.95);
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
 .browcut-panel-title {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.8px;
     text-transform: uppercase;
-    color: #64748b;
-    padding: 12px 14px 6px;
+    color: var(--bc-text-faint);
+    padding: 14px 14px 6px;
 }
 .browcut-panel-group {
-    padding: 8px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 4px 14px 12px;
+    border-bottom: 1px solid var(--bc-line);
 }
+.browcut-tab-panel > .browcut-panel-group:last-child { border-bottom: none; }
+
+.browcut-inspector-empty {
+    padding: 22px 16px;
+    font-size: 11px;
+    color: var(--bc-text-faint);
+    text-align: center;
+    line-height: 1.6;
+}
+.browcut-clip-name {
+    font-size: 12px;
+    color: var(--bc-text);
+    margin-bottom: 9px;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
 .browcut-filter-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    gap: 5px;
 }
 .browcut-filter-pill {
     padding: 6px 4px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
+    background: var(--bc-panel-alt);
+    border: 1px solid var(--bc-line);
+    border-radius: 4px;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     text-align: center;
-    color: #cbd5e1;
+    color: var(--bc-text-dim);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.12s ease, color 0.12s ease;
 }
-.browcut-filter-pill:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
+.browcut-filter-pill:hover { background: #232833; color: var(--bc-text); }
 .browcut-filter-pill.active {
-    background: rgba(0, 242, 254, 0.2);
-    border-color: #00f2fe;
-    color: #00f2fe;
+    background: var(--bc-accent-soft);
+    border-color: var(--bc-accent);
+    color: #7fd3e6;
 }
+
 .browcut-input-row {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: 5px;
+    margin-bottom: 10px;
 }
-.browcut-label {
-    font-size: 11px;
-    color: #94a3b8;
-}
+.browcut-input-row:last-child { margin-bottom: 0; }
+.browcut-label { font-size: 11px; color: var(--bc-text-dim); }
 .browcut-input {
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    background: #0c0e12;
+    border: 1px solid var(--bc-line);
+    color: var(--bc-text);
+    padding: 6px 9px;
+    border-radius: 4px;
     font-size: 12px;
     outline: none;
+    font-family: inherit;
 }
-.browcut-input:focus {
-    border-color: #00f2fe;
-}
+.browcut-input:focus { border-color: var(--bc-accent); }
+input[type="color"].browcut-input { padding: 2px; height: 28px; cursor: pointer; }
+
 .browcut-slider-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+}
+.browcut-slider-row:last-child { margin-bottom: 0; }
+.browcut-slider-row .browcut-label {
+    width: 68px;
+    flex-shrink: 0;
 }
 .browcut-slider {
     flex: 1;
-    accent-color: #00f2fe;
-    height: 4px;
+    min-width: 0;
+    accent-color: var(--bc-accent);
+    height: 3px;
     cursor: pointer;
 }
 .browcut-slider-val {
     font-size: 11px;
-    font-family: monospace;
-    color: #00f2fe;
-    width: 38px;
+    font-family: 'Ubuntu Mono', monospace;
+    color: var(--bc-text-dim);
+    width: 44px;
     text-align: right;
+    flex-shrink: 0;
+}
+.browcut-panel-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 9px;
+}
+.browcut-panel-actions .browcut-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 11px;
+    padding: 5px 8px;
+}
+.browcut-hint {
+    font-size: 10px;
+    color: var(--bc-text-faint);
+    line-height: 1.55;
+    margin-top: 9px;
 }
 
+/* ── Timeline ────────────────────────────────────────────────────────── */
 .browcut-timeline-area {
-    height: 180px;
-    background: #11141a;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    height: 208px;
+    background: var(--bc-panel);
+    border-top: 1px solid var(--bc-line);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
 }
 .browcut-timeline-header {
     height: 32px;
-    background: rgba(255, 255, 255, 0.02);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--bc-line);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 14px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    gap: 10px;
 }
 .browcut-timeline-tools {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
 }
 .browcut-tool-btn {
-    background: none;
-    border: 1px solid transparent;
-    color: #94a3b8;
-    padding: 3px 8px;
+    background: transparent;
+    border: 1px solid var(--bc-line);
+    color: var(--bc-text-dim);
+    padding: 3px 9px;
     border-radius: 4px;
     font-size: 11px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease;
 }
-.browcut-tool-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.12);
+.browcut-tool-btn:hover { background: var(--bc-panel-alt); color: var(--bc-text); }
+.browcut-tool-btn.active {
+    background: var(--bc-accent-soft);
+    border-color: var(--bc-accent);
+    color: #7fd3e6;
 }
+.browcut-zoom-val {
+    font-size: 10px;
+    font-family: 'Ubuntu Mono', monospace;
+    color: var(--bc-text-faint);
+    min-width: 48px;
+    text-align: center;
+}
+.browcut-timeline-tip {
+    font-size: 10px;
+    color: var(--bc-text-faint);
+    white-space: nowrap;
+}
+
 .browcut-timeline-body {
     flex: 1;
-    position: relative;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+}
+.browcut-track-headers {
+    width: 116px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--bc-line);
+    padding-top: 22px;      /* aligns with the ruler row */
+    overflow: hidden;
+}
+.browcut-track-head {
+    height: 34px;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    background: var(--bc-panel-alt);
+    border-left: 2px solid transparent;
+    cursor: pointer;
+}
+.browcut-track-head.selected { border-left-color: var(--bc-accent); }
+.browcut-track-name {
+    flex: 1;
+    font-size: 10px;
+    color: var(--bc-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.browcut-track-head.selected .browcut-track-name { color: var(--bc-text); }
+.browcut-track-btn {
+    background: transparent;
+    border: none;
+    color: var(--bc-text-faint);
+    padding: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.browcut-track-btn:hover { background: rgba(255,255,255,0.08); color: var(--bc-text); }
+.browcut-track-btn.active { color: var(--bc-accent); }
+
+.browcut-timeline-scroll {
+    flex: 1;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 10px 14px;
+    position: relative;
+    min-width: 0;
+}
+.browcut-timeline-inner {
+    position: relative;
+    min-width: 100%;
+    padding-bottom: 8px;
 }
 .browcut-ruler {
-    height: 18px;
+    height: 22px;
     position: relative;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    margin-bottom: 8px;
+    border-bottom: 1px solid var(--bc-line);
 }
 .browcut-ruler-tick {
     position: absolute;
-    font-size: 9px;
-    font-family: monospace;
-    color: #64748b;
-    top: 0;
-    transform: translateX(-50%);
-}
-.browcut-tracks {
-    position: relative;
-    height: 70px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    padding: 4px;
-    cursor: pointer;
-}
-.browcut-clip-block {
-    position: absolute;
     top: 4px;
-    bottom: 4px;
-    background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(79, 172, 254, 0.25));
-    border: 1px solid #00f2fe;
-    border-radius: 6px;
+    font-size: 9px;
+    font-family: 'Ubuntu Mono', monospace;
+    color: var(--bc-text-faint);
+    white-space: nowrap;
+    padding-left: 3px;
+    border-left: 1px solid var(--bc-line);
+    height: 16px;
+}
+.browcut-lanes {
+    position: relative;
+    padding-top: 2px;
+}
+.browcut-lane {
+    position: relative;
+    background: #0c0e12;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: crosshair;
+}
+.browcut-lane.is-audio { background: #0d100e; }
+
+.browcut-clip {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    background: #2b323d;
+    border: 1px solid var(--bc-line-strong);
+    border-radius: 3px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     overflow: hidden;
-    user-select: none;
+    cursor: grab;
+    box-sizing: border-box;
+    transition: background 0.12s ease;
+}
+.browcut-clip:hover { background: #333b47; }
+.browcut-clip.selected {
+    background: var(--bc-accent-soft);
+    border-color: var(--bc-accent);
+}
+.browcut-clip.is-audio { background: #253024; }
+.browcut-clip.is-audio:hover { background: #2c3a2a; }
+.browcut-clip.is-audio.selected {
+    background: rgba(111, 159, 94, 0.22);
+    border-color: var(--bc-audio);
+}
+.browcut-clip.has-blend::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 0; height: 0;
+    border-top: 7px solid var(--bc-accent);
+    border-left: 7px solid transparent;
+}
+.browcut-clip.dragging {
+    opacity: 0.85;
+    cursor: grabbing;
 }
 .browcut-clip-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #fff;
-    padding: 0 10px;
+    flex: 1;
+    font-size: 10px;
+    color: var(--bc-text);
+    padding: 0 7px;
     white-space: nowrap;
-    text-overflow: ellipsis;
     overflow: hidden;
+    text-overflow: ellipsis;
     pointer-events: none;
 }
-.browcut-handle {
-    width: 10px;
-    height: 100%;
-    background: rgba(0, 242, 254, 0.6);
+.browcut-clip-handle {
+    width: 7px;
+    align-self: stretch;
+    background: transparent;
     cursor: col-resize;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s ease;
+    flex-shrink: 0;
+    transition: background 0.12s ease;
 }
-.browcut-handle:hover {
-    background: #00f2fe;
-}
-.browcut-playhead-line {
+.browcut-clip-handle:hover { background: var(--bc-accent); }
+.browcut-clip .browcut-clip-handle.in { border-right: 1px solid rgba(255,255,255,0.2); }
+.browcut-clip .browcut-clip-handle.out { border-left: 1px solid rgba(255,255,255,0.2); }
+
+.browcut-playhead {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background: #ff0844;
-    box-shadow: 0 0 8px #ff0844;
+    width: 1px;
+    background: var(--bc-playhead);
     pointer-events: none;
     z-index: 10;
-    transform: translateX(-50%);
 }
-.browcut-playhead-cap {
+.browcut-playhead::before {
+    content: '';
     position: absolute;
     top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 12px;
-    height: 12px;
-    background: #ff0844;
-    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    left: -3px;
+    width: 7px;
+    height: 7px;
+    background: var(--bc-playhead);
 }
 
-.browcut-modal-overlay {
+/* ── Toast ───────────────────────────────────────────────────────────── */
+.browcut-toast {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background: var(--bc-panel);
+    border: 1px solid var(--bc-line-strong);
+    color: var(--bc-text);
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 11px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 60;
+}
+.browcut-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Export dialog ───────────────────────────────────────────────────── */
+.browcut-export-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
+    background: rgba(6, 8, 11, 0.86);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
 }
-.browcut-modal {
-    background: #181d26;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
+.browcut-export-panel {
+    background: var(--bc-panel);
+    border: 1px solid var(--bc-line-strong);
+    border-radius: 6px;
     width: 380px;
-    padding: 24px;
-    text-align: center;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    padding: 20px;
 }
-.browcut-progress-bar {
+.browcut-export-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bc-text);
+    margin-bottom: 10px;
+}
+.browcut-export-meta {
+    font-size: 11px;
+    color: var(--bc-text-dim);
+    font-family: 'Ubuntu Mono', monospace;
+    margin-bottom: 14px;
+}
+.browcut-export-bar {
     width: 100%;
-    height: 8px;
-    background: #0f131a;
-    border-radius: 4px;
+    height: 6px;
+    background: #0c0e12;
+    border-radius: 3px;
     overflow: hidden;
-    margin: 16px 0;
 }
-.browcut-progress-fill {
+.browcut-export-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #00f2fe, #4facfe);
-    transition: width 0.1s ease;
+    background: var(--bc-accent);
+    transition: width 0.15s linear;
 }
-
-.browcut-btn:disabled {
-    opacity: 0.35 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
+.browcut-export-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--bc-text-dim);
+    margin-top: 8px;
 }
-
-.browcut-hud-toast {
-    position: absolute;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-10px);
-    background: rgba(13, 17, 23, 0.92);
-    border: 1px solid rgba(0, 242, 254, 0.45);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 242, 254, 0.25);
-    color: #00f2fe;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    pointer-events: none;
-    opacity: 0;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 50;
-    letter-spacing: 0.5px;
-    backdrop-filter: blur(8px);
+.browcut-export-pct { color: var(--bc-text); font-family: 'Ubuntu Mono', monospace; }
+.browcut-export-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+.browcut-export-note {
+    font-size: 10px;
+    color: var(--bc-text-faint);
+    margin-top: 12px;
+    line-height: 1.5;
 }
-.browcut-hud-toast.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-

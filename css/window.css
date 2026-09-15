@@ -1,9 +1,9 @@
 /* Window management styles */
 .window {
     position: absolute;
-    background: #ffffff;
+    background: var(--surface-window, #1a1a1e);
     border-radius: 12px;
-    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border-subtle, rgba(0, 0, 0, 0.08));
     overflow: hidden;
     pointer-events: all;
     display: flex;
@@ -21,13 +21,16 @@
 
 /* Active window focus elevation */
 .window.is-active {
-    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.25), 0 0 24px rgba(78, 161, 255, 0.15);
+    box-shadow: var(--shadow-window, 0 24px 64px -12px rgba(0, 0, 0, 0.5)),
+                0 0 0 1px var(--border-strong, rgba(255, 255, 255, 0.25)),
+                0 0 24px rgba(var(--accent-rgb, 78, 161, 255), 0.15);
     filter: none;
     opacity: 1;
 }
 
 .window:not(.is-active) {
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow: var(--shadow-window-idle, 0 10px 30px -5px rgba(0, 0, 0, 0.25)),
+                0 0 0 1px var(--border-subtle, rgba(255, 255, 255, 0.08));
     filter: brightness(0.96);
 }
 
@@ -42,13 +45,13 @@
 
 .window-header {
     height: 36px;
-    background: rgba(246, 246, 248, 0.92);
+    background: var(--surface-header, rgba(246, 246, 248, 0.92));
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     display: flex;
     align-items: center;
     padding: 0 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
     cursor: grab;
     user-select: none;
 }
@@ -131,7 +134,7 @@ body.is-window-dragging .window.is-dragging .window-header {
     gap: 6px;
     font-size: 13px;
     font-weight: 500;
-    color: #222;
+    color: var(--text-primary, #f2f2f4);
     cursor: default;
     min-width: 0;
 }
@@ -345,7 +348,7 @@ body.is-window-dragging .window.is-dragging .window-header {
 .brow-dialog-backdrop {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--scrim, rgba(0, 0, 0, 0.4));
     z-index: 20000;
     display: flex;
     align-items: center;
@@ -354,18 +357,18 @@ body.is-window-dragging .window.is-dragging .window-header {
 }
 
 .brow-dialog {
-    background: rgba(40, 40, 40, 0.95);
+    background: var(--surface-dialog, rgba(40, 40, 40, 0.95));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
     border-radius: 14px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-overlay, 0 20px 50px rgba(0, 0, 0, 0.5));
     width: 280px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: #fff;
+    color: var(--text-primary, #fff);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     animation: dialogPopIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -381,7 +384,7 @@ body.is-window-dragging .window.is-dragging .window-header {
     font-size: 12px;
     text-align: center;
     margin-bottom: 16px;
-    color: #d1d1d6;
+    color: var(--text-secondary, #d1d1d6);
     line-height: 1.4;
     word-break: break-word;
     max-height: 200px;
@@ -392,9 +395,9 @@ body.is-window-dragging .window.is-dragging .window-header {
     width: 100%;
     padding: 6px 8px;
     border-radius: 6px;
-    border: 1px solid #555;
-    background: #1e1e1e;
-    color: #fff;
+    border: 1px solid var(--input-border, #555);
+    background: var(--input-bg, #1e1e1e);
+    color: var(--input-text, #fff);
     font-size: 12px;
     margin-bottom: 16px;
     outline: none;
@@ -433,17 +436,18 @@ body.is-window-dragging .window.is-dragging .window-header {
 
 .brow-dialog-btn.primary {
     background: var(--accent);
-    color: white;
+    color: var(--text-on-accent, white);
 }
 
 .brow-dialog-btn.secondary {
-    background: #4a4a4d;
-    color: white;
+    background: var(--brow-control-bg, rgba(74, 74, 77, 1));
+    color: var(--text-primary, white);
+    border: 1px solid var(--brow-control-border, transparent);
 }
 
 .brow-dialog-btn.danger {
     background: #ff3b30;
-    color: white;
+    color: #ffffff;
 }
 
 @keyframes dialogFadeIn {
@@ -485,3 +489,47 @@ body.is-window-dragging .window.is-dragging .window-header {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
+
+
+/* ─── Mobile & Tablet Responsive Window Manager ───────────────────────── */
+@media (max-width: 768px) {
+    .window {
+        will-change: auto !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 36px !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: calc(100vh - 36px - 58px) !important;
+        border-radius: 0 !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+        resize: none !important;
+        border: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+
+    .window-header {
+        height: 42px !important;
+        padding: 0 12px !important;
+        touch-action: pan-x pan-y !important;
+    }
+
+    .window-controls {
+        gap: 12px !important;
+    }
+
+    .window-control {
+        width: 16px !important;
+        height: 16px !important;
+        padding: 6px !important;
+        box-sizing: content-box !important;
+    }
+
+    .window-resize-handle {
+        display: none !important;
+    }
+
+    #snap-preview {
+        display: none !important;
+    }
+}

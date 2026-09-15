@@ -5,7 +5,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--scrim, rgba(0, 0, 0, 0.45));
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     z-index: 99999;
@@ -25,12 +25,13 @@
 #spotlight-container {
     width: 620px;
     max-width: 90vw;
-    background: rgba(30, 30, 36, 0.82);
+    background: var(--surface-overlay, rgba(30, 30, 36, 0.82));
     backdrop-filter: blur(35px) saturate(190%);
     -webkit-backdrop-filter: blur(35px) saturate(190%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
     border-radius: 16px;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    box-shadow: var(--shadow-overlay, 0 25px 70px rgba(0, 0, 0, 0.45)),
+                0 0 0 1px var(--border-subtle, rgba(255, 255, 255, 0.05));
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -53,7 +54,7 @@
     display: flex;
     align-items: center;
     padding: 14px 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
     position: relative;
     gap: 12px;
 }
@@ -63,6 +64,7 @@
     height: 22px;
     opacity: 0.7;
     flex-shrink: 0;
+    color: var(--text-secondary);
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
@@ -71,14 +73,14 @@
     background: transparent;
     border: none;
     outline: none;
-    color: #ffffff;
+    color: var(--text-primary, #ffffff);
     font-size: 19px;
     font-weight: 400;
     letter-spacing: -0.2px;
 }
 
 #spotlight-input::placeholder {
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--input-placeholder, rgba(255, 255, 255, 0.35));
 }
 
 .spotlight-wasm-tag {
@@ -107,7 +109,7 @@
 }
 
 .spotlight-results::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
     border-radius: 3px;
 }
 
@@ -119,14 +121,14 @@
     cursor: pointer;
     gap: 12px;
     transition: background 0.1s ease;
-    color: #e0e0e6;
+    color: var(--text-primary, #e0e0e6);
     user-select: none;
 }
 
 .spotlight-item.selected,
 .spotlight-item:hover {
-    background: rgba(0, 122, 255, 0.85);
-    color: #ffffff;
+    background: var(--accent);
+    color: var(--text-on-accent, #ffffff);
 }
 
 .spotlight-item-icon {
@@ -137,7 +139,7 @@
     justify-content: center;
     flex-shrink: 0;
     border-radius: 7px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--input-bg, rgba(255, 255, 255, 0.08));
 }
 
 .spotlight-item-icon img,
@@ -163,7 +165,7 @@
 
 .spotlight-item-sub {
     font-size: 11px;
-    opacity: 0.65;
+    color: var(--text-tertiary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -175,7 +177,7 @@
     opacity: 0.7;
     padding: 2px 8px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
 }
 
@@ -187,7 +189,7 @@
 .spotlight-empty {
     padding: 36px 20px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--text-tertiary, rgba(255, 255, 255, 0.4));
     font-size: 14px;
 }
 
@@ -196,10 +198,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.25);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-sunken, rgba(0, 0, 0, 0.25));
+    border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--text-tertiary, rgba(255, 255, 255, 0.45));
 }
 
 .spotlight-footer-keys {
@@ -208,10 +210,10 @@
 }
 
 .spotlight-key {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
     padding: 2px 5px;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--text-secondary, rgba(255, 255, 255, 0.8));
     font-family: monospace;
     font-size: 10px;
 }
@@ -232,7 +234,7 @@
 
 .status-spotlight-btn:hover {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--surface-hover, rgba(255, 255, 255, 0.15));
 }
 
 .status-spotlight-btn svg {
@@ -241,7 +243,8 @@
     stroke: currentColor;
 }
 
-/* Fuzzy Search Match Highlights */
+/* Fuzzy Search Match Highlights. Brand highlight color: deliberately fixed so
+   the match stays legible on the accent-tinted selected row in both themes. */
 .spotlight-match {
     color: #5ac8fa;
     font-weight: 700;
@@ -261,5 +264,3 @@
     font-weight: 700;
     text-shadow: 0 0 8px rgba(90, 200, 250, 0.5);
 }
-
-

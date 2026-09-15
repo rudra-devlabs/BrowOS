@@ -5,8 +5,8 @@ class Desktop {
         this.initializeDesktop();
         this.initializeClock();
         this.initializeDock();
-        this.loadDesktopIcons();
         this.initializeWidgets();
+        this.loadDesktopIcons();
         window.desktop = this;
     }
 
@@ -194,8 +194,10 @@ class Desktop {
             ],
         });
         addDivider();
-        addItem('Edit Widgets', 'edit-widgets');
         addItem('Show View Options', 'view-options');
+        addDivider();
+        addItem('Edit Widgets…', 'edit-widgets');
+        addItem('Widget Gallery', 'widget-gallery');
 
         document.body.appendChild(menu);
 
@@ -297,9 +299,6 @@ class Desktop {
             case 'clean-up':
                 this.refreshDesktopIcons();
                 break;
-            case 'edit-widgets':
-                if (window.BrowWidgets) window.BrowWidgets.openGallery(true);
-                break;
             case 'cleanup-name':
                 localStorage.setItem('browos_desktop_sort', 'name');
                 this.refreshDesktopIcons();
@@ -310,6 +309,16 @@ class Desktop {
                 break;
             case 'view-options':
                 this.showDesktopViewOptions();
+                break;
+            case 'edit-widgets':
+                if (window.BrowWidgets) {
+                    const on = !window.BrowWidgets.isEditMode();
+                    window.BrowWidgets.setEditMode(on);
+                    if (on && !window.BrowWidgets.list().length) window.BrowWidgets.openGallery();
+                }
+                break;
+            case 'widget-gallery':
+                window.BrowWidgets?.openGallery();
                 break;
         }
     }
@@ -392,6 +401,21 @@ class Desktop {
         return 'Other';
     }
 
+    // The widget engine loads after this class is constructed, so boot it as
+    // soon as it appears. BrowWidgets.init() is idempotent.
+    initializeWidgets() {
+        const boot = () => {
+            if (!window.BrowWidgets) return false;
+            window.BrowWidgets.init();
+            return true;
+        };
+        if (boot()) return;
+        let tries = 0;
+        const timer = setInterval(() => {
+            if (boot() || ++tries > 60) clearInterval(timer);
+        }, 50);
+    }
+
     initializeClock() {
         if (window.BrowClock) {
             window.BrowClock.init();
@@ -429,6 +453,7 @@ class Desktop {
     }
 
     getDockPosition() {
+        if (window.innerWidth <= 768) return 'bottom';
         const position = localStorage.getItem('browos_dock_position');
         return ['bottom', 'left', 'right'].includes(position) ? position : 'bottom';
     }
@@ -436,7 +461,8 @@ class Desktop {
     setDockPosition(position = 'bottom', persist = true) {
         const dock = document.getElementById('dock');
         if (!dock) return;
-        const next = ['bottom', 'left', 'right'].includes(position) ? position : 'bottom';
+        const isMobile = window.innerWidth <= 768;
+        const next = isMobile ? 'bottom' : (['bottom', 'left', 'right'].includes(position) ? position : 'bottom');
         dock.classList.remove('dock-bottom', 'dock-left', 'dock-right');
         dock.classList.add(`dock-${next}`);
         dock.dataset.position = next;
@@ -445,7 +471,7 @@ class Desktop {
         this.updateDesktopSafeArea();
     }
 
-    // ─── Desktop safe area (keeps icons/widgets clear of side docks) ──────────
+    // ─── Desktop safe area (keeps icons clear of side docks) ─────────────────
 
     /** True when the dock is slid off-screen (auto-hide / fullscreen hide). */
     _dockIsHidden(dock) {
@@ -470,8 +496,8 @@ class Desktop {
     }
 
     /**
-     * Publish reserves as CSS vars on #desktop (drives the widgets column)
-     * and re-layout icons when the occupied space actually changed.
+     * Publish reserves as CSS vars on #desktop and re-layout icons when the
+     * occupied space actually changed.
      */
     updateDesktopSafeArea() {
         const desktopEl = document.getElementById('desktop');
@@ -654,17 +680,18 @@ class Desktop {
 
         const fitDock = () => {
             const count = dockApps.querySelectorAll('.dock-app:not(.dock-placeholder)').length || 1;
-            const position = dock.dataset.position || 'bottom';
-            const vertical = position !== 'bottom';
-            const compact = (vertical ? window.innerHeight : window.innerWidth) <= 600;
-            const gap = compact ? 3 : 6;
-            const padding = compact ? 16 : 24;
+            const isMobile = window.innerWidth <= 768;
+            const position = isMobile ? 'bottom' : (dock.dataset.position || 'bottom');
+            const vertical = !isMobile && position !== 'bottom';
+            const compact = isMobile || (vertical ? window.innerHeight : window.innerWidth) <= 600;
+            const gap = isMobile ? 8 : (compact ? 3 : 6);
+            const padding = isMobile ? 12 : (compact ? 16 : 24);
             const available = Math.max(220, (vertical ? window.innerHeight : window.innerWidth) - 24);
             const preferredSize = Number(localStorage.getItem('browos_dock_size')) || 50;
-            const maxIcon = Math.max(30, Math.min(80, preferredSize));
-            const minIcon = 30;
-            const fitted = Math.floor((available - padding - gap * (count - 1)) / count);
-            const iconSize = Math.max(minIcon, Math.min(maxIcon, fitted));
+            const maxIcon = isMobile ? 38 : Math.max(30, Math.min(80, preferredSize));
+            const minIcon = isMobile ? 36 : 30;
+            const fitted = isMobile ? 38 : Math.floor((available - padding - gap * (count - 1)) / count);
+            const iconSize = isMobile ? 38 : Math.max(minIcon, Math.min(maxIcon, fitted));
             const overflow = count * iconSize + gap * Math.max(0, count - 1) + padding > available;
             dock.style.setProperty('--dock-icon-size', `${iconSize}px`);
             dock.style.setProperty('--dock-gap', `${gap}px`);
@@ -674,9 +701,9 @@ class Desktop {
                 dockApps.style.overflowY = overflow ? 'auto' : 'visible';
                 dockApps.style.overflowX = 'visible';
             } else {
-                dockApps.style.maxWidth = `${Math.max(220, available)}px`;
+                dockApps.style.maxWidth = isMobile ? '100%' : `${Math.max(220, available)}px`;
                 dockApps.style.maxHeight = '';
-                dockApps.style.overflowX = overflow ? 'auto' : 'visible';
+                dockApps.style.overflowX = isMobile || overflow ? 'auto' : 'visible';
                 dockApps.style.overflowY = 'visible';
             }
             this.updateDesktopSafeArea();
@@ -798,12 +825,26 @@ class Desktop {
         const wm = window.windowManager;
         if (!wm) return;
 
+        // Apps with at least one window open (any desktop space, minimized included)
+        const runningApps = new Set(wm.windows.map(w => w.appName));
+        // Apps the user pinned to the dock — ephemeral icons are never added for them
+        const pinnedApps = new Set(this.getDockApps().filter(k => k !== 'launchpad'));
+
         // Update is-open class for all dock apps based on whether they have any windows open
         dockAppsContainer.querySelectorAll('.dock-app').forEach(el => {
             const appKey = el.dataset.app;
             if (appKey === 'launchpad') return;
-            const isOpen = wm.windows.some(w => w.appName === appKey);
+            const isOpen = runningApps.has(appKey);
             el.classList.toggle('is-open', !!isOpen);
+        });
+
+        // Running but not pinned: show it in the dock as an ephemeral (temporary) icon,
+        // like macOS does for un-pinned apps. Removed again when the last window closes.
+        this._pruneEphemeralDockApps(dockAppsContainer, runningApps, pinnedApps);
+        runningApps.forEach(appKey => {
+            if (pinnedApps.has(appKey)) return;
+            if (dockAppsContainer.querySelector(`.dock-app[data-app="${appKey}"]`)) return;
+            this._addEphemeralDockApp(appKey, dockAppsContainer);
         });
 
         const maximizedWindows = wm.windows.filter(w => w.isMaximized && !w.isMinimized && !(w.element && w.element.classList.contains('space-hidden')));
@@ -821,8 +862,45 @@ class Desktop {
             el.classList.remove('taskbar-active');
         });
         dock.classList.remove('taskbar-mode');
-        dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => el.remove());
         if (this.dockAutoHideSync) this.dockAutoHideSync();
+    }
+
+    /** Remove ephemeral icons whose app closed; promote ones whose app got pinned. */
+    _pruneEphemeralDockApps(dockAppsContainer, runningApps, pinnedApps) {
+        let changed = false;
+        dockAppsContainer.querySelectorAll('.dock-app[data-taskbar-ephemeral]').forEach(el => {
+            const key = el.dataset.app;
+            if (pinnedApps.has(key)) {
+                // App got pinned while running — keep this icon, but as a permanent one.
+                delete el.dataset.taskbarEphemeral;
+                el.classList.remove('taskbar-ephemeral');
+                changed = true;
+            } else if (!runningApps.has(key)) {
+                el.remove();
+                changed = true;
+            }
+        });
+        if (changed && this.dockFit) this.dockFit();
+    }
+
+    /**
+     * Append a temporary dock icon for a running app that is not pinned.
+     * Marked data-taskbar-ephemeral so dock-order saving, drag-to-reorder and
+     * syncDockFromStorage() all ignore it.
+     */
+    _addEphemeralDockApp(appKey, dockAppsContainer) {
+        const app = window.appsManager ? window.appsManager.getAppInfo(appKey) : null;
+        if (!app) return;
+
+        const el = document.createElement('div');
+        el.className = 'dock-app taskbar-ephemeral';
+        el.dataset.app = appKey;
+        el.dataset.title = app.name;
+        el.dataset.taskbarEphemeral = 'true';
+        el.innerHTML = `<img src="${app.icon}" alt="${app.name}"><div class="minimized-dot"></div>`;
+        el.addEventListener('click', () => this._taskbarAppClick(appKey, el));
+        this._ensureTaskbarLabel(el);
+        dockAppsContainer.appendChild(el);
     }
 
     /**
@@ -1053,10 +1131,13 @@ class Desktop {
         try {
             const saved = localStorage.getItem('browos_dock_apps');
             if (saved) {
-                return JSON.parse(saved).map((key) => (key === 'finder' ? 'filebrow' : key));
+                const parsed = JSON.parse(saved).map((key) => (key === 'finder' ? 'filebrow' : key));
+                if (Array.isArray(parsed) && parsed.length >= 4) {
+                    return parsed;
+                }
             }
         } catch (e) {}
-        return ['filebrow', 'messages', 'launchpad', 'settings', 'terminal', 'brownote'];
+        return ['filebrow', 'messages', 'launchpad', 'browdrop', 'settings', 'terminal', 'brownote'];
     }
 
     saveDockApps(apps) {
@@ -1071,13 +1152,14 @@ class Desktop {
         const existingKeys = new Set();
 
         savedApps.forEach(key => {
-            if (key !== 'launchpad' && !allApps[key]) return;
             existingKeys.add(key);
 
             let el = dockContainer.querySelector(`.dock-app[data-app="${key}"]`);
             if (!el) {
-                if (key === 'launchpad') return;
-                const app = allApps[key];
+                const app = allApps[key] || {
+                    name: key.charAt(0).toUpperCase() + key.slice(1),
+                    icon: (key === 'browdrop') ? 'assets/icons/apps/browdrop.svg' : `assets/icons/${key}.svg`
+                };
                 el = document.createElement('div');
                 el.className = 'dock-app';
                 el.dataset.app = key;
@@ -1088,12 +1170,15 @@ class Desktop {
             dockContainer.appendChild(el);
         });
 
-        dockContainer.querySelectorAll('.dock-app').forEach(el => {
-            const key = el.dataset.app;
-            if (key !== 'launchpad' && !existingKeys.has(key)) {
-                el.remove();
-            }
-        });
+        // Only prune if we have at least 5 registered apps, preventing accidental dock erasure
+        if (existingKeys.size >= 5) {
+            dockContainer.querySelectorAll('.dock-app:not([data-taskbar-ephemeral])').forEach(el => {
+                const key = el.dataset.app;
+                if (!existingKeys.has(key)) {
+                    el.remove();
+                }
+            });
+        }
     }
 
     // ─── Dock context menu ─────────────────────────────────────────────────────
@@ -1151,7 +1236,12 @@ class Desktop {
         }, !isOpen);
         div();
         mk('Show in Launchpad', () => this.toggleLaunchpad(true));
-        mk('Remove from Dock', () => this.removeFromDock(appName, appEl));
+        if (appEl && appEl.hasAttribute('data-taskbar-ephemeral')) {
+            // Temporary icon for a running un-pinned app: pin it instead.
+            mk('Keep in Dock', () => this.addToDock(appName));
+        } else {
+            mk('Remove from Dock', () => this.removeFromDock(appName, appEl));
+        }
 
         document.body.appendChild(menu);
 
@@ -1167,25 +1257,31 @@ class Desktop {
     }
 
     removeFromDock(appName, appEl) {
+        const apps = this.getDockApps().filter(a => a !== appName);
+        this.saveDockApps(apps);
+        const resync = () => this.updateTaskbar();
         if (appEl) {
             appEl.style.transition = 'all 0.2s ease';
             appEl.style.transform = 'scale(0)';
             appEl.style.opacity = '0';
-            setTimeout(() => { appEl.remove(); this.updateDesktopSafeArea(); }, 200);
+            setTimeout(() => { appEl.remove(); this.updateDesktopSafeArea(); resync(); }, 200);
+        } else {
+            resync();
         }
-        const apps = this.getDockApps().filter(a => a !== appName);
-        this.saveDockApps(apps);
         this.updateDesktopSafeArea();
     }
 
     addToDock(appName) {
         const apps = this.getDockApps();
-        if (apps.includes(appName)) return;
-        apps.push(appName);
-        this.saveDockApps(apps);
+        if (!apps.includes(appName)) {
+            apps.push(appName);
+            this.saveDockApps(apps);
+        }
         this.syncDockFromStorage();
         this.setupDockDrag();
         this.setupDockContextMenu();
+        // If the app is currently running, its ephemeral icon becomes the pinned one.
+        this.updateTaskbar();
         this.updateDesktopSafeArea();
     }
 
@@ -1194,68 +1290,232 @@ class Desktop {
     setupLaunchpadListeners() {
         const overlay = document.getElementById('launchpad-overlay');
         const searchInput = document.getElementById('launchpad-search-input');
+        const clearBtn = document.getElementById('lp-clear');
+        const closeBtn = document.getElementById('lp-close-btn');
         if (!overlay) return;
 
-        this.setupPointerReorder(document.getElementById('launchpad-grid'), '.launchpad-item', () => {
-            this.saveLaunchpadOrder();
-        });
-
         overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) this.toggleLaunchpad(false);
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && overlay.classList.contains('visible')) {
+            if (e.target === overlay || e.target.classList.contains('lp-backdrop-dismiss')) {
                 this.toggleLaunchpad(false);
             }
         });
 
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.toggleLaunchpad(false));
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!overlay.classList.contains('visible')) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.toggleLaunchpad(false);
+            } else if (e.key === 'Enter' && searchInput && document.activeElement === searchInput) {
+                const first = overlay.querySelector('.lp-item:not(.hidden)');
+                if (first) {
+                    e.preventDefault();
+                    first.click();
+                }
+            }
+        });
+
         if (searchInput) {
+            let _lpSearchTimer;
             searchInput.addEventListener('input', () => {
-                const grid = document.getElementById('launchpad-grid');
-                if (!grid) return;
-                const query = searchInput.value.toLowerCase().trim();
-                grid.querySelectorAll('.launchpad-item').forEach(item => {
-                    const name = item.dataset.name;
-                    item.classList.toggle('hidden', query && !name.includes(query));
-                });
+                if (clearBtn) clearBtn.classList.toggle('is-visible', !!searchInput.value);
+                clearTimeout(_lpSearchTimer);
+                _lpSearchTimer = setTimeout(() => this.applyLaunchpadFilter(), 20);
+            });
+        }
+
+        if (clearBtn && searchInput) {
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                clearBtn.classList.remove('is-visible');
+                this.applyLaunchpadFilter();
+                searchInput.focus();
             });
         }
     }
 
+    // Clean category taxonomy
+    getLaunchpadCategories() {
+        return [
+            { id: 'system', name: 'System', apps: ['filebrow', 'terminal', 'settings', 'monitor'] },
+            { id: 'create', name: 'Create', apps: ['codebrow', 'brownote', 'browcut', 'showcase'] },
+            { id: 'play',   name: 'Play',   apps: ['gta', 'starship', 'browrio', 'snake', 'terrario'] },
+            { id: 'life',   name: 'Life',   apps: ['messages', 'calendar', 'weather', 'clock'] },
+            { id: 'media',  name: 'Media',  apps: ['music', 'photos', 'camera'] },
+            { id: 'tools',  name: 'Tools',  apps: ['browdrop', 'calculator', 'widgets'] },
+        ];
+    }
+
+    escapeLaunchpadText(value) {
+        return String(value).replace(/[&<>"']/g, ch => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+        ));
+    }
+
     populateLaunchpadGrid() {
-        const grid = document.getElementById('launchpad-grid');
-        if (!grid || !window.appsManager) return;
-        // Rebuild so newly installed apps + dock changes are always reflected.
-        grid.innerHTML = '';
+        const body = document.getElementById('lp-body');
+        if (!body || !window.appsManager) return;
 
         const apps = window.appsManager.getAllApps();
-        const orderedKeys = this.getLaunchpadApps(apps);
+        const ordered = this.getLaunchpadApps(apps).filter(key => key !== 'launchpad' && apps[key]);
 
-        for (const key of orderedKeys) {
+        // Fast fingerprint check
+        const fingerprint = ordered.join(',');
+        if (this._lpGridFingerprint === fingerprint && body.children.length > 0) {
+            this._lpActiveCategory = 'all';
+            document.querySelectorAll('#lp-filters .lp-filter-pill').forEach(c =>
+                c.classList.toggle('active', c.dataset.category === 'all')
+            );
+            this.syncLaunchpadRunningIndicators();
+            this.applyLaunchpadFilter();
+            return;
+        }
+        this._lpGridFingerprint = fingerprint;
+        body.innerHTML = '';
+
+        const categories = this.getLaunchpadCategories();
+        const catMap = new Map();
+        categories.forEach(cat => {
+            cat.apps.forEach(appKey => catMap.set(appKey, cat.id));
+        });
+
+        // Determine currently open windows for running indicator
+        const openAppKeys = new Set();
+        if (window.windowManager && window.windowManager.windows) {
+            window.windowManager.windows.forEach(w => {
+                if (w && w.appKey) openAppKeys.add(w.appKey);
+            });
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        for (const key of ordered) {
             const app = apps[key];
             if (!app) continue;
-            if (key === 'launchpad') continue;
-            const item = document.createElement('div');
-            item.className = 'launchpad-item';
-            item.dataset.name = app.name.toLowerCase();
-            item.dataset.appKey = key;
-            item.innerHTML = `
-                <img src="${app.icon}" alt="${app.name}" draggable="false">
-                <span>${app.name}</span>
+            const catId = catMap.get(key) || 'tools';
+
+            const tile = document.createElement('div');
+            tile.className = 'lp-item' + (openAppKeys.has(key) ? ' is-running' : '');
+            tile.dataset.appKey = key;
+            tile.dataset.category = catId;
+            tile.dataset.name = (app.name || key).toLowerCase();
+            tile.setAttribute('role', 'button');
+            tile.setAttribute('tabindex', '0');
+
+            tile.innerHTML = `
+                <div class="lp-item-icon-wrap">
+                    <img class="lp-item-icon" src="${app.icon}" alt="" draggable="false" loading="lazy">
+                    <span class="lp-running-dot"></span>
+                </div>
+                <span class="lp-item-name">${this.escapeLaunchpadText(app.name)}</span>
             `;
-            item.addEventListener('click', () => {
+
+            tile.addEventListener('click', () => {
                 this.toggleLaunchpad(false);
                 window.windowManager.launchApp(key);
             });
-            item.addEventListener('contextmenu', (e) => {
+
+            tile.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    tile.click();
+                }
+            });
+
+            tile.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 this.hideContextMenu();
                 this.showLaunchpadContextMenu(e.clientX, e.clientY, key, this.getDockApps().includes(key));
             });
-            grid.appendChild(item);
+
+            fragment.appendChild(tile);
         }
+
+        body.appendChild(fragment);
+        this.buildLaunchpadFilters(categories, ordered, catMap);
+        this.applyLaunchpadFilter();
+    }
+
+    syncLaunchpadRunningIndicators() {
+        const body = document.getElementById('lp-body');
+        if (!body || !window.windowManager || !window.windowManager.windows) return;
+        const openKeys = new Set();
+        window.windowManager.windows.forEach(w => {
+            if (w && w.appKey) openKeys.add(w.appKey);
+        });
+        body.querySelectorAll('.lp-item').forEach(tile => {
+            tile.classList.toggle('is-running', openKeys.has(tile.dataset.appKey));
+        });
+    }
+
+    buildLaunchpadFilters(categories, ordered, catMap) {
+        const row = document.getElementById('lp-filters');
+        if (!row) return;
+
+        const active = this._lpActiveCategory || 'all';
+        row.innerHTML = '';
+
+        // Calculate counts
+        const counts = { all: ordered.length };
+        categories.forEach(cat => counts[cat.id] = 0);
+        ordered.forEach(k => {
+            const cat = catMap.get(k) || 'tools';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+
+        const addPill = (id, label, count) => {
+            const pill = document.createElement('button');
+            pill.type = 'button';
+            pill.className = 'lp-filter-pill' + (id === active ? ' active' : '');
+            pill.dataset.category = id;
+            pill.innerHTML = `<span>${this.escapeLaunchpadText(label)}</span><span class="lp-pill-count">${count}</span>`;
+            pill.addEventListener('click', () => {
+                this._lpActiveCategory = id;
+                row.querySelectorAll('.lp-filter-pill').forEach(c => c.classList.toggle('active', c === pill));
+                this.applyLaunchpadFilter();
+            });
+            row.appendChild(pill);
+        };
+
+        addPill('all', 'All', counts.all);
+        categories.forEach(cat => {
+            if (counts[cat.id] > 0) {
+                addPill(cat.id, cat.name, counts[cat.id]);
+            }
+        });
+    }
+
+    applyLaunchpadFilter() {
+        const body = document.getElementById('lp-body');
+        if (!body) return;
+
+        const input = document.getElementById('launchpad-search-input');
+        const empty = document.getElementById('lp-empty');
+        const query = (input ? input.value : '').toLowerCase().trim();
+        const terms = query ? query.split(/\s+/) : [];
+        const category = this._lpActiveCategory || 'all';
+
+        let totalVisible = 0;
+        const tiles = body.querySelectorAll('.lp-item');
+
+        tiles.forEach(tile => {
+            const appName = tile.dataset.name;
+            const appCat = tile.dataset.category;
+            const inCategory = category === 'all' || appCat === category;
+            const matches = inCategory && (!terms.length || terms.every(t => appName.includes(t)));
+
+            tile.classList.toggle('hidden', !matches);
+            if (matches) totalVisible++;
+        });
+
+        if (empty) empty.hidden = totalVisible !== 0;
+
+        const stat = document.getElementById('lp-stat-count');
+        if (stat) stat.textContent = `${totalVisible} app${totalVisible === 1 ? '' : 's'}`;
     }
 
     getLaunchpadApps(apps = (window.appsManager ? window.appsManager.getAllApps() : {})) {
@@ -1271,10 +1531,10 @@ class Desktop {
     }
 
     saveLaunchpadOrder() {
-        const grid = document.getElementById('launchpad-grid');
-        if (!grid) return;
+        const body = document.getElementById('lp-body');
+        if (!body) return;
         localStorage.setItem('browos_launchpad_apps', JSON.stringify(
-            [...grid.querySelectorAll('.launchpad-item')].map(item => item.dataset.appKey)
+            [...body.querySelectorAll('.lp-app')].map(item => item.dataset.appKey)
         ));
     }
 
@@ -1322,19 +1582,34 @@ class Desktop {
         const overlay = document.getElementById('launchpad-overlay');
         const dock = document.getElementById('dock');
         if (!overlay) return;
-        if (show) {
+
+        // Called with no argument (e.g. the F9 binding) this is a real toggle.
+        const next = (show === undefined)
+            ? !overlay.classList.contains('visible')
+            : !!show;
+
+        if (next) {
+            this._lpActiveCategory = 'all';
+            // populateLaunchpadGrid is dirty-flagged — cheap no-op when nothing changed
             this.populateLaunchpadGrid();
             overlay.style.display = 'flex';
-            requestAnimationFrame(() => overlay.classList.add('visible'));
+            // Two rAF frames: first lets display:flex apply, second triggers transition
+            requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('visible')));
             if (dock) dock.classList.add('launchpad-hidden');
+
             const searchInput = document.getElementById('launchpad-search-input');
-            if (searchInput) { searchInput.value = ''; searchInput.focus(); }
-            const grid = document.getElementById('launchpad-grid');
-            if (grid) grid.querySelectorAll('.launchpad-item').forEach(i => i.classList.remove('hidden'));
+            const clearBtn = document.getElementById('lp-clear');
+            if (searchInput) {
+                searchInput.value = '';
+                if (clearBtn) clearBtn.classList.remove('is-visible');
+                // Focus after paint to avoid blocking the open animation
+                setTimeout(() => searchInput.focus(), 120);
+            }
+            // applyLaunchpadFilter already called inside populateLaunchpadGrid — skip duplicate
         } else {
             overlay.classList.remove('visible');
             if (dock) dock.classList.remove('launchpad-hidden');
-            setTimeout(() => { overlay.style.display = 'none'; }, 250);
+            setTimeout(() => { overlay.style.display = 'none'; }, 240);
         }
     }
 
@@ -1368,14 +1643,13 @@ class Desktop {
             const entries = this._sortDesktopEntries(raw);
             const prefs = this._desktopPrefs();
 
-            // Keep icons clear of the widgets column AND a left/right dock.
+            // Keep icons clear of a left/right dock.
             const reserves = this.getDockReserves();
             const startX = 50 + (reserves.left || 0);
             const startY = 50;
             const gapX = 100;
             const gapY = 100;
-            // Reserve 340px on the right for the widgets column to prevent overlap
-            const rightEdge = window.innerWidth - 340 - (reserves.right || 0);
+            const rightEdge = window.innerWidth - 24 - (reserves.right || 0);
             const maxCols = Math.max(1, Math.floor((rightEdge - startX) / gapX));
             const posFor = (i) => ({
                 x: startX + (i % maxCols) * gapX,
@@ -1770,12 +2044,6 @@ class Desktop {
         } else {
             WindowManager.createWindow(appName);
         }
-    }
-
-    initializeWidgets() {
-        // Widget layer is owned by the BrowWidgets engine (js/widgets.js):
-        // free-position cards, gallery add/remove/edit, per-widget settings.
-        if (window.BrowWidgets) window.BrowWidgets.init();
     }
 
 }

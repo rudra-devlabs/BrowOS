@@ -450,6 +450,22 @@ body {
     box-shadow: 0 0 6px rgba(254, 188, 46, 0.9);
 }
 
+/* Temporary icon for a running app that isn't pinned (macOS-style) */
+.dock-app.taskbar-ephemeral {
+    animation: dockEphemeralIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dockEphemeralIn {
+    from {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 .dock-app.is-dragging {
     opacity: 0.35 !important;
     transform: scale(0.88) !important;
@@ -494,12 +510,6 @@ body {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.16);
     box-shadow: 0 0 16px rgba(255, 255, 255, 0.22);
-}
-
-.launchpad-item.pointer-drag-placeholder {
-    outline: 2px dashed rgba(255, 255, 255, 0.48);
-    outline-offset: -2px;
-    background: rgba(255, 255, 255, 0.08);
 }
 
 .is-pointer-dragging {
@@ -751,138 +761,6 @@ body {
     transform: translateY(-50%) translateX(-14px);
 }
 
-.launchpad-overlay {
-    align-items: center;
-    justify-content: center;
-    padding: 42px;
-    background: rgba(5, 9, 12, 0.86);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.launchpad-panel {
-    width: min(900px, 100%);
-    max-height: min(760px, 86vh);
-    padding: 26px;
-    gap: 18px;
-    background: var(--brow-panel);
-    border: 1px solid var(--brow-line);
-    border-radius: 12px;
-    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.035);
-    transform: translateY(14px);
-    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.launchpad-overlay.visible .launchpad-panel {
-    transform: translateY(0);
-}
-
-.launchpad-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--brow-line);
-}
-
-.launchpad-kicker,
-.launchpad-status {
-    display: block;
-    color: var(--brow-teal);
-    font: 700 10px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
-    letter-spacing: 0.12em;
-}
-
-.launchpad-head h2 {
-    margin-top: 7px;
-    color: var(--brow-paper);
-    font-size: 25px;
-    font-weight: 650;
-    letter-spacing: 0;
-}
-
-.launchpad-status {
-    color: var(--brow-amber);
-    padding-top: 2px;
-    white-space: nowrap;
-}
-
-.launchpad-search {
-    gap: 12px;
-    padding: 11px 14px;
-    border: 1px solid var(--brow-line);
-    border-radius: 8px;
-    background: var(--brow-ink);
-    transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.launchpad-search:focus-within {
-    border-color: var(--brow-teal);
-    background: #0e171c;
-}
-
-.launchpad-search input {
-    color: var(--brow-paper);
-    font-size: 14px;
-}
-
-.launchpad-search input::placeholder {
-    color: var(--brow-muted);
-}
-
-.launchpad-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
-    padding: 2px;
-    max-height: 60vh;
-}
-
-.launchpad-item {
-    min-height: 126px;
-    gap: 12px;
-    padding: 16px 10px 12px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    background: #141f26;
-    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
-}
-
-.launchpad-item:hover {
-    background: #1c2b33;
-    border-color: var(--brow-teal);
-    transform: translateY(-3px);
-}
-
-.launchpad-item:active {
-    transform: translateY(0);
-}
-
-.launchpad-item img {
-    width: 58px;
-    height: 58px;
-    filter: none;
-    transition: none;
-}
-
-.launchpad-item:hover img {
-    transform: none;
-}
-
-.launchpad-item span {
-    color: var(--brow-paper);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-.launchpad-item.pointer-drag-placeholder {
-    border-color: var(--brow-amber);
-    background: rgba(240, 173, 84, 0.08);
-    outline: none;
-}
-
 @media (max-width: 700px) {
     #dock {
         left: 12px;
@@ -901,25 +779,11 @@ body {
     .dock-identity-label {
         font-size: 7px;
     }
-
-    .launchpad-overlay {
-        padding: 18px;
-    }
-
-    .launchpad-panel {
-        padding: 18px;
-    }
-
-    .launchpad-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     #dock,
-    #dock .dock-app,
-    .launchpad-panel,
-    .launchpad-item {
+    #dock .dock-app {
         transition-duration: 0.01ms !important;
     }
 }
@@ -1060,167 +924,6 @@ body {
     z-index: 1000;
     pointer-events: none;
     isolation: isolate;
-}
-
-/* Launchpad Overlay */
-.launchpad-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 99998 !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-bottom: 75px; /* allows dock to be clearly visible at bottom */
-    background: rgba(10, 12, 18, 0.52);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                visibility 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, visibility;
-}
-
-.launchpad-overlay.visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: all;
-}
-
-.launchpad-panel {
-    width: 680px;
-    max-height: 85vh;
-    background: rgba(28, 30, 38, 0.88);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
-    padding: 28px 36px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    transform: scale(0.94) translateZ(0);
-    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform;
-    backface-visibility: hidden;
-}
-
-.launchpad-overlay.visible .launchpad-panel {
-    transform: scale(1) translateZ(0);
-}
-
-.launchpad-search {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
-    padding: 10px 16px;
-    transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.launchpad-search:focus-within {
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.14);
-}
-
-.launchpad-search input {
-    background: none;
-    border: none;
-    outline: none;
-    color: #fff;
-    font-size: 15px;
-    width: 100%;
-    font-family: inherit;
-}
-
-.launchpad-search input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
-}
-
-.launchpad-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    overflow-y: auto;
-    padding: 8px 4px;
-    max-height: 60vh;
-}
-
-.launchpad-grid::-webkit-scrollbar {
-    width: 6px;
-}
-
-.launchpad-grid::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.launchpad-grid::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-}
-
-.launchpad-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    cursor: grab;
-    padding: 10px 6px;
-    border-radius: 12px;
-    transition: background 0.12s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
-    will-change: transform;
-    -webkit-user-drag: none !important;
-    user-drag: none !important;
-}
-
-.launchpad-item:hover {
-    background: rgba(255, 255, 255, 0.09);
-}
-
-.launchpad-item:active {
-    cursor: grabbing;
-    transform: scale(0.94);
-}
-
-.launchpad-item.is-dragging {
-    opacity: 0.35;
-    transform: scale(0.88);
-}
-
-.launchpad-item.hidden {
-    display: none;
-}
-
-.launchpad-item img {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
-    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    transform: translateZ(0);
-    will-change: transform;
-}
-
-.launchpad-item:hover img {
-    transform: scale(1.12) translateZ(0);
-}
-
-.launchpad-item span {
-    color: rgba(255, 255, 255, 0.92);
-    font-size: 11.5px;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1.2;
-    max-width: 90px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    letter-spacing: 0.01em;
 }
 
 /* Calculator */
@@ -2541,4 +2244,196 @@ body {
     background: rgba(120, 120, 128, 0.12);
     border-color: rgba(0, 0, 0, 0.15);
     color: #1d1d1f;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile & Tablet Responsive Adjustments (Dock, Menu Bar, Touch Ergonomics)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Touch friendly viewport */
+    html, body {
+        overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: manipulation;
+    }
+
+    /* ─── Mobile Menu Bar (Status Bar) ─────────────────────────────────── */
+    #menu-bar {
+        height: 38px !important;
+        padding: 0 12px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: rgba(16, 18, 24, 0.96) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        z-index: 10000 !important;
+    }
+
+    /* Left: Logo + BrowOS */
+    .apple-menu {
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .apple-menu img {
+        height: 20px !important;
+        width: 20px !important;
+    }
+
+    .menu-item {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.2px !important;
+        color: #ffffff !important;
+        padding: 0 !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Absolutely suppress desktop File/Edit/View/Window/Help menus on mobile */
+    #menu-bar-menus,
+    .menu-bar-menus {
+        display: none !important;
+    }
+
+    /* Right: Clean, non-colliding status items */
+    .status-bar {
+        position: static !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin-left: auto !important;
+        padding: 0 !important;
+        flex-shrink: 0 !important;
+    }
+
+    .status-spotlight-btn,
+    #spaces-indicator,
+    .status-spaces-btn {
+        display: none !important;
+    }
+
+    .status-browdrop-btn {
+        width: 28px !important;
+        height: 28px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .status-browdrop-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    #clock {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        letter-spacing: 0.2px !important;
+        padding: 0 !important;
+    }
+
+    /* ─── Mobile Dock: Full-width, Horizontal, Touch-Scrollable ────────── */
+    #dock,
+    #dock.dock-left,
+    #dock.dock-right,
+    #dock.dock-bottom {
+        position: fixed !important;
+        bottom: 14px !important;
+        top: auto !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) translateY(0) !important;
+        width: max-content !important;
+        max-width: calc(100vw - 20px) !important;
+        height: 58px !important;
+        max-height: 58px !important;
+        border-radius: 28px !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        z-index: 99999 !important;
+        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+        background: rgba(20, 22, 28, 0.92) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    }
+
+    #dock .dock-background,
+    #dock.dock-left .dock-background,
+    #dock.dock-right .dock-background {
+        display: none !important;
+    }
+
+    #dock .dock-apps,
+    #dock.dock-left .dock-apps,
+    #dock.dock-right .dock-apps {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        padding: 0 12px !important;
+        gap: 12px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+    }
+
+    #dock .dock-apps::-webkit-scrollbar,
+    #dock.dock-left .dock-apps::-webkit-scrollbar,
+    #dock.dock-right .dock-apps::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    #dock .dock-app,
+    #dock.dock-left .dock-app,
+    #dock.dock-right .dock-app {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        flex: 0 0 42px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transform: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #dock .dock-app img,
+    #dock.dock-left .dock-app img,
+    #dock.dock-right .dock-app img {
+        width: 36px !important;
+        height: 36px !important;
+        max-width: 36px !important;
+        max-height: 36px !important;
+        object-fit: contain !important;
+    }
+
+}
+
+@media (hover: none) {
+    .dock-app:hover {
+        transform: none !important;
+    }
 }

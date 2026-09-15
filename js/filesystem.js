@@ -56,6 +56,10 @@ class FileSystem {
         this.storageLoaded = false;
         this._saveStorageTimer = null;
         this.initPromise = null;
+        
+        // Cache optimization settings
+        this.cacheMaxSize = 100; // Maximum number of cached handles
+        this.cacheAccessTimes = new Map(); // Track LRU access times
     }
 
     // ─── Event Emitter ──────────────────────────────────────────
@@ -105,7 +109,8 @@ class FileSystem {
     }
 
     getMountedName() {
-        return this.handle ? this.handle.name : null;
+        if (this.isVirtualDrive) return this.virtualDriveName || 'BrowOS Device Storage';
+        return this.handle ? (this.handle.name || 'BrowOS Storage') : null;
     }
 
     // ─── Initialization & Permission ────────────────────────────
@@ -114,28 +119,49 @@ class FileSystem {
             const saved = await loadHandle();
             if (saved) {
                 this.handle = saved;
+                this.isVirtualDrive = false;
                 const perm = await this._queryPermission();
                 if (perm === 'granted') {
                     this._setState('ready');
                     await this._bootstrapHierarchy();
                     await this._loadStorageStats();
-                    console.log("Restored mounted directory:", this.handle.name);
-                    this.emit('mount', { name: this.handle.name, ready: true });
+                    console.log("Restored mounted directory:", this.getMountedName());
+                    this.emit('mount', { name: this.getMountedName(), ready: true });
+                    return;
                 } else {
                     this._setState('needs_permission');
-                    console.warn("Restored handle requires user re-authorization for:", this.handle.name);
-                    this.emit('mount', { name: this.handle.name, ready: false });
+                    console.warn("Restored handle requires user re-authorization for:", this.getMountedName());
+                    this.emit('mount', { name: this.getMountedName(), ready: false });
+                    return;
                 }
-            } else {
-                this._setState('unmounted');
             }
+
+            // On Android / Mobile browsers where showDirectoryPicker is absent, auto-mount OPFS!
+            if (typeof window.showDirectoryPicker !== 'function' && typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+                try {
+                    this.handle = await navigator.storage.getDirectory();
+                    this.isVirtualDrive = true;
+                    this.virtualDriveName = 'BrowOS Device Storage';
+                    this._setState('ready');
+                    await this._bootstrapHierarchy();
+                    await this._loadStorageStats();
+                    console.log("Auto-mounted persistent OPFS storage on mobile:", this.virtualDriveName);
+                    this.emit('mount', { name: this.virtualDriveName, ready: true });
+                    return;
+                } catch (e) {
+                    console.warn("OPFS auto-mount failed:", e);
+                }
+            }
+
+            this._setState('unmounted');
         } catch (e) {
-            console.error("Failed to load handle from DB", e);
+            console.error("Failed to initialize filesystem:", e);
             this._setState('unmounted');
         }
     }
 
     async _queryPermission() {
+        if (this.isVirtualDrive) return 'granted';
         if (!this.handle) return 'denied';
         try {
             if (typeof this.handle.queryPermission === 'function') {
@@ -171,38 +197,60 @@ class FileSystem {
     }
 
     async mount() {
-        if (typeof window.showDirectoryPicker !== 'function') {
-            const msg = 'Your browser does not support the File System Access API. Please use Chrome, Edge, or Brave.';
-            if (window.BrowDialog && typeof window.BrowDialog.alert === 'function') {
-                await window.BrowDialog.alert('Filesystem Unsupported', msg);
-            } else {
-                alert(msg);
+        // 1. Desktop File System Access API (mount a real folder on disk)
+        if (typeof window.showDirectoryPicker === 'function') {
+            try {
+                this.handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                this.isVirtualDrive = false;
+                await saveHandle(this.handle);
+                this.handleCache.clear();
+                this._setState('ready');
+                await this._bootstrapHierarchy();
+                await this._loadStorageStats();
+                console.log("Directory mounted:", this.getMountedName());
+                this.emit('mount', { name: this.getMountedName(), ready: true });
+                return true;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error("Mount failed:", err);
+                }
+                return false;
             }
-            return false;
         }
 
-        try {
-            this.handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-            await saveHandle(this.handle);
-            this.handleCache.clear();
-            this._setState('ready');
-            await this._bootstrapHierarchy();
-            await this._loadStorageStats();
-            console.log("Directory mounted:", this.handle.name);
-            this.emit('mount', { name: this.handle.name, ready: true });
-            return true;
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                console.error("Mount failed:", err);
+        // 2. Mobile / Android fallback: Origin Private File System (OPFS)
+        if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+            try {
+                this.handle = await navigator.storage.getDirectory();
+                this.isVirtualDrive = true;
+                this.virtualDriveName = 'BrowOS Device Storage';
+                this.handleCache.clear();
+                this._setState('ready');
+                await this._bootstrapHierarchy();
+                await this._loadStorageStats();
+                console.log("Mounted persistent OPFS storage on Android:", this.virtualDriveName);
+                this.emit('mount', { name: this.virtualDriveName, ready: true });
+                return true;
+            } catch (err) {
+                console.error("OPFS mount failed:", err);
             }
-            return false;
         }
+
+        // 3. Inform user if browser supports neither
+        const msg = 'Your browser does not support local or sandboxed filesystem storage. Please use a modern browser like Chrome, Edge, or Brave.';
+        if (window.BrowDialog && typeof window.BrowDialog.alert === 'function') {
+            await window.BrowDialog.alert('Filesystem Unsupported', msg);
+        } else {
+            alert(msg);
+        }
+        return false;
     }
 
     async unmount() {
         const prevName = this.getMountedName();
         this.handle = null;
         this.handleCache.clear();
+        this.cacheAccessTimes.clear();
         this.storageUsed = 0;
         this.storageLoaded = false;
         await clearHandle();
@@ -296,13 +344,41 @@ Enjoy your desktop environment!
         const norm = this._normalize(path);
         if (norm === '/') {
             this.handleCache.clear();
+            this.cacheAccessTimes.clear();
             return;
         }
         for (const key of this.handleCache.keys()) {
             if (key === norm || key.startsWith(norm + '/') || norm.startsWith(key + '/')) {
                 this.handleCache.delete(key);
+                this.cacheAccessTimes.delete(key);
             }
         }
+    }
+
+    // LRU cache management
+    _evictLRU() {
+        if (this.handleCache.size <= this.cacheMaxSize) return;
+        
+        // Find least recently used entry
+        let lruKey = null;
+        let lruTime = Infinity;
+        
+        for (const [key, time] of this.cacheAccessTimes) {
+            if (time < lruTime) {
+                lruTime = time;
+                lruKey = key;
+            }
+        }
+        
+        if (lruKey) {
+            this.handleCache.delete(lruKey);
+            this.cacheAccessTimes.delete(lruKey);
+        }
+    }
+
+    _updateCacheAccess(key) {
+        this.cacheAccessTimes.set(key, Date.now());
+        this._evictLRU();
     }
 
     // ─── Path Resolution with Hierarchical Caching ──────────────
@@ -313,6 +389,7 @@ Enjoy your desktop environment!
         if (norm === '/') return this.handle;
 
         if (this.handleCache.has(norm)) {
+            this._updateCacheAccess(norm);
             return this.handleCache.get(norm);
         }
 
@@ -326,6 +403,7 @@ Enjoy your desktop environment!
 
             if (this.handleCache.has(builtPath)) {
                 current = this.handleCache.get(builtPath);
+                this._updateCacheAccess(builtPath);
                 continue;
             }
 
@@ -340,12 +418,14 @@ Enjoy your desktop environment!
                     current = await current.getDirectoryHandle(part);
                 }
                 this.handleCache.set(builtPath, current);
+                this._updateCacheAccess(builtPath);
             } catch (e) {
                 return null;
             }
         }
 
         this.handleCache.set(norm, current);
+        this._updateCacheAccess(norm);
         return current;
     }
 
@@ -538,6 +618,7 @@ Enjoy your desktop environment!
             try {
                 current = await current.getDirectoryHandle(part, { create: true });
                 this.handleCache.set(built, current);
+                this._updateCacheAccess(built);
             } catch (e) {
                 return false;
             }
@@ -875,7 +956,7 @@ Enjoy your desktop environment!
     //  - originUsage/quota: what navigator.storage.estimate() reports
     //    (IndexedDB, CacheStorage, …) — real, but excludes mounted files.
     // totalUsed = filesTotal + originUsage is the honest "everything" number,
-    // and every surface (widget, Settings) must render from this snapshot.
+    // and every surface (Settings, apps) must render from this snapshot.
     async getStorageSnapshot() {
         const mounted = (typeof this.isMounted === 'function' && this.isMounted()) && this.isReady();
         let filesTotal = 0, docs = 0, media = 0;
@@ -913,7 +994,7 @@ Enjoy your desktop environment!
         };
     }
 
-    // ─── Shared real cleanup (used by the widget AND Settings) ──────────────
+    // ─── Shared real cleanup (used by Settings and the Storage panel) ──────
     // Clears CacheStorage + recalculates tracked stats. User files are never
     // touched. Returns honest numbers for result dialogs.
     async _estimateOriginUsage() {

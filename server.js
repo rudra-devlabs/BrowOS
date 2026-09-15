@@ -11,6 +11,10 @@ const port = process.env.PORT || 3000;
 // Compress responses
 app.use(compression());
 
+// Parse JSON & URL-encoded bodies for LAN room API & WebRTC signaling
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 // Security headers
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -405,6 +409,164 @@ app.get(`${PROXY_PREFIX}*`, async (req, res) => {
             </body></html>
         `);
     }
+});
+
+// ─── BrowDrop LAN Multi-User Signaling Hub ──────────────────────────────
+// In-memory room registry and SSE event stream for offline LAN synchronization
+const browDropRooms = new Map(); // roomCode -> { passwordHash, peers: Map(peerId -> { peerId, name, device, color, isHost, res, lastSeen }), files: Map() }
+
+// Clean up stale peers periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [roomCode, room] of browDropRooms.entries()) {
+        for (const [peerId, peer] of room.peers.entries()) {
+            if (now - peer.lastSeen > 30000) {
+                try { peer.res?.end(); } catch (e) {}
+                room.peers.delete(peerId);
+                const leaveMsg = `data: ${JSON.stringify({ type: 'peer-left', peerId })}\n\n`;
+                for (const p of room.peers.values()) {
+                    try { p.res?.write(leaveMsg); } catch (e) {}
+                }
+            }
+        }
+        if (room.peers.size === 0) {
+            browDropRooms.delete(roomCode);
+        }
+    }
+}, 10000);
+
+// SSE endpoint for real-time room events
+app.get('/api/browdrop/rooms/:roomCode/events', (req, res) => {
+    const roomCode = req.params.roomCode.toUpperCase();
+    const peerId = req.query.peerId;
+    const name = decodeURIComponent(req.query.name || 'Member');
+    const device = decodeURIComponent(req.query.device || 'Device');
+    const color = decodeURIComponent(req.query.color || '#0a84ff');
+    const isHost = req.query.isHost === 'true';
+    const hash = req.query.hash || '';
+
+    if (!peerId) {
+        return res.status(400).send('peerId required');
+    }
+
+    if (!browDropRooms.has(roomCode)) {
+        browDropRooms.set(roomCode, { passwordHash: hash, peers: new Map(), files: new Map() });
+    }
+    const room = browDropRooms.get(roomCode);
+
+    // Verify password hash if room already has one
+    if (room.passwordHash && hash && room.passwordHash !== hash) {
+        res.writeHead(403, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        return res.end(JSON.stringify({ error: 'Incorrect room password' }));
+    }
+    if (!room.passwordHash && hash) {
+        room.passwordHash = hash;
+    }
+
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+    });
+    res.write(': keepalive\n\n');
+
+    // Register this peer
+    const peerObj = {
+        peerId,
+        name,
+        device,
+        color,
+        isHost,
+        res,
+        lastSeen: Date.now()
+    };
+    room.peers.set(peerId, peerObj);
+
+    // Send the joining peer the current list of all other peers in the room
+    const currentPeers = [];
+    for (const [pId, p] of room.peers.entries()) {
+        if (pId !== peerId) {
+            currentPeers.push({
+                id: p.peerId,
+                name: p.name,
+                device: p.device,
+                color: p.color,
+                isHost: p.isHost
+            });
+        }
+    }
+    // Also include currently uploaded room files catalog
+    const currentFiles = Array.from(room.files.values());
+
+    res.write(`data: ${JSON.stringify({ type: 'room-roster', peers: currentPeers, files: currentFiles })}\n\n`);
+
+    // Notify all other peers in the room that this peer joined
+    const joinMsg = `data: ${JSON.stringify({
+        type: 'peer-joined',
+        member: { id: peerId, name, device, color, isHost }
+    })}\n\n`;
+    for (const [pId, p] of room.peers.entries()) {
+        if (pId !== peerId) {
+            try { p.res.write(joinMsg); } catch (e) {}
+        }
+    }
+
+    // Ping interval for this connection to keep SSE alive
+    const pingInterval = setInterval(() => {
+        try { res.write(': ping\n\n'); } catch (e) { clearInterval(pingInterval); }
+    }, 15000);
+
+    req.on('close', () => {
+        clearInterval(pingInterval);
+        if (room.peers.get(peerId)?.res === res) {
+            room.peers.delete(peerId);
+            const leaveMsg = `data: ${JSON.stringify({ type: 'peer-left', peerId })}\n\n`;
+            for (const p of room.peers.values()) {
+                try { p.res.write(leaveMsg); } catch (e) {}
+            }
+            if (room.peers.size === 0) browDropRooms.delete(roomCode);
+        }
+    });
+});
+
+// Relay messages (chat, files announcements, cursor movements, signals) between room members
+app.post('/api/browdrop/rooms/:roomCode/broadcast', (req, res) => {
+    const roomCode = req.params.roomCode.toUpperCase();
+    const payload = req.body;
+    if (!payload) return res.status(400).send('Payload required');
+
+    const room = browDropRooms.get(roomCode);
+    if (!room) return res.json({ ok: true, delivered: 0 });
+
+    const senderId = payload.senderId;
+    if (senderId && room.peers.has(senderId)) {
+        room.peers.get(senderId).lastSeen = Date.now();
+    }
+
+    // Track announced files in room catalog
+    if (payload.type === 'file-announced' && payload.fileMeta) {
+        room.files.set(payload.fileMeta.id, payload.fileMeta);
+    }
+
+    const targetId = payload.targetId;
+    const sseData = `data: ${JSON.stringify(payload)}\n\n`;
+
+    let delivered = 0;
+    if (targetId) {
+        const targetPeer = room.peers.get(targetId);
+        if (targetPeer) {
+            try { targetPeer.res.write(sseData); delivered++; } catch (e) {}
+        }
+    } else {
+        for (const [pId, p] of room.peers.entries()) {
+            if (pId !== senderId) {
+                try { p.res.write(sseData); delivered++; } catch (e) {}
+            }
+        }
+    }
+
+    res.json({ ok: true, delivered });
 });
 
 // SPA fallback: serve index.html only for non-file routes

@@ -282,11 +282,11 @@
         register({ id: 'appswitcher', combo: 'F4', desc: 'App switcher', handler: () => {
             window.BrowMacOS?.module?.appswitch?.toggle();
         }});
-        register({ id: 'widgets', combo: 'F8', desc: 'Widget gallery', handler: () => {
-            window.BrowWidgets?.openGallery?.(false);
-        }});
         register({ id: 'launchpad', combo: 'F9', desc: 'Launchpad', handler: () => {
             window.desktop?.toggleLaunchpad?.();
+        }});
+        register({ id: 'widgets', combo: 'F8', desc: 'Widgets', handler: () => {
+            window.BrowWidgets?.openGallery();
         }});
 
         // Tier 2 — Ctrl+Alt combos

@@ -1,0 +1,1245 @@
+/* ============================================================================
+   BrowDrop v2: Password-Protected Rooms, Multi-User Swarm & Shared File Hub
+   ============================================================================ */
+
+.browdrop-app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: rgba(18, 20, 26, 0.95);
+    color: #f5f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+    overflow: hidden;
+    position: relative;
+}
+
+:root[data-theme="light"] .browdrop-app-container {
+    background: rgba(245, 247, 252, 0.96);
+    color: #1d1d1f;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOBBY VIEW (Create Room vs Join Room with Password)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.browdrop-lobby {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    padding: 24px;
+    overflow-y: auto;
+    position: relative;
+    background: radial-gradient(circle at 50% 10%, rgba(10, 132, 255, 0.12) 0%, transparent 60%);
+}
+
+.browdrop-lobby-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 30px 32px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: browdrop-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="light"] .browdrop-lobby-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+}
+
+.browdrop-lobby-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.35);
+    margin-bottom: 14px;
+}
+
+.browdrop-lobby-badge svg {
+    width: 30px;
+    height: 30px;
+}
+
+.browdrop-lobby-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 4px;
+}
+
+.browdrop-lobby-sub {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    margin-bottom: 22px;
+    line-height: 1.4;
+}
+
+:root[data-theme="light"] .browdrop-lobby-sub {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* Segmented Control Tabs */
+.browdrop-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 3px;
+    width: 100%;
+    margin-bottom: 22px;
+    position: relative;
+}
+
+:root[data-theme="light"] .browdrop-tabs {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.browdrop-tab-btn {
+    flex: 1;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+:root[data-theme="light"] .browdrop-tab-btn {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.browdrop-tab-btn.active {
+    background: var(--accent, #0a84ff);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(10, 132, 255, 0.4);
+}
+
+/* Form Styles */
+.browdrop-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.browdrop-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.browdrop-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+    display: flex;
+    justify-content: space-between;
+}
+
+:root[data-theme="light"] .browdrop-label {
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.browdrop-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.browdrop-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: inherit;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+:root[data-theme="light"] .browdrop-input {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.browdrop-input:focus {
+    border-color: var(--accent, #0a84ff);
+    background: rgba(10, 132, 255, 0.05);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+.browdrop-input-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+:root[data-theme="light"] .browdrop-input-btn {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.browdrop-submit-btn {
+    width: 100%;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent, #0a84ff);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 6px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35);
+}
+
+.browdrop-submit-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.browdrop-submit-btn:active {
+    transform: translateY(0);
+}
+
+.browdrop-status-banner {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.browdrop-status-banner.error {
+    display: flex;
+    background: rgba(255, 69, 58, 0.15);
+    border: 1px solid rgba(255, 69, 58, 0.3);
+    color: #ff453a;
+}
+
+.browdrop-status-banner.loading {
+    display: flex;
+    background: rgba(10, 132, 255, 0.12);
+    border: 1px solid rgba(10, 132, 255, 0.25);
+    color: var(--accent, #0a84ff);
+}
+
+.browdrop-lan-pill {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 4px 12px;
+}
+
+:root[data-theme="light"] .browdrop-lan-pill {
+    color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.browdrop-lan-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #30d158;
+    box-shadow: 0 0 6px #30d158;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROOM HUB VIEW (Active Room with File Hub & Members)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.browdrop-room-hub {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    animation: browdrop-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.browdrop-room-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+:root[data-theme="light"] .browdrop-room-topbar {
+    background: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.browdrop-room-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.browdrop-room-lock-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--accent, #0a84ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.browdrop-room-name-text {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.browdrop-room-code-tag {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent, #0a84ff);
+    background: rgba(10, 132, 255, 0.12);
+    border: 1px solid rgba(10, 132, 255, 0.25);
+    border-radius: 6px;
+    padding: 2px 7px;
+}
+
+.browdrop-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.browdrop-members-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+:root[data-theme="light"] .browdrop-members-pill {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.browdrop-btn-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.browdrop-btn-icon:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+:root[data-theme="light"] .browdrop-btn-icon {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .browdrop-btn-icon:hover {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.browdrop-leave-btn {
+    background: rgba(255, 69, 58, 0.15);
+    color: #ff453a;
+    border: 1px solid rgba(255, 69, 58, 0.3);
+    border-radius: 7px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.browdrop-leave-btn:hover {
+    background: #ff453a;
+    color: #fff;
+}
+
+/* Room Hub Split Content */
+.browdrop-room-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Left Sidebar: Members & Radar Orbit */
+.browdrop-room-sidebar {
+    width: 250px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 14px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+:root[data-theme="light"] .browdrop-room-sidebar {
+    background: rgba(0, 0, 0, 0.02);
+    border-right-color: rgba(0, 0, 0, 0.08);
+}
+
+.browdrop-sidebar-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+:root[data-theme="light"] .browdrop-sidebar-title {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.browdrop-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.browdrop-member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background 0.15s;
+}
+
+:root[data-theme="light"] .browdrop-member-row {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+.browdrop-member-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: #fff;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.browdrop-member-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #30d158;
+    border: 1.5px solid #1a1c23;
+}
+
+.browdrop-member-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.browdrop-member-name {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.browdrop-member-device {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme="light"] .browdrop-member-device {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+/* Right Area: Shared Room Files Repository */
+.browdrop-room-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 20px;
+    overflow-y: auto;
+    gap: 16px;
+}
+
+/* Room Dropzone */
+.browdrop-room-dropzone {
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.browdrop-room-dropzone:hover,
+.browdrop-room-dropzone.dragover {
+    border-color: var(--accent, #0a84ff);
+    background: rgba(10, 132, 255, 0.08);
+    transform: scale(1.005);
+}
+
+:root[data-theme="light"] .browdrop-room-dropzone {
+    border-color: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+:root[data-theme="light"] .browdrop-room-dropzone:hover,
+:root[data-theme="light"] .browdrop-room-dropzone.dragover {
+    border-color: var(--accent, #0a84ff);
+    background: rgba(10, 132, 255, 0.05);
+}
+
+.browdrop-room-dropzone-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--accent, #0a84ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.browdrop-room-dropzone-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.browdrop-room-dropzone-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.browdrop-room-dropzone-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 2px;
+}
+
+:root[data-theme="light"] .browdrop-room-dropzone-sub {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+/* Files Repository Section */
+.browdrop-files-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.browdrop-files-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.browdrop-files-count {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme="light"] .browdrop-files-count {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.browdrop-files-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.browdrop-file-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    gap: 12px;
+    transition: all 0.15s;
+    animation: browdrop-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="light"] .browdrop-file-row {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.browdrop-file-row:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+:root[data-theme="light"] .browdrop-file-row:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.browdrop-file-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.browdrop-file-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent, #0a84ff);
+    flex-shrink: 0;
+}
+
+:root[data-theme="light"] .browdrop-file-icon {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.browdrop-file-details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.browdrop-file-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.browdrop-file-meta {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 2px;
+}
+
+:root[data-theme="light"] .browdrop-file-meta {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.browdrop-download-btn {
+    background: var(--accent, #0a84ff);
+    color: #ffffff;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.browdrop-download-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.browdrop-download-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.browdrop-files-empty {
+    padding: 36px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+:root[data-theme="light"] .browdrop-files-empty {
+    color: rgba(0, 0, 0, 0.4);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.browdrop-files-empty svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+    opacity: 0.6;
+}
+
+/* Clipboard / Message Bar */
+.browdrop-chat-bar {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 6px 8px;
+}
+
+:root[data-theme="light"] .browdrop-chat-bar {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.browdrop-chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: inherit;
+    outline: none;
+    font-family: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QR MODAL & OVERLAYS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.browdrop-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: browdrop-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.browdrop-modal-card {
+    background: #1e2028;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    padding: 24px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="light"] .browdrop-modal-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.18);
+}
+
+.browdrop-qr-box {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 14px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#bd-qr-canvas-holder canvas,
+#bd-qr-canvas-holder img {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.browdrop-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.browdrop-modal-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 4px;
+}
+
+:root[data-theme="light"] .browdrop-modal-sub {
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REMOTE COLLABORATIVE CURSORS & BANNERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.browdrop-remote-cursor {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999999;
+    will-change: transform;
+    transition: transform 0.08s linear;
+}
+
+.browdrop-cursor-pointer {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+}
+
+.browdrop-cursor-badge {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.browdrop-click-ripple {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--accent, #0a84ff);
+    pointer-events: none;
+    z-index: 999998;
+    transform: translate(-50%, -50%) scale(0.2);
+    animation: browdrop-ripple-anim 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes browdrop-ripple-anim {
+    0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+
+.browdrop-incoming-banner {
+    position: fixed;
+    top: 38px;
+    right: 20px;
+    background: rgba(28, 30, 38, 0.94);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: browdrop-slide-down 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 360px;
+}
+
+:root[data-theme="light"] .browdrop-incoming-banner {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+    color: #1d1d1f;
+}
+
+@keyframes browdrop-slide-down {
+    from { transform: translateY(-20px) scale(0.96); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.browdrop-banner-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.browdrop-banner-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.browdrop-banner-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.browdrop-banner-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 2px;
+}
+
+:root[data-theme="light"] .browdrop-banner-sub {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.status-browdrop-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+}
+
+.status-browdrop-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="light"] .status-browdrop-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.browdrop-badge-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    background: #30d158;
+    border-radius: 50%;
+    display: none;
+    box-shadow: 0 0 6px #30d158;
+}
+
+.browdrop-badge-dot.active {
+    display: block;
+}
+
+@keyframes browdrop-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BrowDrop Mobile & Tablet Ergonomic Responsiveness
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Mobile view switcher segmented bar */
+.browdrop-mobile-nav {
+    display: none;
+}
+
+.browdrop-touch-browse-btn {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* 1. Zero backdrop filter on mobile for smooth 60 FPS */
+    .browdrop-lobby-card,
+    .browdrop-modal-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(22, 24, 32, 0.98) !important;
+    }
+
+    :root[data-theme="light"] .browdrop-lobby-card,
+    :root[data-theme="light"] .browdrop-modal-card {
+        background: rgba(255, 255, 255, 0.98) !important;
+    }
+
+    /* 2. Lobby Card & Inputs */
+    .browdrop-lobby {
+        padding: 12px 14px !important;
+        justify-content: flex-start !important;
+        overflow-y: auto !important;
+    }
+
+    .browdrop-lobby-card {
+        padding: 20px 16px !important;
+        max-width: 100% !important;
+        border-radius: 16px !important;
+        margin-top: 10px !important;
+    }
+
+    .browdrop-lobby-badge {
+        width: 48px !important;
+        height: 48px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .browdrop-lobby-title {
+        font-size: 18px !important;
+    }
+
+    .browdrop-lobby-sub {
+        font-size: 12px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .browdrop-input-group input,
+    .browdrop-field input {
+        font-size: 16px !important; /* Enforces NO auto-zoom on iOS & Android */
+        min-height: 44px !important;
+        padding: 10px 14px !important;
+    }
+
+    .browdrop-primary-btn,
+    .browdrop-tab-btn {
+        min-height: 44px !important;
+        font-size: 15px !important;
+    }
+
+    /* 3. Room Topbar */
+    .browdrop-room-topbar {
+        padding: 8px 10px !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .browdrop-room-title-group {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+
+    .browdrop-room-name-text {
+        max-width: 110px !important;
+        font-size: 13px !important;
+    }
+
+    .browdrop-room-code-tag {
+        font-size: 11px !important;
+        padding: 2px 6px !important;
+    }
+
+    .browdrop-topbar-actions {
+        gap: 6px !important;
+    }
+
+    .browdrop-members-pill {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+    }
+
+    .browdrop-leave-btn {
+        min-height: 32px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+    }
+
+    /* 4. Mobile Segmented Navigation */
+    .browdrop-mobile-nav {
+        display: flex !important;
+        background: rgba(0, 0, 0, 0.25) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 6px 10px !important;
+        gap: 8px !important;
+    }
+
+    :root[data-theme="light"] .browdrop-mobile-nav {
+        background: rgba(0, 0, 0, 0.04) !important;
+        border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .browdrop-mobile-nav-btn {
+        flex: 1 !important;
+        min-height: 38px !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+    }
+
+    :root[data-theme="light"] .browdrop-mobile-nav-btn {
+        background: rgba(0, 0, 0, 0.06) !important;
+        color: rgba(0, 0, 0, 0.7) !important;
+    }
+
+    .browdrop-mobile-nav-btn.active {
+        background: #0a84ff !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(10, 132, 255, 0.35) !important;
+    }
+
+    /* 5. Room Content Mobile Tab Switching */
+    .browdrop-room-content {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+    }
+
+    .browdrop-room-content.tab-files .browdrop-room-sidebar {
+        display: none !important;
+    }
+
+    .browdrop-room-content.tab-files .browdrop-room-main {
+        display: flex !important;
+        width: 100% !important;
+        padding: 12px !important;
+    }
+
+    .browdrop-room-content.tab-members .browdrop-room-main {
+        display: none !important;
+    }
+
+    .browdrop-room-content.tab-members .browdrop-room-sidebar {
+        display: flex !important;
+        width: 100% !important;
+        border-right: none !important;
+        padding: 14px 12px !important;
+    }
+
+    /* 6. Dropzone Touch Sizing */
+    .browdrop-room-dropzone {
+        padding: 16px 12px !important;
+        gap: 12px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .browdrop-room-dropzone-icon {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .browdrop-room-dropzone-title {
+        font-size: 13px !important;
+    }
+
+    .browdrop-room-dropzone-sub {
+        font-size: 11px !important;
+    }
+
+    .browdrop-touch-browse-btn {
+        display: inline-block !important;
+        background: #0a84ff !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        margin-left: auto !important;
+        cursor: pointer !important;
+    }
+
+    /* 7. File Cards & Download Buttons */
+    .browdrop-room-file-card {
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+        gap: 10px !important;
+    }
+
+    .browdrop-file-name {
+        font-size: 13px !important;
+    }
+
+    .browdrop-file-meta {
+        font-size: 11px !important;
+    }
+
+    .browdrop-download-btn {
+        min-height: 40px !important;
+        padding: 0 14px !important;
+        font-size: 12px !important;
+        gap: 6px !important;
+    }
+}

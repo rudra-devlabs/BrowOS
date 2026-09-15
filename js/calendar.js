@@ -1,5 +1,5 @@
 /* BrowCalendar — month agenda app with a shared local event store.
- * The calendar widget reads the same store, so both stay in sync.
+ * The Calendar app reads the same store.
  */
 (function () {
     'use strict';

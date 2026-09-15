@@ -2,16 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!--
+      Theme boot: resolve the persisted theme and set data-theme on <html>
+      BEFORE any stylesheet is parsed, so the first paint is already correct.
+      This is the FOUC guard. It is intentionally tiny, dependency-free and
+      inline (a separate file would itself be a render-blocking round trip).
+
+      It must stay in lockstep with js/settings.js:
+        persisted 'light' | 'dark'   -> used verbatim
+        persisted 'system' | 'auto'  -> follow prefers-color-scheme
+        nothing persisted            -> store DEFAULTS.theme ('dark')
+      and it binds its own media listener so OS theme changes apply even
+      before js/settings.js has loaded.
+    -->
+    <script>
+    (function () {
+        'use strict';
+        var root = document.documentElement;
+
+        function savedTheme() {
+            try {
+                var raw = localStorage.getItem('browos_settings_v2');
+                if (!raw) return null;
+                var blob = JSON.parse(raw);
+                return (blob && typeof blob.theme === 'string') ? blob.theme : null;
+            } catch (e) {
+                return null; // corrupt blob / storage disabled -> fall through
+            }
+        }
+        function osPrefers() {
+            return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                ? 'dark' : 'light';
+        }
+        // Mirrors js/settings.js effectiveTheme() + DEFAULTS.theme exactly.
+        function resolve() {
+            var t = savedTheme();
+            if (t === 'light' || t === 'dark') return t;
+            if (t === 'system' || t === 'auto') return osPrefers();
+            return 'dark';
+        }
+
+        root.setAttribute('data-theme', resolve());
+
+        // Follow the OS live, but only while the setting is 'system'.
+        var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+        if (mq) {
+            var onOsChange = function () {
+                var t = savedTheme();
+                if (t === 'system' || t === 'auto') {
+                    root.setAttribute('data-theme', osPrefers());
+                }
+            };
+            if (mq.addEventListener) mq.addEventListener('change', onOsChange);
+            else if (mq.addListener) mq.addListener(onOsChange); // Safari < 14
+        }
+    })();
+    </script>
     <title>BrowOS</title>
+    <!-- Design tokens load first: every later sheet consumes these variables. -->
+    <link rel="stylesheet" href="css/tokens.css?v=20260913-1">
     <link rel="stylesheet" href="css/style.css?v=20260910-3">
     <link rel="stylesheet" href="css/desktop.css?v=20260518-2">
     <link rel="stylesheet" href="css/window.css?v=20260524-2">
-    <link rel="stylesheet" href="css/widgets.css?v=20260524-1">
-    <link rel="stylesheet" href="css/apps.css?v=20260909-1">
+    <link rel="stylesheet" href="css/apps.css?v=20260914-2">
     <link rel="stylesheet" href="css/filepicker.css?v=20260520-1">
     <link rel="stylesheet" href="css/spotlight.css?v=20260904-1">
-    <link rel="stylesheet" href="css/browcut.css?v=20260904-2">
+    <link rel="stylesheet" href="css/browcut.css?v=20260910-1">
+    <link rel="stylesheet" href="css/browdrop.css?v=20260911-1">
+    <link rel="stylesheet" href="css/launchpad.css?v=20260914-1">
     <link rel="stylesheet" href="css/macos.css?v=20260906-1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +81,7 @@
     <link rel="stylesheet" href="css/controls.css?v=20260906-2">
     <link rel="stylesheet" href="css/spaces.css?v=20260907-1">
     <link rel="stylesheet" href="css/clock.css?v=20260907-1">
+    <link rel="stylesheet" href="css/widgets.css?v=20260914-1">
     <link rel="stylesheet" href="css/theme.css?v=20260908-2">
     <style>
         #boot-screen {
@@ -320,6 +380,13 @@
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                 </div>
+                <div class="status-browdrop-btn" id="status-browdrop-btn" title="BrowDrop & Multiplayer (AirDrop / Share)" onclick="window.windowManager?.launchApp('browdrop')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4.93 19.07A10 10 0 0 1 19.07 4.93M7.76 16.24a6 6 0 0 1 8.48-8.48M10.59 13.41a2 2 0 0 1 2.82-2.82"></path>
+                        <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+                    </svg>
+                    <span class="browdrop-badge-dot"></span>
+                </div>
                 <span id="clock"></span>
             </div>
         </div>
@@ -346,6 +413,10 @@
                 </div>
                 <div class="dock-app" data-app="terminal" data-title="Terminal">
                     <img src="assets/icons/terminal.svg" alt="Terminal">
+                    <div class="minimized-dot"></div>
+                </div>
+                <div class="dock-app" data-app="browdrop" data-title="BrowDrop">
+                    <img src="assets/icons/apps/browdrop.svg" alt="BrowDrop">
                     <div class="minimized-dot"></div>
                 </div>
                 <div class="dock-app" data-app="brownote" data-title="Brow Note">
@@ -375,21 +446,56 @@
             </div>
         </div>
 
-        <!-- Launchpad Overlay -->
-        <div id="launchpad-overlay" class="launchpad-overlay">
-            <div class="launchpad-panel">
-                <div class="launchpad-head">
-                    <div>
-                        <span class="launchpad-kicker">BROWOS / APP INDEX</span>
-                        <h2>Applications</h2>
+        <!-- Reimagined Glassmorphism Launchpad (App Launcher) -->
+        <div id="launchpad-overlay" class="launchpad-overlay" style="display: none;">
+            <div class="lp-backdrop-dismiss"></div>
+            <div class="lp-deck" role="dialog" aria-modal="true" aria-label="Applications">
+                <header class="lp-header">
+                    <div class="lp-header-left">
+                        <div class="lp-title-wrap">
+                            <h2 class="lp-title">Applications</h2>
+                            <span class="lp-badge" id="lp-stat-count">0 apps</span>
+                        </div>
                     </div>
-                    <span class="launchpad-status">SYSTEM READY</span>
-                </div>
-                <div class="launchpad-search">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="rgba(255,255,255,0.5)"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242.156a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
-                    <input type="text" id="launchpad-search-input" placeholder="Search apps...">
-                </div>
-                <div class="launchpad-grid" id="launchpad-grid"></div>
+
+                    <div class="lp-search-box">
+                        <svg class="lp-search-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="launchpad-search-input" placeholder="Search apps, tools & games..." autocomplete="off" spellcheck="false">
+                        <button type="button" class="lp-clear-btn" id="lp-clear" title="Clear search" aria-label="Clear search">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <span class="lp-key-hint">ESC</span>
+                    </div>
+
+                    <button type="button" class="lp-close-btn" id="lp-close-btn" title="Close (Esc)" aria-label="Close Launchpad">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </header>
+
+                <nav class="lp-nav" id="lp-filters" aria-label="Categories"></nav>
+
+                <main class="lp-content" id="lp-content">
+                    <div class="lp-grid" id="lp-body" role="list"></div>
+                    <div class="lp-empty" id="lp-empty" hidden>
+                        <div class="lp-empty-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        <h3 class="lp-empty-title">No applications found</h3>
+                        <p class="lp-empty-desc">Check your spelling or try another category</p>
+                    </div>
+                </main>
             </div>
         </div>
 
@@ -565,17 +671,17 @@
     <script src="js/apps.js?v=20260520-1" onload="window._bootStep('apps', true)" onerror="window._bootFail('apps', 'Failed to load apps.js')"></script>
     <script src="js/fuzzy.js?v=20260904-1"></script>
     <script src="js/clock.js?v=20260907-1"></script>
-    <script src="js/widgets.js?v=20260910-3"></script>
-    <script src="js/widgets-builtin.js?v=20260910-2"></script>
-    <script src="js/weather.js?v=20260908-1"></script>
+    <script src="js/weather.js?v=20260911-12"></script>
     <script src="js/calendar.js?v=20260908-1"></script>
     <script src="js/monitor.js?v=20260908-1"></script>
     <!-- Filesystem must be available before Desktop subscribes to mount/state events. -->
     <script src="js/filesystem.js?v=20260906-3" onload="Promise.resolve(window.filesystem?.initPromise).then(() => window._bootStep('filesystem', true)).catch(error => window._bootFail('filesystem', error?.message || 'Filesystem initialization failed'))" onerror="window._bootFail('filesystem', 'Failed to load filesystem.js')"></script>
     <script src="js/desktop.js?v=20260910-1" onload="Promise.resolve(window.desktop?.initialDesktopLoad).then(() => window._bootStep('desktop', true)).catch(error => window._bootFail('desktop', error?.message || 'Desktop initialization failed'))" onerror="window._bootFail('desktop', 'Failed to load desktop.js')"></script>
+    <script src="js/widgets.js?v=20260912-1"></script>
+    <script src="js/widgets-builtin.js?v=20260914-4"></script>
 
     <!-- Modular App Registry and UI Subsystems -->
-    <script src="js/apps/registry.js?v=20260910-1"></script>
+    <script src="js/apps/registry.js?v=20260911-13"></script>
     <script src="js/apps/messages.js?v=20260910-1"></script>
     <script src="js/apps/settings.js?v=20260910-1"></script>
     <script src="js/apps/brownote.js?v=20260910-1"></script>
@@ -592,7 +698,6 @@
     <script src="js/shell.js?v=20260910-3" onload="window._bootStep('shell', true)" onerror="window._bootFail('shell', 'Failed to load shell.js')"></script>
     <script src="js/codebrow.js?v=20260910-3"></script>
     <script src="js/spotlight.js?v=20260910-2"></script>
-    <script src="js/browcut.js?v=20260904-2"></script>
     <script src="js/spaces.js?v=20260910-3"></script>
     <script>
         (function() {

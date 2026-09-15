@@ -1,0 +1,544 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   BrowOS Reimagined App Launcher (Launchpad)
+   Aesthetic: Pure Glassmorphism — minimal gradients, no harsh glows,
+   butter-smooth 60fps performance, hardware-accelerated animations.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+#launchpad-overlay.launchpad-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99998 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    background: rgba(8, 10, 15, 0.60);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.2s ease;
+    will-change: opacity;
+}
+
+#launchpad-overlay.launchpad-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Backdrop dismiss area */
+.lp-backdrop-dismiss {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+/* ── Central Glass Deck ─────────────────────────────────────────────────── */
+.lp-deck {
+    position: relative;
+    z-index: 1;
+    width: min(980px, 94vw);
+    max-height: 86vh;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 28px;
+    border-radius: 24px;
+    background: rgba(22, 27, 36, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transform: scale(0.97) translateY(8px);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+    overflow: hidden;
+}
+
+#launchpad-overlay.visible .lp-deck {
+    transform: scale(1) translateY(0);
+}
+
+/* Light theme deck */
+:root[data-theme="light"] .lp-deck {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(0, 0, 0, 0.10);
+    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.20),
+                0 0 0 1px rgba(255, 255, 255, 0.80) inset;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.lp-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: nowrap;
+}
+
+.lp-header-left {
+    flex: 0 0 auto;
+}
+
+.lp-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.lp-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+:root[data-theme="light"] .lp-title {
+    color: #111827;
+}
+
+.lp-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .lp-badge {
+    background: rgba(0, 0, 0, 0.06);
+    color: rgba(0, 0, 0, 0.60);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ── Search Box ─────────────────────────────────────────────────────────── */
+.lp-search-box {
+    flex: 1 1 auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+:root[data-theme="light"] .lp-search-box {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.09);
+}
+
+.lp-search-box:focus-within {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(78, 211, 194, 0.55);
+}
+
+:root[data-theme="light"] .lp-search-box:focus-within {
+    background: #ffffff;
+    border-color: rgba(59, 130, 246, 0.6);
+}
+
+.lp-search-svg {
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme="light"] .lp-search-svg {
+    color: rgba(0, 0, 0, 0.40);
+}
+
+.lp-search-box:focus-within .lp-search-svg {
+    color: #4ed3c2;
+}
+
+:root[data-theme="light"] .lp-search-box:focus-within .lp-search-svg {
+    color: #2563eb;
+}
+
+.lp-search-box input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    outline: none;
+    color: #ffffff;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+:root[data-theme="light"] .lp-search-box input {
+    color: #111827;
+}
+
+.lp-search-box input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme="light"] .lp-search-box input::placeholder {
+    color: rgba(0, 0, 0, 0.38);
+}
+
+.lp-clear-btn {
+    display: none;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+}
+
+.lp-clear-btn.is-visible {
+    display: grid;
+}
+
+.lp-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.lp-key-hint {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+:root[data-theme="light"] .lp-key-hint {
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.40);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Close button */
+.lp-close-btn {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+:root[data-theme="light"] .lp-close-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.60);
+}
+
+.lp-close-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #ffffff;
+}
+
+/* ── Category Filter Pills ──────────────────────────────────────────────── */
+.lp-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+}
+
+.lp-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.lp-filter-pill {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+:root[data-theme="light"] .lp-filter-pill {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.lp-filter-pill:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+:root[data-theme="light"] .lp-filter-pill:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #111827;
+}
+
+.lp-filter-pill.active {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.28);
+    font-weight: 600;
+}
+
+:root[data-theme="light"] .lp-filter-pill.active {
+    background: #111827;
+    color: #ffffff;
+    border-color: #111827;
+}
+
+.lp-pill-count {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.65;
+}
+
+/* ── Content & Grid ─────────────────────────────────────────────────────── */
+.lp-content {
+    min-height: 240px;
+    max-height: calc(86vh - 130px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+}
+
+.lp-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lp-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.lp-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+}
+
+:root[data-theme="light"] .lp-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/* The clean, ultra-responsive app grid */
+.lp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 12px;
+    padding: 6px 2px 14px;
+}
+
+/* ── App Item Tile ──────────────────────────────────────────────────────── */
+.lp-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px 10px;
+    border-radius: 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.15s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lp-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+}
+
+:root[data-theme="light"] .lp-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+.lp-item:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.lp-item.hidden {
+    display: none !important;
+}
+
+.lp-item-icon-wrap {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+}
+
+.lp-item-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    pointer-events: none;
+    border-radius: 12px;
+    transition: transform 0.15s ease;
+}
+
+.lp-item:hover .lp-item-icon {
+    transform: scale(1.05);
+}
+
+/* Active running indicator dot */
+.lp-running-dot {
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #4ed3c2;
+    display: none;
+}
+
+.lp-item.is-running .lp-running-dot {
+    display: block;
+}
+
+.lp-item-name {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:root[data-theme="light"] .lp-item-name {
+    color: #1f2937;
+}
+
+/* ── Empty State ────────────────────────────────────────────────────────── */
+.lp-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.lp-empty[hidden] {
+    display: none;
+}
+
+.lp-empty-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.40);
+    margin-bottom: 4px;
+}
+
+:root[data-theme="light"] .lp-empty-icon {
+    background: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.35);
+}
+
+.lp-empty-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+:root[data-theme="light"] .lp-empty-title {
+    color: #1f2937;
+}
+
+.lp-empty-desc {
+    margin: 0;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme="light"] .lp-empty-desc {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+/* ── Mobile & Entry-Level Optimizations ─────────────────────────────────── */
+@media (max-width: 768px), (pointer: coarse) {
+    #launchpad-overlay.launchpad-overlay {
+        padding: 12px;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(12, 16, 22, 0.94);
+    }
+
+    .lp-deck {
+        width: 100%;
+        max-height: 94vh;
+        padding: 16px 14px 18px;
+        border-radius: 18px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        transform: none !important;
+    }
+
+    .lp-title {
+        font-size: 18px;
+    }
+
+    .lp-grid {
+        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+        gap: 8px;
+    }
+
+    .lp-item {
+        padding: 10px 4px 8px;
+    }
+
+    .lp-item:hover {
+        transform: none !important;
+    }
+
+    .lp-item-icon-wrap {
+        width: 48px;
+        height: 48px;
+    }
+
+    .lp-item-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .lp-key-hint {
+        display: none;
+    }
+}

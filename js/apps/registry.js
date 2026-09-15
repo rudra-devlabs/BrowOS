@@ -165,8 +165,44 @@
         }
     };
 
+    /**
+     * Non-game apps that load their implementation on first launch. Same
+     * machinery as GAME_CONFIGS, but this also guarantees the initializer
+     * exists before the window is built — a plain `typeof fn === 'function'`
+     * check silently produced a dead window if the script had not run yet.
+     */
+    const LAZY_APPS = {
+        browcut: {
+            title: 'BrowCut',
+            subtitle: 'Loading the video engine…',
+            scripts: ['js/browcut.js?v=20260910-3'],
+            isReady: () => typeof window.initBrowCutApp === 'function',
+            mount: (el) => window.initBrowCutApp && window.initBrowCutApp(el)
+        },
+        browdrop: {
+            title: 'BrowDrop',
+            subtitle: 'Initializing P2P WebRTC radar…',
+            scripts: [
+                'js/apps/peerjs.min.js',
+                'js/apps/qrcode.min.js',
+                'js/apps/browdrop.js?v=20260911-3'
+            ],
+            isReady: () => typeof window.initBrowDropApp === 'function',
+            mount: (el) => {
+                const mountContainer = el.querySelector('.browdrop-window') || el.querySelector('.window-content') || el;
+                if (typeof window.initBrowDropApp === 'function') {
+                    window.initBrowDropApp(mountContainer);
+                }
+            }
+        }
+    };
+
+    function lazyConfigFor(key) {
+        return GAME_CONFIGS[key] || LAZY_APPS[key] || null;
+    }
+
     function mountLazyGame(gameKey, windowElement) {
-        const cfg = GAME_CONFIGS[gameKey];
+        const cfg = lazyConfigFor(gameKey);
         if (!cfg) return;
 
         if (cfg.isReady()) {
@@ -181,7 +217,7 @@
         loader.innerHTML = `
             <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.15);border-top-color:#0a84ff;border-radius:50%;animation:boot-spin 0.75s linear infinite;margin-bottom:14px;"></div>
             <div style="font-size:14px;font-weight:600;letter-spacing:0.2px;">Launching ${cfg.title}...</div>
-            <div style="font-size:11px;color:#8e8e93;margin-top:4px;">Loading 3D engine & assets on demand</div>
+            <div style="font-size:11px;color:#8e8e93;margin-top:4px;">${cfg.subtitle || 'Loading 3D engine & assets on demand'}</div>
         `;
         contentArea.appendChild(loader);
 
@@ -232,16 +268,18 @@
                     return `<div id="filebrow-app-container-${windowCounter}" class="filebrow-window" style="height: 100%; width: 100%;"></div>`;
                 case 'clock':
                     return `<div class="clock-window"><div class="clock-app-container"></div></div>`;
-                case 'widgets':
-                    return `<div class="widgets-window-content bw-gallery-host"></div>`;
                 case 'weather':
                     return `<div class="weather-window"></div>`;
                 case 'calendar':
                     return `<div class="calendar-window"></div>`;
                 case 'monitor':
                     return `<div class="mon-app-host"></div>`;
+                case 'widgets':
+                    return `<div class="bw-gallery-host"></div>`;
                 case 'terminal':
                     return `<div class="terminal-shell-container" style="height: 100%; width: 100%;"></div>`;
+                case 'browdrop':
+                    return `<div class="browdrop-window" style="height: 100%; width: 100%; overflow: hidden;"></div>`;
                 case 'codebrow':
                 return `
                     <div class="codebrow-window">
@@ -906,144 +944,249 @@
                     </div>
                 `;
                 case 'browcut':
-                return `
+                    return `
                     <div class="browcut-app">
-                        <!-- Top Toolbar -->
                         <div class="browcut-toolbar">
                             <div class="browcut-toolbar-left">
                                 <span class="browcut-badge">BROWCUT</span>
                                 <span class="browcut-timecode" id="bc-timecode">00:00.00</span>
+                                <span class="browcut-meta" id="bc-clip-count">1 clip</span>
+                                <span class="browcut-meta" id="bc-duration">00:10.00</span>
                             </div>
                             <div class="browcut-toolbar-center">
                                 <button class="browcut-aspect-btn active" data-aspect="16:9">16:9</button>
-                                <button class="browcut-aspect-btn" data-aspect="9:16">9:16 REELS</button>
+                                <button class="browcut-aspect-btn" data-aspect="9:16">9:16</button>
                                 <button class="browcut-aspect-btn" data-aspect="1:1">1:1</button>
                                 <button class="browcut-aspect-btn" data-aspect="4:3">4:3</button>
+                                <button class="browcut-btn" id="bc-fit-btn" title="Fit or fill the frame">Fit</button>
                             </div>
                             <div class="browcut-toolbar-right">
                                 <button class="browcut-btn" id="bc-undo-btn" title="Undo (Ctrl+Z)">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                                     Undo
                                 </button>
-                                <button class="browcut-btn" id="bc-redo-btn" title="Redo (Ctrl+Y)">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                <button class="browcut-btn" id="bc-redo-btn" title="Redo (Ctrl+Shift+Z)">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                                     Redo
                                 </button>
-                                <button class="browcut-btn" id="bc-demo-btn" title="Load demo footage">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                <button class="browcut-btn" id="bc-demo-btn" title="Load the built-in demo sequence">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                                     Demo
                                 </button>
-                                <button class="browcut-btn" id="bc-import-btn">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <button class="browcut-btn" id="bc-import-btn" title="Import video or audio">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                     Import
                                 </button>
-                                <input type="file" id="bc-file-input" accept="video/*" style="display:none">
-                                <button class="browcut-btn browcut-btn-primary" id="bc-export-btn">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                                <input type="file" id="bc-file-input" accept="video/*,audio/*" multiple style="display:none">
+                                <button class="browcut-btn browcut-btn-primary" id="bc-export-btn" title="Export video">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                     Export
                                 </button>
                             </div>
                         </div>
-
-                        <!-- Main Stage & Sidebar -->
                         <div class="browcut-workspace">
                             <div class="browcut-stage">
                                 <div class="browcut-canvas-wrap">
-                                    <canvas id="browcut-canvas" width="640" height="360"></canvas>
+                                    <canvas id="browcut-canvas" width="1280" height="720"></canvas>
                                 </div>
-                                <div class="browcut-controls-overlay">
-                                    <button class="browcut-ctrl-btn" id="bc-in-btn" title="Set In Point ([)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"/><line x1="18" y1="19" x2="18" y2="5"/></svg>
+                                <div class="browcut-empty-hint" id="bc-empty-hint">Drop video files here, or use Import</div>
+                                <div class="browcut-transport">
+                                    <button class="browcut-ctrl-btn primary" id="bc-play-btn" title="Play / Pause (Space)">
+                                        <span id="bc-play-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
                                     </button>
-                                    <button class="browcut-ctrl-btn primary" id="bc-play-btn" title="Play/Pause (Space)">
-                                        <span id="bc-play-icon">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                        </span>
-                                    </button>
-                                    <button class="browcut-ctrl-btn" id="bc-out-btn" title="Set Out Point (])">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><line x1="6" y1="19" x2="6" y2="5"/></svg>
-                                    </button>
-                                    <button class="browcut-ctrl-btn" id="bc-split-btn" title="Split Clip (S)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-                                    </button>
+                                    <button class="browcut-ctrl-btn" id="bc-split-btn" title="Split at playhead (S)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></button>
                                 </div>
                             </div>
-
                             <div class="browcut-sidebar">
-                                <div class="browcut-panel-title">Filters &amp; LUTs</div>
-                                <div class="browcut-panel-group">
-                                    <div class="browcut-filter-grid">
-                                        <div class="browcut-filter-pill active" data-filter="normal">Normal</div>
-                                        <div class="browcut-filter-pill" data-filter="cyberpunk">Cyberpunk</div>
-                                        <div class="browcut-filter-pill" data-filter="vhs">90s VHS</div>
-                                        <div class="browcut-filter-pill" data-filter="cinema">Cinema</div>
-                                        <div class="browcut-filter-pill" data-filter="noir">Noir B&amp;W</div>
-                                        <div class="browcut-filter-pill" data-filter="glitch">Glitch RGB</div>
+                                <div class="browcut-tabs">
+                                    <button class="browcut-tab active" data-tab="clip">Clip</button>
+                                    <button class="browcut-tab" data-tab="colour">Colour</button>
+                                    <button class="browcut-tab" data-tab="text">Text</button>
+                                </div>
+                                <div class="browcut-tab-panel" data-panel="clip">
+                                    <div class="browcut-inspector-empty" id="bc-inspector-empty">Select a clip on the timeline to edit it.</div>
+                                    <div id="bc-inspector-body" style="display:none;">
+                                        <div class="browcut-panel-title">Clip</div>
+                                        <div class="browcut-panel-group">
+                                            <div class="browcut-clip-name" id="bc-clip-name">—</div>
+                                            <div class="browcut-panel-actions">
+                                                <button class="browcut-btn" id="bc-duplicate-btn">Duplicate</button>
+                                                <button class="browcut-btn" id="bc-delete-btn">Delete</button>
+                                            </div>
+                                        </div>
+                                        <div class="browcut-panel-title" data-video-only>Transform</div>
+                                        <div class="browcut-panel-group" data-video-only>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Position X</span>
+                                                <input type="range" class="browcut-slider" id="bc-pos-x" min="-960" max="960" step="1" value="0">
+                                                <span class="browcut-slider-val" id="bc-pos-x-val">0px</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Position Y</span>
+                                                <input type="range" class="browcut-slider" id="bc-pos-y" min="-540" max="540" step="1" value="0">
+                                                <span class="browcut-slider-val" id="bc-pos-y-val">0px</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Scale</span>
+                                                <input type="range" class="browcut-slider" id="bc-scale" min="0.1" max="3" step="0.01" value="1">
+                                                <span class="browcut-slider-val" id="bc-scale-val">100%</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Rotation</span>
+                                                <input type="range" class="browcut-slider" id="bc-rotation" min="-180" max="180" step="1" value="0">
+                                                <span class="browcut-slider-val" id="bc-rotation-val">0&deg;</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Opacity</span>
+                                                <input type="range" class="browcut-slider" id="bc-opacity" min="0" max="1" step="0.01" value="1">
+                                                <span class="browcut-slider-val" id="bc-opacity-val">100%</span>
+                                            </div>
+                                            <div class="browcut-input-row">
+                                                <span class="browcut-label">Blend mode</span>
+                                                <select class="browcut-input" id="bc-blend">
+                                                    <option value="normal">Normal</option>
+                                                    <option value="screen">Screen</option>
+                                                    <option value="multiply">Multiply</option>
+                                                    <option value="overlay">Overlay</option>
+                                                    <option value="lighten">Lighten</option>
+                                                    <option value="darken">Darken</option>
+                                                    <option value="difference">Difference</option>
+                                                    <option value="soft-light">Soft light</option>
+                                                </select>
+                                            </div>
+                                            <div class="browcut-hint">Keep a layer on Video 2 to use blend modes as an overlay.</div>
+                                        </div>
+                                        <div class="browcut-panel-title">Timing &amp; Audio</div>
+                                        <div class="browcut-panel-group">
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Speed</span>
+                                                <input type="range" class="browcut-slider" id="bc-speed-range" min="0.25" max="4" step="0.05" value="1">
+                                                <span class="browcut-slider-val" id="bc-speed-val">1.00x</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Volume</span>
+                                                <input type="range" class="browcut-slider" id="bc-volume" min="0" max="1" step="0.01" value="1">
+                                                <span class="browcut-slider-val" id="bc-volume-val">100%</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Fade in</span>
+                                                <input type="range" class="browcut-slider" id="bc-fade-in" min="0" max="5" step="0.1" value="0">
+                                                <span class="browcut-slider-val" id="bc-fade-in-val">0.0s</span>
+                                            </div>
+                                            <div class="browcut-slider-row">
+                                                <span class="browcut-label">Fade out</span>
+                                                <input type="range" class="browcut-slider" id="bc-fade-out" min="0" max="5" step="0.1" value="0">
+                                                <span class="browcut-slider-val" id="bc-fade-out-val">0.0s</span>
+                                            </div>
+                                            <div class="browcut-hint">Overlap two clips on one track and fade the upper one in for a cross-dissolve.</div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div class="browcut-panel-title">Speed &amp; Audio</div>
-                                <div class="browcut-panel-group">
-                                    <div class="browcut-slider-row">
-                                        <span class="browcut-label">Speed</span>
-                                        <input type="range" class="browcut-slider" id="bc-speed-slider" min="0.25" max="3" step="0.25" value="1">
-                                        <span class="browcut-slider-val" id="bc-speed-val">1.00x</span>
+                                <div class="browcut-tab-panel" data-panel="colour" style="display:none;">
+                                    <div class="browcut-panel-title">Grade</div>
+                                    <div class="browcut-panel-group">
+                                        <div class="browcut-slider-row">
+                                            <span class="browcut-label">Brightness</span>
+                                            <input type="range" class="browcut-slider" id="bc-bright-range" min="0.5" max="1.8" step="0.01" value="1">
+                                            <span class="browcut-slider-val" id="bc-bright-val">100%</span>
+                                        </div>
+                                        <div class="browcut-slider-row">
+                                            <span class="browcut-label">Contrast</span>
+                                            <input type="range" class="browcut-slider" id="bc-contrast-range" min="0.5" max="1.8" step="0.01" value="1">
+                                            <span class="browcut-slider-val" id="bc-contrast-val">100%</span>
+                                        </div>
+                                        <div class="browcut-slider-row">
+                                            <span class="browcut-label">Saturation</span>
+                                            <input type="range" class="browcut-slider" id="bc-sat-range" min="0" max="2" step="0.01" value="1">
+                                            <span class="browcut-slider-val" id="bc-sat-val">100%</span>
+                                        </div>
+                                        <div class="browcut-panel-actions">
+                                            <button class="browcut-btn" id="bc-grade-reset">Reset grade</button>
+                                        </div>
                                     </div>
-                                    <div class="browcut-slider-row">
-                                        <span class="browcut-label">Volume</span>
-                                        <input type="range" class="browcut-slider" id="bc-vol-slider" min="0" max="1" step="0.05" value="1">
-                                        <span class="browcut-slider-val" id="bc-vol-val">100%</span>
-                                        <button class="browcut-ctrl-btn" id="bc-mute-btn" style="width:26px;height:26px;">
-                                            <svg id="bc-mute-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                                        </button>
+                                    <div class="browcut-panel-title">Looks</div>
+                                    <div class="browcut-panel-group">
+                                        <div class="browcut-filter-grid">
+                                            <div class="browcut-filter-pill active" data-filter="normal">Normal</div>
+                                            <div class="browcut-filter-pill" data-filter="cyberpunk">Cyberpunk</div>
+                                            <div class="browcut-filter-pill" data-filter="vhs">VHS</div>
+                                            <div class="browcut-filter-pill" data-filter="cinema">Cinema</div>
+                                            <div class="browcut-filter-pill" data-filter="noir">Noir</div>
+                                            <div class="browcut-filter-pill" data-filter="matrix">Matrix</div>
+                                        </div>
+                                        <div class="browcut-hint">Looks apply to the whole project, across every layer.</div>
                                     </div>
                                 </div>
-
-                                <div class="browcut-panel-title">Text Overlay</div>
-                                <div class="browcut-panel-group">
-                                    <div class="browcut-input-row">
-                                        <span class="browcut-label">Title / Caption</span>
-                                        <input type="text" class="browcut-input" id="bc-text-input" value="BROWCUT STUDIO">
+                                <div class="browcut-tab-panel" data-panel="text" style="display:none;">
+                                    <div class="browcut-panel-title">Overlay</div>
+                                    <div class="browcut-panel-group">
+                                        <div class="browcut-input-row">
+                                            <span class="browcut-label">Text (leave empty for none)</span>
+                                            <input type="text" class="browcut-input" id="bc-text-input" value="" placeholder="Title or caption">
+                                        </div>
+                                        <div class="browcut-input-row">
+                                            <span class="browcut-label">Position</span>
+                                            <select class="browcut-input" id="bc-text-pos">
+                                                <option value="bottom" selected>Bottom</option>
+                                                <option value="center">Center</option>
+                                                <option value="top">Top</option>
+                                            </select>
+                                        </div>
+                                        <div class="browcut-slider-row">
+                                            <span class="browcut-label">Size</span>
+                                            <input type="range" class="browcut-slider" id="bc-text-size" min="14" max="96" step="1" value="34">
+                                            <span class="browcut-slider-val" id="bc-text-size-val">34px</span>
+                                        </div>
+                                        <div class="browcut-input-row">
+                                            <span class="browcut-label">Colour</span>
+                                            <input type="color" class="browcut-input" id="bc-text-color" value="#ffffff">
+                                        </div>
                                     </div>
-                                    <div class="browcut-input-row">
-                                        <span class="browcut-label">Position</span>
-                                        <select class="browcut-input" id="bc-text-pos">
-                                            <option value="bottom" selected>Bottom Subtitle</option>
-                                            <option value="center">Center Banner</option>
-                                            <option value="top">Top Header</option>
-                                        </select>
+                                </div>
+                                <div class="browcut-panel-title">Master Audio</div>
+                                <div class="browcut-panel-group">
+                                    <div class="browcut-slider-row">
+                                        <span class="browcut-label">Output</span>
+                                        <input type="range" class="browcut-slider" id="bc-master-vol" min="0" max="1" step="0.01" value="1">
+                                        <span class="browcut-slider-val" id="bc-master-vol-val">100%</span>
+                                    </div>
+                                    <div class="browcut-panel-actions">
+                                        <button class="browcut-btn" id="bc-mute-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg><span>Mute</span></button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Multi-track Timeline -->
                         <div class="browcut-timeline-area">
                             <div class="browcut-timeline-header">
                                 <div class="browcut-timeline-tools">
-                                    <button class="browcut-tool-btn" id="bc-tl-split" title="Split clip at playhead">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-                                        Split
-                                    </button>
-                                    <span style="font-size:11px;color:#64748b;">Trim Drag Handles · Space to Play · Ctrl+Z Undo</span>
+                                    <button class="browcut-tool-btn" id="bc-tl-split">Split</button>
+                                    <button class="browcut-tool-btn" id="bc-add-media-btn">Add media</button>
+                                    <button class="browcut-tool-btn" id="bc-add-video-track">+ Video track</button>
+                                    <button class="browcut-tool-btn" id="bc-add-audio-track">+ Audio track</button>
+                                </div>
+                                <div class="browcut-timeline-tools">
+                                    <button class="browcut-tool-btn active" id="bc-snap-btn">Snap</button>
+                                    <button class="browcut-tool-btn" id="bc-zoom-out">&minus;</button>
+                                    <span class="browcut-zoom-val" id="bc-zoom-val">60px/s</span>
+                                    <button class="browcut-tool-btn" id="bc-zoom-in">+</button>
+                                    <button class="browcut-tool-btn" id="bc-zoom-fit">Fit</button>
+                                    <span class="browcut-timeline-tip" id="bc-timeline-tip">Drag clips to move &middot; drag edges to trim</span>
                                 </div>
                             </div>
                             <div class="browcut-timeline-body">
-                                <div class="browcut-ruler" id="bc-ruler"></div>
-                                <div class="browcut-tracks" id="bc-tracks">
-                                    <div class="browcut-clip-block" id="bc-clip-block" style="left:0%; width:100%;">
-                                        <div class="browcut-handle" id="bc-handle-in" title="Drag to trim In Point"></div>
-                                        <span class="browcut-clip-label">VIDEO CLIP 01</span>
-                                        <div class="browcut-handle" id="bc-handle-out" title="Drag to trim Out Point"></div>
-                                    </div>
-                                    <div class="browcut-playhead-line" id="bc-playhead" style="left:0%;">
-                                        <div class="browcut-playhead-cap"></div>
+                                <div class="browcut-track-headers" id="bc-headers"></div>
+                                <div class="browcut-timeline-scroll" id="bc-scroll">
+                                    <div class="browcut-timeline-inner" id="bc-inner">
+                                        <div class="browcut-ruler" id="bc-ruler"></div>
+                                        <div class="browcut-lanes" id="bc-tracks"></div>
+                                        <div class="browcut-playhead" id="bc-playhead"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                `;
+                    `;
                 default:
                     return `<div class="${appName}-window" style="height: 100%; width: 100%;"></div>`;
             }
@@ -1064,15 +1207,10 @@
                 if (container && window.ClockApp) {
                     new window.ClockApp(container);
                 }
-            } else if (appName === 'widgets') {
-                windowElement.classList.add('app-widgets-window');
-                windowElement.style.width = '900px';
-                windowElement.style.height = '680px';
-                const wg = windowElement.querySelector('.bw-gallery-host');
-                if (wg && window.BrowWidgets) window.BrowWidgets.mountGallery(wg);
             } else if (appName === 'weather') {
-                windowElement.style.width = '560px';
-                windowElement.style.height = '640px';
+                // the dashboard is a sidebar plus a five-column metrics grid
+                windowElement.style.width = '1040px';
+                windowElement.style.height = '680px';
                 if (window.BrowWeather) window.BrowWeather.mountApp(windowElement);
             } else if (appName === 'calendar') {
                 windowElement.style.width = '720px';
@@ -1082,10 +1220,35 @@
                 windowElement.style.width = '640px';
                 windowElement.style.height = '620px';
                 if (window.BrowMonitor) window.BrowMonitor.mountApp(windowElement);
+            } else if (appName === 'widgets') {
+                // The gallery lays out on a 170px grid (tile + 18px gutter).
+                // Four columns is the macOS widget-gallery convention (4 smalls
+                // / 2 mediums / 1 large per row) and it is also the width that
+                // divides the roster evenly: 8 smalls + 10 mediums = 28 units,
+                // and 28 / 4 = 7 perfectly full rows. Sized so the grid sits
+                // flush against the 22px padding: 4*170 + 3*18 + 2*22 = 778.
+                // Resizing still works — `repeat(auto-fill, 170px)` reflows.
+                windowElement.classList.add('app-widgets-window');
+                windowElement.style.width = '778px';
+                windowElement.style.height = '780px';
+                const content = windowElement.querySelector('.window-content');
+                if (content) {
+                    content.style.overflow = 'hidden';
+                    content.style.padding = '0';
+                }
+                const host = windowElement.querySelector('.bw-gallery-host');
+                if (host && window.BrowWidgets) {
+                    host.style.cssText = 'position:relative;height:100%;width:100%;';
+                    window.BrowWidgets.mountGallery(host);
+                }
             } else if (appName === 'browcut') {
-                windowElement.style.width = '880px';
-                windowElement.style.height = '580px';
-                if (window.initBrowCutApp) window.initBrowCutApp(windowElement);
+                windowElement.style.width = '1180px';
+                windowElement.style.height = '760px';
+                mountLazyGame('browcut', windowElement);
+            } else if (appName === 'browdrop') {
+                windowElement.style.width = '780px';
+                windowElement.style.height = '560px';
+                mountLazyGame('browdrop', windowElement);
             } else if (appName === 'showcase') {
                 windowElement.style.width = '1060px';
                 windowElement.style.height = '680px';

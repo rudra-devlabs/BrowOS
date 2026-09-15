@@ -340,6 +340,27 @@ class FileBrow {
             btn.addEventListener("click", () => this.navigateUp());
         });
 
+        // File upload / import from Android/device
+        const importBtn = root.querySelector('.filebrow-import-btn');
+        const fileInput = root.querySelector('.filebrow-hidden-file-input');
+        if (importBtn && fileInput) {
+            importBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', async () => {
+                if (fileInput.files && fileInput.files.length > 0) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        const file = fileInput.files[i];
+                        const sep = this.currentPath.endsWith('/') ? '' : '/';
+                        const targetPath = (this.currentPath === '/' ? '' : this.currentPath) + sep + file.name;
+                        await window.filesystem.createFileFromBlob(targetPath, file);
+                    }
+                    await this.render();
+                    if (window.BrowSettings?.audio?.play) {
+                        try { window.BrowSettings.audio.play('drop'); } catch (e) {}
+                    }
+                }
+            });
+        }
+
         root.querySelectorAll('.filebrow-action-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.showContextMenu(e, 'grid');
@@ -351,9 +372,17 @@ class FileBrow {
         });
 
         root.querySelectorAll(".filebrow-entry[data-name][data-type]").forEach((entry) => {
-            entry.addEventListener("dblclick", () => {
-                this.handleEntryClick(entry.dataset.name, entry.dataset.type);
-            });
+            const isTouchScreen = ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+                                  !window.matchMedia('(pointer: fine)').matches;
+            if (isTouchScreen) {
+                entry.addEventListener("click", () => {
+                    this.handleEntryClick(entry.dataset.name, entry.dataset.type);
+                });
+            } else {
+                entry.addEventListener("dblclick", () => {
+                    this.handleEntryClick(entry.dataset.name, entry.dataset.type);
+                });
+            }
             entry.addEventListener("contextmenu", (e) => {
                 this.showContextMenu(e, 'entry', entry.dataset.name, entry.dataset.type);
             });

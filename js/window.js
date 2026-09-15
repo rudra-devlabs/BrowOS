@@ -29,13 +29,22 @@ class WindowManager {
         windowElement.dataset.app = appName;
         windowElement.style.setProperty('z-index', `${++this.zIndexCounter}`, 'important');
         
-        // Random position for new windows
-        const posX = 100 + (this.windowCounter * 30);
-        const posY = 100 + (this.windowCounter * 30);
-        windowElement.style.left = `${posX}px`;
-        windowElement.style.top = `${posY}px`;
-        windowElement.style.width = '600px';
-        windowElement.style.height = '400px';
+        // Adaptive viewport sizing: full-width native feel on mobile/tablets, cascading float on desktop
+        const isMobileScreen = window.innerWidth <= 768;
+        if (isMobileScreen) {
+            windowElement.style.left = '0px';
+            windowElement.style.top = '36px';
+            windowElement.style.width = '100vw';
+            windowElement.style.height = 'calc(100vh - 36px - 58px)';
+            windowElement.classList.add('window-maximized');
+        } else {
+            const posX = 100 + (this.windowCounter * 30);
+            const posY = 100 + (this.windowCounter * 30);
+            windowElement.style.left = `${posX}px`;
+            windowElement.style.top = `${posY}px`;
+            windowElement.style.width = '600px';
+            windowElement.style.height = '400px';
+        }
 
         const appIcon = BrowOSIcons.forApp(appName);
         windowElement.innerHTML = `
@@ -71,7 +80,7 @@ class WindowManager {
             appName: appName,
             element: windowElement,
             isMinimized: false,
-            isMaximized: false,
+            isMaximized: isMobileScreen,
             // Virtual desktop (BrowSpaces). New windows open on the active space.
             spaceIndex: (window.BrowSpaces ? window.BrowSpaces.getActive() : 0)
         };
@@ -79,6 +88,11 @@ class WindowManager {
 
         // Setup event handlers for the window
         this.setupWindowEvents(windowElement, windowObj);
+
+        // Reflect the new window in the dock (open indicator / ephemeral icon)
+        if (window.desktop && window.desktop.updateTaskbar) {
+            window.desktop.updateTaskbar();
+        }
 
         // Initialize terminal shell asynchronously
         if (appName === 'terminal') {
@@ -267,6 +281,7 @@ class WindowManager {
         // Window dragging with 120 FPS rAF coalescing
         header.addEventListener('mousedown', (e) => {
             if (e.target.closest('.window-control')) return;
+            if (window.innerWidth <= 768) return; // Touch mobile: windows are full screen, disable drag peel
             
             isDragging = true;
             this.bringToFront(windowElement);
@@ -553,15 +568,10 @@ class WindowManager {
         try { window.BrowSettings?.audio?.play('close'); } catch (e) {}
         // Dispatch close event so apps can safely dispose resources immediately
         windowElement.dispatchEvent(new CustomEvent('window-closing'));
-        if (windowElement._snake3D && typeof windowElement._snake3D.destroy === 'function') {
-            windowElement._snake3D.destroy();
-        }
-        if (windowElement._terrario && typeof windowElement._terrario.destroy === 'function') {
-            windowElement._terrario.destroy();
-        }
-        if (windowElement._browcut && typeof windowElement._browcut.destroy === 'function') {
-            windowElement._browcut.destroy();
-        }
+        
+        // Enhanced memory cleanup for all app types
+        this.cleanupWindowResources(windowElement, windowObj);
+        
         windowElement.classList.add('window-closing');
         setTimeout(() => {
             windowElement.remove();
@@ -570,6 +580,114 @@ class WindowManager {
                 window.desktop.updateTaskbar();
             }
         }, 160); // 160ms snappy spring exit
+    }
+
+    cleanupWindowResources(windowElement, windowObj) {
+        if (!windowElement) return;
+        
+        const appName = windowObj?.appName || 'unknown';
+        
+        try {
+            // Game-specific cleanup
+            if (windowElement._snake3D && typeof windowElement._snake3D.destroy === 'function') {
+                windowElement._snake3D.destroy();
+                windowElement._snake3D = null;
+            }
+            if (windowElement._terrario && typeof windowElement._terrario.destroy === 'function') {
+                windowElement._terrario.destroy();
+                windowElement._terrario = null;
+            }
+            if (windowElement._browcut && typeof windowElement._browcut.destroy === 'function') {
+                windowElement._browcut.destroy();
+                windowElement._browcut = null;
+            }
+            
+            // Three.js and GPU resource cleanup
+            if (windowElement._threeCanvas) {
+                const canvas = windowElement._threeCanvas;
+                const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+                if (gl) {
+                    const extension = gl.getExtension('WEBGL_lose_context');
+                    if (extension) extension.loseContext();
+                }
+                windowElement._threeCanvas = null;
+            }
+            
+            // Game instance cleanup with GPU tracker integration
+            if (windowElement._gameInstance) {
+                const game = windowElement._gameInstance;
+                if (game.dispose && typeof game.dispose === 'function') {
+                    game.dispose();
+                }
+                if (game.cleanup && typeof game.cleanup === 'function') {
+                    game.cleanup();
+                }
+                windowElement._gameInstance = null;
+            }
+            
+            // Use GPU tracker to dispose context-specific resources
+            if (window.GPUTracker && appName) {
+                window.GPUTracker.disposeContext(appName);
+            }
+            
+            // Use asset manager to unload game-specific assets
+            if (window.AssetManager && windowElement._gameContext) {
+                window.AssetManager.unloadContext(windowElement._gameContext);
+                windowElement._gameContext = null;
+            }
+            
+            // Terminal cleanup
+            if (windowElement._terminalInstance) {
+                const term = windowElement._terminalInstance;
+                if (term.term) {
+                    term.term.dispose();
+                }
+                if (term._resizeObserver) {
+                    term._resizeObserver.disconnect();
+                }
+                if (term.shell && term.shell.dispose) {
+                    term.shell.dispose();
+                }
+                windowElement._terminalInstance = null;
+            }
+            
+            // CodeBrow cleanup
+            if (windowElement._codebrowInstance) {
+                const codebrow = windowElement._codebrowInstance;
+                if (codebrow.editor) {
+                    codebrow.editor.dispose();
+                }
+                if (codebrow.monaco) {
+                    codebrow.monaco.dispose();
+                }
+                windowElement._codebrowInstance = null;
+            }
+            
+            // Clear any intervals, timeouts, or animation frames
+            if (windowElement._intervals) {
+                windowElement._intervals.forEach(id => clearInterval(id));
+                windowElement._intervals = [];
+            }
+            if (windowElement._timeouts) {
+                windowElement._timeouts.forEach(id => clearTimeout(id));
+                windowElement._timeouts = [];
+            }
+            if (windowElement._animationFrames) {
+                windowElement._animationFrames.forEach(id => cancelAnimationFrame(id));
+                windowElement._animationFrames = [];
+            }
+            
+            // No listener teardown is needed here: closeWindow() detaches this
+            // node a moment later, which releases its listeners with it, and
+            // .window-closing already sets pointer-events: none for the exit.
+            // Do NOT swap in a clone — cloneNode(false) drops every child (so
+            // the window renders as an empty white box) and breaks the exit,
+            // because both the animation class and the removal target this
+            // original node, not the clone.
+            
+        } catch (e) {
+            console.warn(`[WindowManager] Error cleaning up ${appName} resources:`, e);
+        }
     }
 
     minimizeWindow(windowElement, windowObj) {
@@ -811,6 +929,12 @@ class WindowManager {
     }
 
     launchApp(appName) {
+        if (appName === 'launchpad') {
+            if (window.desktop && window.desktop.toggleLaunchpad) {
+                window.desktop.toggleLaunchpad(true);
+            }
+            return;
+        }
         if (!window.appsManager) return;
         const app = window.appsManager.getAppInfo(appName);
         if (!app) {

@@ -6,6 +6,839 @@
     flex-direction: column;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Weather — Atmosphere
+   A city sidebar beside a masonry metrics dashboard. The card grid
+   reproduces the reference layout: two wide cards lead (current
+   conditions and the 7-day forecast), the narrow metrics fill in
+   around them, and the whole grid reorders on demand.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.wx-app-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    background: #06080c;
+
+    container-type: inline-size;
+    container-name: wx;
+
+    --wx-ink: #f2f4f8;
+    --wx-dim: rgba(255, 255, 255, 0.6);
+    --wx-faint: rgba(255, 255, 255, 0.37);
+    --wx-line: rgba(255, 255, 255, 0.075);
+    --wx-card: rgba(255, 255, 255, 0.045);
+    --wx-card-line: rgba(255, 255, 255, 0.07);
+}
+/* Illustrated glyphs (art() in js/weather.js) are filled SVG, so they
+ * need display:block to avoid an inline baseline gap. */
+.wx-app-host .wx-art { display: block; }
+
+.weather-window { flex: 1 1 auto; min-height: 0; display: flex; }
+
+/* ── Weather Window: Dedicated dark atmospheric chrome (never blinding white) ── */
+.window[data-app="weather"] {
+    background: #06080c !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 24px 70px -10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.window[data-app="weather"] .window-header {
+    background: rgba(14, 18, 26, 0.94) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+}
+
+.window[data-app="weather"] .window-title {
+    color: #f2f4f8 !important;
+}
+
+.window[data-app="weather"] .window-title span {
+    color: #f2f4f8 !important;
+}
+
+.window[data-app="weather"] .window-content {
+    background: #06080c !important;
+    padding: 0 !important;
+}
+
+.wx-app {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    color: var(--wx-ink);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* ── sidebar ─────────────────────────────────────────────────────── */
+.wx-side {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    min-height: 0;
+    padding: 15px 13px 11px;
+    border-right: 1px solid var(--wx-line);
+    background: rgba(255, 255, 255, 0.016);
+}
+.wx-side-head h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+}
+
+.wx-csearch { position: relative; display: flex; align-items: center; }
+.wx-csearch .wx-search-ico {
+    position: absolute;
+    left: 11px;
+    display: flex;
+    color: var(--wx-faint);
+    pointer-events: none;
+}
+.wx-csearch input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px 8px 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--wx-line);
+    border-radius: 999px;
+    color: var(--wx-ink);
+    font: inherit;
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.18s ease, background 0.18s ease;
+}
+.wx-csearch input::placeholder { color: var(--wx-faint); }
+.wx-csearch input:focus {
+    border-color: rgba(87, 200, 255, 0.45);
+    background: rgba(255, 255, 255, 0.075);
+}
+.wx-csearch input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+.wx-results {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding: 4px;
+    background: rgba(13, 17, 24, 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 13px;
+    box-shadow: 0 22px 48px -12px rgba(0, 0, 0, 0.8);
+    max-height: 280px;
+    overflow-y: auto;
+}
+.wx-results button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 10px;
+    background: none;
+    border: 0;
+    border-radius: 9px;
+    color: var(--wx-ink);
+    font: inherit;
+    font-size: 12.5px;
+    text-align: left;
+    cursor: pointer;
+}
+.wx-results button svg { color: var(--wx-faint); flex: 0 0 auto; }
+.wx-results button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wx-results button:hover { background: rgba(87, 200, 255, 0.14); }
+.wx-nohit { padding: 10px 11px; font-size: 11.5px; color: var(--wx-faint); }
+
+.wx-citylist {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-right: 2px;
+}
+
+.wx-city {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex: 0 0 auto;
+    padding: 9px 11px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+.wx-city:hover { background: rgba(255, 255, 255, 0.085); }
+.wx-city.is-active {
+    background: linear-gradient(180deg, #3474d6, #2456ad);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 10px 24px -12px rgba(52, 116, 214, 0.9);
+}
+.wx-city-l, .wx-city-r { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wx-city-r { align-items: flex-end; text-align: right; flex: 0 0 auto; }
+.wx-city-l b { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+.wx-city-l i, .wx-city-r i {
+    font-style: normal;
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+.wx-city-l em, .wx-city-r em {
+    font-style: normal;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.62);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wx-city-r b { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.wx-city.is-active .wx-city-l i,
+.wx-city.is-active .wx-city-r i,
+.wx-city.is-active .wx-city-l em,
+.wx-city.is-active .wx-city-r em { color: rgba(255, 255, 255, 0.78); }
+
+.wx-city-x {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ff453a;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.wx-side-foot { display: flex; align-items: center; gap: 8px; padding-top: 3px; }
+.wx-edit, .wx-gearbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid var(--wx-line);
+    color: var(--wx-dim);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+.wx-gearbtn { padding: 0; width: 30px; margin-left: auto; }
+.wx-edit:hover, .wx-gearbtn:hover {
+    color: var(--wx-ink);
+    background: rgba(87, 200, 255, 0.13);
+    border-color: rgba(87, 200, 255, 0.4);
+}
+.wx-edit.is-on {
+    color: #fff;
+    background: rgba(255, 69, 58, 0.2);
+    border-color: rgba(255, 69, 58, 0.5);
+}
+
+/* ── main column ─────────────────────────────────────────────────── */
+.wx-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+
+.wx-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--wx-line);
+}
+.wx-seg {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.065);
+}
+.wx-seg button {
+    padding: 6px 17px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--wx-dim);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease;
+}
+.wx-seg button:hover { color: var(--wx-ink); }
+.wx-seg button.is-active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.wx-topright { display: flex; align-items: center; gap: 10px; }
+.wx-reorder {
+    padding: 6px 4px;
+    border: 0;
+    background: none;
+    color: var(--wx-dim);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: color 0.16s ease;
+}
+.wx-reorder:hover, .wx-reorder.is-on { color: #7cc7ff; }
+.wx-iconbtn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid var(--wx-line);
+    color: var(--wx-dim);
+    cursor: pointer;
+    transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+.wx-iconbtn:hover {
+    color: var(--wx-ink);
+    background: rgba(87, 200, 255, 0.13);
+    border-color: rgba(87, 200, 255, 0.4);
+}
+.wx-refresh.is-busy svg { animation: wx-spin 1s linear infinite; }
+@keyframes wx-spin { to { transform: rotate(360deg); } }
+
+.wx-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px 16px 16px;
+}
+
+/* ── the metrics grid ────────────────────────────────────────────── */
+.wx-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    align-content: start;
+}
+
+.wx-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    min-height: 152px;
+    padding: 11px;
+    border-radius: 14px;
+    background: var(--wx-card);
+    border: 1px solid var(--wx-card-line);
+    overflow: hidden;
+}
+.wx-card-wide { grid-column: span 2; }
+/* the 7-day card also spans two rows so the three metric columns bottom out level */
+.wx-card[data-card="week"] { grid-row: span 2; }
+
+.wx-card-h { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.wx-card-ico { display: flex; color: var(--wx-faint); flex: 0 0 auto; }
+.wx-card-h h3 {
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
+    color: var(--wx-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wx-card-b { display: flex; flex-direction: column; gap: 5px; flex: 1 1 auto; min-height: 0; min-width: 0; }
+.wx-card-f {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    flex: 0 0 auto;
+    margin-top: auto;
+    font-size: 11.5px;
+    line-height: 1;
+    color: var(--wx-dim);
+}
+.wx-see {
+    padding: 2px 2px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.wx-card-f:hover { color: #7cc7ff; }
+
+.wx-big { font-size: 29px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.08; }
+.wx-bigline { display: flex; align-items: baseline; gap: 7px; }
+.wx-bigline b { font-size: 29px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.08; }
+.wx-bigline em { font-style: normal; font-size: 12px; font-weight: 600; }
+.wx-sub { font-size: 11.5px; color: var(--wx-dim); line-height: 1.35; }
+.wx-note { font-size: 10.5px; color: var(--wx-faint); line-height: 1.45; margin-top: auto; }
+.wx-stale { color: #fbbf24; }
+
+.wx-grip { display: flex; gap: 2px; margin-left: auto; }
+.wx-grip button {
+    width: 19px;
+    height: 19px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.09);
+    color: var(--wx-dim);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+.wx-grip button:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.wx-grid.is-reordering .wx-card { outline: 1px dashed rgba(255, 255, 255, 0.17); outline-offset: -1px; }
+
+/* ── current conditions (wide) ───────────────────────────────────── */
+.wx-card-home { position: relative; }
+.wx-card-home::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(155deg,
+        var(--wx-tone-b, #123a63) 0%,
+        var(--wx-tone-a, #07182c) 62%,
+        transparent 100%);
+    opacity: 0.55;
+    pointer-events: none;
+}
+.wx-card-home > * { position: relative; }
+.wx-now { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.wx-now-glyph { flex: 0 0 auto; color: rgba(255, 255, 255, 0.9); margin-top: -2px; }
+.wx-minis {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 3px;
+    margin-top: auto;
+    padding-top: 6px;
+}
+.wx-mini { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--wx-dim); }
+.wx-mini i { font-style: normal; font-size: 10px; color: var(--wx-faint); }
+.wx-mini b { font-size: 11.5px; font-weight: 600; color: var(--wx-ink); }
+
+/* ── 7-day forecast ──────────────────────────────────────────────── */
+.wx-week { display: flex; flex-direction: column; flex: 1 1 auto; }
+.wx-drow {
+    display: grid;
+    grid-template-columns: 44px 24px 30px minmax(28px, 1fr) 30px;
+    align-items: center;
+    gap: 7px;
+    flex: 1 1 auto;
+    padding: 5px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
+    font-size: 12.5px;
+}
+.wx-drow:first-child { border-top: 0; }
+.wx-dday { color: var(--wx-ink); font-weight: 500; }
+.wx-dico { display: flex; color: var(--wx-dim); }
+.wx-dlo { color: var(--wx-faint); text-align: right; }
+.wx-dhi { color: var(--wx-ink); text-align: right; font-weight: 500; }
+.wx-dtrack, .wx-wtrack {
+    position: relative;
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.11);
+    overflow: hidden;
+}
+.wx-dtrack i, .wx-wtrack i {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #f5c53d, #f59e0b);
+}
+
+/* ── scales (UV / AQI) ───────────────────────────────────────────── */
+.wx-scale { position: relative; height: 5px; margin: 7px 0 5px; flex: 0 0 auto; }
+.wx-scale-bar {
+    position: absolute;
+    inset: 0;
+    display: block;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #5ad27a, #a8d95a, #f5b13d, #f5763d, #e4557f, #b06bff);
+}
+.wx-scale-pin {
+    position: absolute;
+    top: -3px;
+    width: 3px;
+    height: 11px;
+    border-radius: 2px;
+    background: #fff;
+    transform: translateX(-50%);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ── wind compass ────────────────────────────────────────────────── */
+.wx-windrow { display: flex; align-items: center; gap: 10px; }
+.wx-compass { width: 74px; height: 74px; flex: 0 0 auto; }
+.wx-compass svg { width: 100%; height: 100%; display: block; }
+.wx-cmp-ring { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 1; }
+.wx-cmp-arrow path { fill: #e8eaee; }
+.wx-cmp-t {
+    fill: rgba(255, 255, 255, 0.45);
+    font-size: 11px;
+    font-family: inherit;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+.wx-windval { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.wx-windval b { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.wx-windval span { font-size: 10.5px; color: var(--wx-faint); }
+.wx-windval em { font-style: normal; font-size: 10.5px; color: var(--wx-dim); }
+
+/* ── sun arc ─────────────────────────────────────────────────────── */
+.wx-arc { margin: 3px 0 4px; flex: 0 0 auto; }
+.wx-arc svg { width: 100%; height: auto; display: block; }
+.wx-arc-line { fill: none; stroke: rgba(255, 255, 255, 0.17); stroke-width: 1.8; }
+.wx-arc-dot { fill: #ffd166; }
+
+/* ── inset stat row (averages) ───────────────────────────────────── */
+.wx-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 9px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 11px;
+    color: var(--wx-dim);
+    margin-top: auto;
+}
+.wx-stat b { color: var(--wx-ink); font-weight: 600; }
+
+/* ── panel views (hourly / week) ─────────────────────────────────── */
+.wx-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--wx-card);
+    border: 1px solid var(--wx-card-line);
+}
+.wx-panel-head { display: flex; align-items: center; gap: 8px; }
+.wx-panel-head h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
+    color: var(--wx-dim);
+}
+.wx-panel-head > span { margin-left: auto; font-size: 11.5px; color: var(--wx-faint); }
+
+.wx-hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.wx-hcell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 9px 5px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    color: var(--wx-dim);
+}
+.wx-hcell.is-now {
+    background: rgba(87, 200, 255, 0.13);
+    border-color: rgba(87, 200, 255, 0.38);
+}
+.wx-htime { font-size: 10.5px; color: var(--wx-faint); white-space: nowrap; }
+.wx-hcell.is-now .wx-htime { color: #7cc7ff; }
+.wx-hico { display: flex; color: var(--wx-dim); }
+.wx-htemp { font-size: 14px; font-weight: 600; color: var(--wx-ink); }
+.wx-hpop { font-size: 10.5px; }
+.wx-hpop.is-wet { color: #7cc7ff; }
+.wx-hmeta { font-size: 9.5px; color: var(--wx-faint); white-space: nowrap; }
+
+.wx-week-detail { display: flex; flex-direction: column; }
+.wx-wrow {
+    display: grid;
+    grid-template-columns: 78px 30px minmax(72px, 0.9fr) 34px minmax(60px, 1.6fr) 34px repeat(4, minmax(58px, 0.7fr));
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
+    font-size: 12px;
+}
+.wx-wrow:first-child { border-top: 0; }
+.wx-wday { font-weight: 500; color: var(--wx-ink); }
+.wx-wday i { font-style: normal; color: var(--wx-faint); font-size: 10.5px; }
+.wx-wico { display: flex; color: var(--wx-dim); }
+.wx-wcond { color: var(--wx-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wx-wlo { color: var(--wx-faint); text-align: right; }
+.wx-whi { color: var(--wx-ink); font-weight: 500; text-align: right; }
+.wx-wmeta { color: var(--wx-faint); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── loading / error / footer ────────────────────────────────────── */
+.wx-loading {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    padding: 44px 20px;
+    color: var(--wx-dim);
+    font-size: 13px;
+    text-align: center;
+}
+.wx-loading b { font-size: 14px; color: var(--wx-ink); font-weight: 600; }
+.wx-loading span { font-size: 12px; color: var(--wx-faint); }
+.wx-loading .wx-spin svg { animation: wx-spin 1.1s linear infinite; }
+.wx-error svg { color: var(--wx-faint); }
+.wx-retry {
+    margin-top: 4px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: rgba(87, 200, 255, 0.16);
+    border: 1px solid rgba(87, 200, 255, 0.42);
+    color: var(--wx-ink);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+.wx-retry:hover { background: rgba(87, 200, 255, 0.26); }
+
+.wx-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px 8px;
+    flex: 0 0 auto;
+    padding: 0 2px;
+    font-size: 10.5px;
+    color: var(--wx-faint);
+}
+.wx-foot i { width: 3px; height: 3px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); }
+
+/* ── narrow windows ──────────────────────────────────────────────── */
+@container wx (max-width: 930px) {
+    .wx-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .wx-card[data-card="week"] { grid-row: span 1; }
+}
+@container wx (max-width: 680px) {
+    .wx-app { grid-template-columns: minmax(0, 1fr); }
+    .wx-side { display: none; }
+    .wx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wx-card-wide { grid-column: span 2; }
+    .wx-card { min-height: 148px; }
+    .wx-minis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .wx-wrow { grid-template-columns: 66px 28px 34px minmax(50px, 1.4fr) 34px; }
+    .wx-wcond, .wx-wmeta { display: none; }
+}
+
+
+/* Performance Monitor Styles */
+.performance-panel {
+    padding: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.performance-panel h2 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.perf-score {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.perf-score-label {
+    font-size: 12px;
+    color: #8e8e93;
+    margin-bottom: 8px;
+}
+
+.perf-score-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.perf-score-value.good {
+    color: #34c759;
+}
+
+.perf-score-value.medium {
+    color: #ff9500;
+}
+
+.perf-score-value.poor {
+    color: #ff3b30;
+}
+
+.perf-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.perf-metric {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.perf-metric-label {
+    font-size: 11px;
+    color: #8e8e93;
+    margin-bottom: 4px;
+}
+
+.perf-metric-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.perf-metric-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.perf-metric-fill {
+    height: 100%;
+    background: #0a84ff;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.perf-metric-fill.good {
+    background: #34c759;
+}
+
+.perf-metric-fill.medium {
+    background: #ff9500;
+}
+
+.perf-metric-fill.poor {
+    background: #ff3b30;
+}
+
+.perf-recommendations {
+    margin-bottom: 20px;
+}
+
+.perf-recommendations h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 12px 0;
+}
+
+.perf-rec {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.perf-rec-high {
+    background: rgba(255, 59, 48, 0.1);
+    border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+.perf-rec-medium {
+    background: rgba(255, 149, 0, 0.1);
+    border: 1px solid rgba(255, 149, 0, 0.2);
+}
+
+.perf-rec-low {
+    background: rgba(142, 142, 147, 0.1);
+    border: 1px solid rgba(142, 142, 147, 0.2);
+}
+
+.perf-rec-icon {
+    font-size: 16px;
+}
+
+.perf-rec-text {
+    font-size: 12px;
+    color: #e9e9e9;
+    flex: 1;
+}
+
+.perf-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.perf-action-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.perf-action-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.perf-action-btn:active {
+    transform: scale(0.98);
+}
+
 .wasm-status-badge {
     font-size: 11px;
     font-weight: 600;
@@ -1421,17 +2254,17 @@ tr.filebrow-entry {
 .mac-context-menu {
     position: fixed;
     z-index: 999999 !important;
-    background: rgba(30, 30, 32, 0.85);
+    background: var(--surface-overlay, rgba(30, 30, 32, 0.85));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-overlay, 0 10px 30px rgba(0, 0, 0, 0.5));
     padding: 5px 0;
     min-width: 180px;
     display: none;
     font-size: 13px;
-    color: #f1f1f2;
+    color: var(--text-primary, #f1f1f2);
 }
 
 .mac-context-menu.visible {
@@ -1447,8 +2280,8 @@ tr.filebrow-entry {
 }
 
 .mac-context-menu-item:hover {
-    background: #0060df;
-    color: #ffffff;
+    background: var(--accent);
+    color: var(--text-on-accent, #ffffff);
 }
 
 .mac-context-menu-item.danger {
@@ -1462,7 +2295,7 @@ tr.filebrow-entry {
 
 .mac-context-menu-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-subtle, rgba(255, 255, 255, 0.1));
     margin: 4px 0;
 }
 
@@ -4184,3 +5017,121 @@ tr.filebrow-entry {
 .gta-set-toggle, .gta-set-select { background: rgba(255,255,255,0.08); color: #e6eefc; border: 1px solid rgba(255,255,255,0.25); border-radius: 5px; padding: 4px 12px; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; }
 .gta-set-toggle.on { background: rgba(63,208,90,0.22); border-color: #3fd05a; color: #8effa1; }
 .gta-set-hint { font-size: 10.5px; color: rgba(255,255,255,0.45); margin: 10px 2px 0; line-height: 1.5; text-align: left; }
+
+.filebrow-import-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Calendar / Monitor app surfaces
+   These lived in css/widgets.css until the widget system was removed.
+   They are plain app styles with no widget dependency, so they were
+   relocated here verbatim. (The relocated block also carried the OLD
+   Weather app's light stylesheet; its rules shadowed the current dark
+   `.wx-*` design at the top of this file, so they were removed.)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.bw-empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+.cal-app-host { height: 100%; background: #f2f2f7; }
+
+.cal-app { height: 100%; display: flex; gap: 14px; padding: 16px 18px; color: #1d1d1f; box-sizing: border-box; background: #f2f2f7; }
+
+.cal-main { flex: 1.4; display: flex; flex-direction: column; min-width: 0; }
+
+.cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+
+.cal-head strong { font-size: 16px; flex: 1; color: #1d1d1f; }
+
+.cal-head button {
+    background: rgba(120, 120, 128, 0.12); border: 1px solid rgba(0, 0, 0, 0.05);
+    color: #1d1d1f; border-radius: 8px; width: 30px; height: 28px; font-size: 15px; cursor: pointer;
+}
+
+.cal-head .cal-today { width: auto; padding: 0 12px; font-size: 12px; }
+
+.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 10.5px; font-weight: 700; color: rgba(60, 60, 67, 0.5); padding: 4px 0; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+
+.cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; border-radius: 9px; cursor: pointer; position: relative;
+    background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.04); color: #1d1d1f;
+}
+
+.cal-day:hover { background: rgba(10, 132, 255, 0.1); }
+
+.cal-day.is-empty { background: none; border-color: transparent; cursor: default; }
+
+.cal-day.is-today { background: #0a84ff; color: #fff; font-weight: 700; }
+
+.cal-day.is-sel { outline: 2px solid #0a84ff; }
+
+.cal-day.has-ev::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: #ff9f0a; }
+
+.cal-side { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 12px 14px; }
+
+.cal-side h3 { margin: 0 0 8px; font-size: 14px; color: #1d1d1f; }
+
+.cal-events { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+
+.cal-ev { display: flex; align-items: center; gap: 8px; background: rgba(120, 120, 128, 0.1); border-radius: 9px; padding: 7px 10px; font-size: 12.5px; color: #1d1d1f; }
+
+.cal-ev-time { color: #0a84ff; font-weight: 700; font-size: 11.5px; min-width: 44px; }
+
+.cal-ev-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cal-ev button { background: none; border: none; color: rgba(60, 60, 67, 0.4); font-size: 15px; cursor: pointer; }
+
+.cal-ev button:hover { color: #d70015; }
+
+.cal-add { display: flex; gap: 6px; margin-top: 8px; }
+
+.cal-add input {
+    background: rgba(120, 120, 128, 0.12); border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 8px; color: #1d1d1f; padding: 7px 9px; font-size: 12.5px;
+}
+
+.cal-in-title { flex: 1; min-width: 0; }
+
+.cal-in-time { width: 86px; color-scheme: dark; }
+
+.cal-in-add { background: #0a84ff; border: none; color: #fff; border-radius: 8px; padding: 0 13px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+
+.mon-app-host { height: 100%; background: #f2f2f7; }
+
+.mon-app { height: 100%; overflow-y: auto; padding: 16px 18px; color: #1d1d1f; display: flex; flex-direction: column; gap: 12px; background: #f2f2f7; }
+
+.mon-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+.mon-card { background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 11px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; }
+
+.mon-card span { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(60, 60, 67, 0.55); }
+
+.mon-card b { font-size: 15px; color: #1d1d1f; }
+
+.mon-graphs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.mon-graphs h4, .mon-sec { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: rgba(60, 60, 67, 0.55); margin: 2px 0 6px; }
+
+.mon-graphs canvas { width: 100%; height: 110px; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; }
+
+.mon-procs { display: flex; flex-direction: column; gap: 6px; }
+
+.mon-proc {
+    display: flex; align-items: center; gap: 9px;
+    background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 7px 11px; font-size: 12.5px;
+}
+
+.mon-dot { width: 8px; height: 8px; border-radius: 50%; background: #30d158; flex-shrink: 0; }
+
+.mon-proc-name { flex: 1; font-weight: 600; color: #1d1d1f; }
+
+.mon-proc button {
+    background: rgba(120, 120, 128, 0.12); border: 1px solid rgba(0, 0, 0, 0.05);
+    color: #1d1d1f; border-radius: 7px; padding: 4px 10px; font-size: 11.5px; cursor: pointer;
+}
+
+/* Generic empty-state + muted-text helpers used by the Calendar and Monitor
+   apps. These were referenced but never defined (pre-existing gap). */
+.bw-empty { text-align: center; padding: 18px 10px; font-size: 12.5px; color: rgba(60, 60, 67, 0.55); }
+.bw-muted { color: rgba(60, 60, 67, 0.55); }

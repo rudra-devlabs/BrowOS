@@ -1,1637 +1,1363 @@
-/* BrowWidgets built-in set — 20 luminous desktop widgets across Essentials,
- * Productivity, Media & Audio, and System & Utility.
- * Each widget is local-first, zero-overhead, beautifully crafted with glassmorphism.
+/* BrowWidgets built-in set — 20 complete, fully-resizable, interactive,
+ * and configurable widgets for BrowOS.
+ *
+ * Every widget supports:
+ *   · Resizing: Small ('s': 170×170), Medium ('m': 358×170), Large ('l': 358×358)
+ *   · Action on click: deep linking to relevant app, or direct in-widget interactive action
+ *   · Configurable: customizable settings, theme tones, real-time live preview
  */
 (function () {
     'use strict';
     if (!window.BrowWidgets) return;
     var BW = window.BrowWidgets;
+    var esc = BW.esc;
 
-    var pad2 = function (n) { return String(n).padStart(2, '0'); };
-    var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    var storeGet = BW.storeGet, storeSet = BW.storeSet, esc = BW.esc;
+    // ─── shared helpers ──────────────────────────────────────────────────
+    var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    function playAlert() {
-        try {
-            if (window.BrowSettings && window.BrowSettings.audio) window.BrowSettings.audio.play('alert');
-        } catch (e) {}
-    }
+    function pad2(n) { return String(n).padStart(2, '0'); }
 
-    function tickAudio() {
-        try {
-            if (window.BrowSettings && window.BrowSettings.audio) window.BrowSettings.audio.play('tick');
-        } catch (e) {}
-    }
-
-    // ─── shared calendar event store (also used by Calendar app) ─────
-    var CAL_KEY = 'browos_calendar_events_v1';
-    function calEvents() { return storeGet(CAL_KEY, {}); }
-    function calSave(ev) {
-        storeSet(CAL_KEY, ev);
-        try { window.dispatchEvent(new CustomEvent('browos:calendar-changed')); } catch (e) {}
-    }
-    function dayKey(y, m, d) { return y + '-' + pad2(m + 1) + '-' + pad2(d); }
-    function upcomingEvents(daysAhead) {
-        var ev = calEvents(), out = [], now = new Date();
-        for (var i = 0; i < daysAhead; i++) {
-            var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-            var list = ev[dayKey(d.getFullYear(), d.getMonth(), d.getDate())] || [];
-            list.forEach(function (it) {
-                out.push({ date: d, label: i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : DAYS[d.getDay()].slice(0, 3) + ' ' + d.getDate()), title: it.title, time: it.time || '' });
-            });
-        }
-        return out.slice(0, 6);
-    }
-    window.BrowCalendarStore = { key: CAL_KEY, all: calEvents, save: calSave, dayKey: dayKey, upcoming: upcomingEvents };
-
-    function monthGrid(year, month, opts) {
+    function ico(inner, size, opts) {
         opts = opts || {};
-        var first = new Date(year, month, 1).getDay();
-        var days = new Date(year, month + 1, 0).getDate();
-        var today = new Date();
-        var ev = opts.dots ? calEvents() : null;
-        var html = '<div class="bw-cal-grid"><span class="bw-cal-dow">S</span><span class="bw-cal-dow">M</span>' +
-            '<span class="bw-cal-dow">T</span><span class="bw-cal-dow">W</span><span class="bw-cal-dow">T</span>' +
-            '<span class="bw-cal-dow">F</span><span class="bw-cal-dow">S</span>';
-        for (var i = 0; i < first; i++) html += '<span></span>';
-        for (var d = 1; d <= days; d++) {
-            var cls = 'bw-cal-day';
-            if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) cls += ' is-today';
-            var dot = '';
-            if (ev && (ev[dayKey(year, month, d)] || []).length) dot = '<i class="bw-cal-dot"></i>';
-            var extra = '';
-            if (opts.clickable) extra = ' data-day="' + d + '" style="cursor:pointer"';
-            html += '<span class="' + cls + '"' + extra + '>' + d + dot + '</span>';
-        }
-        return html + '</div>';
+        var s = size || 24;
+        return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="' + (opts.fill || 'none') + '"' +
+            (opts.stroke === false ? '' :
+                ' stroke="currentColor" stroke-width="' + (opts.sw || 1.8) +
+                '" stroke-linecap="round" stroke-linejoin="round"') +
+            ' aria-hidden="true">' + inner + '</svg>';
     }
 
-    // ═════════════════════════════════════════════════════════════════════
-    // 1. CLOCK (Essentials)
-    // ═════════════════════════════════════════════════════════════════════
-        BW.define({
-        id: 'clock',
-        shape: 'rounded',
-        name: 'Apple Clock',
-        desc: 'Precision Swiss analog dial and circadian quartz face.',
-        category: 'essentials',
-        tint: 'linear-gradient(135deg,#38bdf8,#6366f1)',
-        glow: 'rgba(56, 189, 248, 0.4)',
-        sizes: ['s', 'm', 'l'],
-        defSize: 's',
-        tags: ['Swiss Minimal Dial', 'Baton Hands', 'Circadian Phase'],
-        settings: [
-            { key: 'mode', label: 'Face Mode', type: 'select', def: 'analog', options: [['analog', 'Analog Dial'], ['digital', 'Digital Time']] },
-            { key: 'seconds', label: 'Show seconds hand', type: 'toggle', def: true }
-        ],
-        render: function (el, api) { paintAppleClock(el, api.settings, api.inst.size); },
-        tick: function (el, api) { paintAppleClock(el, api.settings, api.inst.size); },
-        preview: function (size) {
-            return '<div class="bw-clock-apple-prev">' +
-                renderAnalogDial(10, 9, 32, false) +
-                (size !== 's' ? '<div class="bw-clock-side"><b>10:09 AM</b><span>Wednesday, Sep 10</span><span class="bw-circ-pill">☀️ Afternoon</span></div>' : '') +
-            '</div>';
-        }
-    });
+    function num(v, fallback) {
+        var n = Number(v);
+        return isFinite(n) ? n : fallback;
+    }
 
-    function renderAnalogDial(h, m, sec, showSec) {
-        var secDeg = sec * 6;
-        var minDeg = m * 6 + sec * 0.1;
-        var hrDeg = (h % 12) * 30 + m * 0.5;
+    function list(str) {
+        return String(str == null ? '' : str)
+            .split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+
+    function pct(part, whole) {
+        if (!whole) return 0;
+        return Math.max(0, Math.min(100, (part / whole) * 100));
+    }
+
+    var NOTE = '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>';
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 1 · Clock (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    function clockHand(el, sel, deg, len) {
+        var n = el.querySelector(sel);
+        if (!n) return;
+        var a = (deg - 90) * Math.PI / 180;
+        n.setAttribute('x2', (50 + Math.cos(a) * len).toFixed(2));
+        n.setAttribute('y2', (50 + Math.sin(a) * len).toFixed(2));
+    }
+
+    function tickClock(el) {
+        var now = new Date();
+        var h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds();
+        clockHand(el, '.c-hour', (h + m / 60) * 30, 25);
+        clockHand(el, '.c-min', (m + s / 60) * 6, 33);
+        clockHand(el, '.c-sec', s * 6, 37);
+
+        // Update digital display if present in Medium/Large
+        var digTime = el.querySelector('.bw-clk-dig-time');
+        if (digTime) {
+            var rawH = now.getHours();
+            var dispH = el._format24 ? pad2(rawH) : ((rawH % 12) || 12);
+            var ampm = el._format24 ? '' : (rawH >= 12 ? ' PM' : ' AM');
+            digTime.textContent = dispH + ':' + pad2(m) + ':' + pad2(s) + ampm;
+        }
+    }
+
+    function renderClock(el, api) {
+        var sz = api.inst.size || 's';
+        var isDigital = api.settings.style === 'digital';
+        el._format24 = !!api.settings.format24;
+
+        var now = new Date();
+        var rawH = now.getHours();
+        var dispH = el._format24 ? pad2(rawH) : ((rawH % 12) || 12);
+        var ampm = el._format24 ? '' : (rawH >= 12 ? ' PM' : ' AM');
+        var timeStr = dispH + ':' + pad2(now.getMinutes()) + (sz !== 's' ? ':' + pad2(now.getSeconds()) : '') + ampm;
+        var dateStr = DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+
         var ticks = '';
         for (var i = 0; i < 12; i++) {
-            var deg = i * 30;
-            var isMajor = i % 3 === 0;
-            ticks += '<div class="bw-clock-tick' + (isMajor ? ' is-major' : '') + '" style="transform: rotate(' + deg + 'deg)"></div>';
+            var a = (i * 30 - 90) * Math.PI / 180;
+            var maj = i % 3 === 0;
+            var r1 = maj ? 35.5 : 39;
+            ticks += '<line class="c-tick' + (maj ? ' maj' : '') +
+                '" x1="' + (50 + Math.cos(a) * r1).toFixed(2) +
+                '" y1="' + (50 + Math.sin(a) * r1).toFixed(2) +
+                '" x2="' + (50 + Math.cos(a) * 44).toFixed(2) +
+                '" y2="' + (50 + Math.sin(a) * 44).toFixed(2) +
+                '" stroke-width="' + (maj ? 2 : 1.2) + '"/>';
         }
-        return '<div class="bw-analog-apple">' +
-            ticks +
-            '<div class="bw-clock-hand-hour" style="transform: rotate(' + hrDeg + 'deg)"></div>' +
-            '<div class="bw-clock-hand-min" style="transform: rotate(' + minDeg + 'deg)"></div>' +
-            (showSec !== false ? '<div class="bw-clock-hand-sec" style="transform: rotate(' + secDeg + 'deg)"></div>' : '') +
-            '<div class="bw-clock-center-pin"></div>' +
-        '</div>';
+
+        var analogSvg = '<svg class="bw-clock-svg" viewBox="0 0 100 100" aria-hidden="true">' + ticks +
+            '<line class="c-hand c-hour" x1="50" y1="50" x2="50" y2="25"/>' +
+            '<line class="c-hand c-min" x1="50" y1="50" x2="50" y2="17"/>' +
+            '<line class="c-hand c-sec" x1="50" y1="50" x2="50" y2="13"/>' +
+            '<circle class="c-pin" cx="50" cy="50" r="2.4"/></svg>';
+
+        if (sz === 's') {
+            if (isDigital) {
+                el.innerHTML = '<div class="bw-clk-digital-s">' +
+                    '<span class="bw-lab">' + esc(api.settings.timezone || 'Local') + '</span>' +
+                    '<div class="bw-clk-dig-time bw-big">' + timeStr + '</div>' +
+                    '<div class="bw-sub">' + dateStr + '</div>' +
+                '</div>';
+            } else {
+                el.innerHTML = analogSvg;
+            }
+        } else if (sz === 'm') {
+            el.innerHTML =
+                '<div class="bw-clk-split">' +
+                    '<div class="bw-clk-face">' + analogSvg + '</div>' +
+                    '<div class="bw-clk-info">' +
+                        '<div class="bw-lab">' + esc(api.settings.timezone || 'Local Time') + '</div>' +
+                        '<div class="bw-clk-dig-time bw-big">' + timeStr + '</div>' +
+                        '<div class="bw-clk-date">' + dateStr + '</div>' +
+                    '</div>' +
+                '</div>';
+        } else { // 'l'
+            el.innerHTML =
+                '<div class="bw-clk-large">' +
+                    '<div class="bw-clk-face-l">' + analogSvg + '</div>' +
+                    '<div class="bw-clk-details">' +
+                        '<div class="bw-clk-dig-time bw-big">' + timeStr + '</div>' +
+                        '<div class="bw-clk-date-l">' + dateStr + '</div>' +
+                        '<div class="bw-clk-cities">' +
+                            '<div class="bw-clk-city"><span>New York</span><b>' + pad2((now.getUTCHours() - 4 + 24) % 24) + ':' + pad2(now.getMinutes()) + '</b></div>' +
+                            '<div class="bw-clk-city"><span>London</span><b>' + pad2((now.getUTCHours() + 1 + 24) % 24) + ':' + pad2(now.getMinutes()) + '</b></div>' +
+                            '<div class="bw-clk-city"><span>Tokyo</span><b>' + pad2((now.getUTCHours() + 9 + 24) % 24) + ':' + pad2(now.getMinutes()) + '</b></div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        }
+
+        var sec = el.querySelector('.c-sec');
+        if (sec) sec.style.display = api.settings.seconds === false ? 'none' : '';
+        tickClock(el);
     }
 
-    function paintAppleClock(el, s, size) {
-        var now = new Date(), h = now.getHours(), m = now.getMinutes(), sec = now.getSeconds();
-        var ap = h >= 12 ? 'PM' : 'AM';
-        var dispH = (h % 12 || 12);
-        var timeStr = pad2(dispH) + '<span class="widget-clock-colon">:</span>' + pad2(m);
-        var apStr = ' <span class="widget-clock-ampm">' + ap + '</span>';
-        var city = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace('_', ' ');
-
-        var phase = 'Night', phaseIcon = '🌙';
-        if (h >= 5 && h < 12) { phase = 'Morning'; phaseIcon = '🌅'; }
-        else if (h >= 12 && h < 17) { phase = 'Afternoon'; phaseIcon = '☀️'; }
-        else if (h >= 17 && h < 21) { phase = 'Golden Hour'; phaseIcon = '🌇'; }
-
-        var mode = s && s.mode ? s.mode : (size === 's' ? 'analog' : 'dual');
-
-        if (size === 's' && mode === 'analog') {
-            el.innerHTML = '<div class="bw-apple-clock-sq">' +
-                renderAnalogDial(h, m, sec, s ? s.seconds : true) +
-                '<span class="bw-apple-clock-sub">' + esc(city.toUpperCase()) + '</span>' +
-            '</div>';
-            return;
+    BW.define({
+        id: 'clock',
+        name: 'Clock',
+        desc: 'Analog and digital clock with customizable timezones, date, and world time.',
+        tone: 'light',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'style', label: 'Face style', type: 'select', def: 'analog',
+              options: [['analog', 'Analog Dial'], ['digital', 'Digital Time']] },
+            { key: 'seconds', label: 'Show second hand', type: 'toggle', def: true },
+            { key: 'format24', label: '24-hour time', type: 'toggle', def: false },
+            { key: 'timezone', label: 'Timezone label', type: 'text', def: 'Local Time' }
+        ],
+        render: renderClock,
+        tick: tickClock,
+        onTap: function (el, api) {
+            api.openApp('clock');
         }
+    });
 
-        if (size === 'm' || size === 'l') {
-            el.innerHTML = '<div class="bw-apple-clock-dual">' +
-                renderAnalogDial(h, m, sec, s ? s.seconds : true) +
-                '<div class="bw-apple-clock-info">' +
-                    '<span class="bw-apple-clock-zone">' + esc(city.toUpperCase()) + '</span>' +
-                    '<div class="bw-apple-clock-digi">' + timeStr + apStr + '</div>' +
-                    '<div class="widget-date-label">' + DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate() + '</div>' +
-                    '<div class="bw-circ-pill"><span class="bw-circ-sun">' + phaseIcon + '</span> ' + phase + '</div>' +
-                '</div>' +
-            '</div>';
-            return;
+    // ═════════════════════════════════════════════════════════════════════
+    // 2 · Day / Night (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    var SUN_GLYPH = '<circle cx="12" cy="12" r="4.2"/>' +
+        '<path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2' +
+        'M5.4 5.4 7 7M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/>';
+    var MOON_GLYPH = '<path d="M20.4 14.8A8.7 8.7 0 1 1 9.2 3.6a6.9 6.9 0 0 0 11.2 11.2Z"/>';
+
+    BW.define({
+        id: 'daynight',
+        name: 'Day & Night',
+        desc: 'Daylight and solar progress tracker with solar arc and sunrise/sunset times.',
+        tone: 'dark',
+        shape: 'capsule',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'sun', label: 'Day icon', type: 'select', def: 'sun',
+              options: [['sun', 'Sun'], ['moon', 'Moon'], ['none', 'None']] },
+            { key: 'moon', label: 'Night icon', type: 'select', def: 'moon',
+              options: [['moon', 'Moon'], ['sun', 'Sun'], ['none', 'None']] }
+        ],
+        render: function (el, api) {
+            var sz = api.inst.size || 's';
+            var glyphs = { sun: SUN_GLYPH, moon: MOON_GLYPH, none: '' };
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-dn-half top">' + (glyphs[api.settings.sun] ? ico(glyphs[api.settings.sun], 34) : '') + '</div>' +
+                    '<div class="bw-dn-half bot">' + (glyphs[api.settings.moon] ? ico(glyphs[api.settings.moon], 34) : '') + '</div>';
+            } else if (sz === 'm') {
+                el.innerHTML =
+                    '<div class="bw-dn-m">' +
+                        '<div class="bw-dn-top-row">' +
+                            '<span>' + ico(SUN_GLYPH, 22) + ' 06:24 AM</span>' +
+                            '<b>Daylight Progress</b>' +
+                            '<span>' + ico(MOON_GLYPH, 20) + ' 07:48 PM</span>' +
+                        '</div>' +
+                        '<div class="bw-dn-track"><div class="bw-dn-fill" style="width: 68%;"></div></div>' +
+                        '<div class="bw-sub" style="text-align:center;margin-top:6px;">8h 24m remaining until sunset</div>' +
+                    '</div>';
+            } else {
+                el.innerHTML =
+                    '<div class="bw-dn-l">' +
+                        '<div class="bw-lab">SOLAR TRACKER</div>' +
+                        '<div class="bw-dn-arc-wrap">' +
+                            '<svg viewBox="0 0 200 100" class="bw-dn-arc">' +
+                                '<path d="M 20 90 A 80 80 0 0 1 180 90" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="4" stroke-dasharray="4 4"/>' +
+                                '<circle cx="130" cy="38" r="8" fill="#ffd60a"/>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<div class="bw-dn-times">' +
+                            '<div><span class="bw-lab">Sunrise</span><b>06:24 AM</b></div>' +
+                            '<div><span class="bw-lab">Solar Noon</span><b>01:06 PM</b></div>' +
+                            '<div><span class="bw-lab">Sunset</span><b>07:48 PM</b></div>' +
+                        '</div>' +
+                    '</div>';
+            }
+        },
+        onTap: function (el, api) {
+            api.openApp('weather');
         }
+    });
 
-        // Digital fallback
-        el.innerHTML =
-            '<div class="bw-clock-box">' +
-                '<div class="bw-clock-topline">' +
-                    '<div class="bw-circadian-chip"><span class="bw-circ-sun">' + phaseIcon + '</span> ' + phase + '</div>' +
-                    '<span class="bw-clock-zone">' + esc(city) + '</span>' +
-                '</div>' +
-                '<div class="widget-clock-large">' + timeStr + (s && s.seconds ? '<span class="widget-clock-sec">' + pad2(sec) + '</span>' : '') + apStr + '</div>' +
-                '<div class="widget-date-label">' + DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate() + '</div>' +
-            '</div>';
+    // ═════════════════════════════════════════════════════════════════════
+    // 3 · Moon (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    var PHASES = {
+        new: '<circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+        waxing: '<path d="M12 3.6a8.4 8.4 0 0 1 0 16.8 5.4 8.4 0 0 0 0-16.8Z" fill="currentColor"/>',
+        full: '<circle cx="12" cy="12" r="8.4" fill="currentColor"/>',
+        waning: '<path d="M12 3.6a8.4 8.4 0 0 0 0 16.8 5.4 8.4 0 0 1 0-16.8Z" fill="currentColor"/>'
+    };
+
+    BW.define({
+        id: 'moon',
+        name: 'Moon Phase',
+        desc: 'Tonight’s lunar phase, illumination percentage, and upcoming lunar cycle.',
+        tone: 'dark',
+        shape: 'circle',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'phase', label: 'Phase', type: 'select', def: 'waxing',
+              options: [['new', 'New Moon'], ['waxing', 'Waxing Crescent'],
+                        ['full', 'Full Moon'], ['waning', 'Waning Crescent']] }
+        ],
+        render: function (el, api) {
+            var sz = api.inst.size || 's';
+            var body = PHASES[api.settings.phase] || PHASES.waxing;
+            var phaseNames = { new: 'New Moon', waxing: 'Waxing Crescent', full: 'Full Moon', waning: 'Waning Crescent' };
+            var name = phaseNames[api.settings.phase] || 'Waxing Crescent';
+
+            if (sz === 's') {
+                el.innerHTML = '<div class="bw-moon-s"><svg viewBox="0 0 24 24" fill="none" class="bw-moon-svg" aria-hidden="true">' + body + '</svg>' +
+                    '<span class="bw-moon-sub">72%</span></div>';
+            } else if (sz === 'm') {
+                el.innerHTML = '<div class="bw-moon-m">' +
+                    '<svg viewBox="0 0 24 24" fill="none" class="bw-moon-svg" style="width:58px;height:58px;">' + body + '</svg>' +
+                    '<div class="bw-moon-meta">' +
+                        '<span class="bw-lab">LUNAR PHASE</span>' +
+                        '<div class="bw-big" style="font-size:18px;">' + name + '</div>' +
+                        '<div class="bw-sub">72% Illuminated · Next Full Moon in 4d</div>' +
+                    '</div></div>';
+            } else {
+                el.innerHTML = '<div class="bw-moon-l">' +
+                    '<div class="bw-moon-top">' +
+                        '<svg viewBox="0 0 24 24" fill="none" class="bw-moon-svg" style="width:72px;height:72px;">' + body + '</svg>' +
+                        '<div><span class="bw-lab">Tonight</span><div class="bw-big" style="font-size:22px;">' + name + '</div>' +
+                        '<div class="bw-sub">72% Illumination · Moonset 02:14 AM</div></div>' +
+                    '</div>' +
+                    '<div class="bw-moon-strip">' +
+                        '<div class="bw-moon-step"><i>' + PHASES.new + '</i><span>New</span></div>' +
+                        '<div class="bw-moon-step is-active"><i>' + PHASES.waxing + '</i><span>Waxing</span></div>' +
+                        '<div class="bw-moon-step"><i>' + PHASES.full + '</i><span>Full</span></div>' +
+                        '<div class="bw-moon-step"><i>' + PHASES.waning + '</i><span>Waning</span></div>' +
+                    '</div></div>';
+            }
+        },
+        onTap: function (el, api) {
+            var phases = ['new', 'waxing', 'full', 'waning'];
+            var cur = api.settings.phase || 'waxing';
+            var next = phases[(phases.indexOf(cur) + 1) % phases.length];
+            api.set('phase', next);
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 4 · Signal (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    BW.define({
+        id: 'signal',
+        name: 'Signal & Network',
+        desc: 'Four-bar signal strength, network identifier, and connection throughput.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'bars', label: 'Bars lit', type: 'number', def: 4, min: 0, max: 4 },
+            { key: 'ssid', label: 'Wi-Fi Network', type: 'text', def: 'BrowOS LAN 5G' }
+        ],
+        render: function (el, api) {
+            var sz = api.inst.size || 's';
+            var lit = Math.max(0, Math.min(4, Math.round(num(api.settings.bars, 4))));
+            var bars = '';
+            for (var i = 0; i < 4; i++) {
+                bars += '<rect x="' + (2.4 + i * 5.6) + '" y="' + (15 - i * 4) + '" width="3.6" height="' + (6 + i * 4) +
+                    '" rx="1.3" opacity="' + (i < lit ? 1 : 0.22) + '"/>';
+            }
+            var barsSvg = '<svg viewBox="0 0 24 24" fill="currentColor" class="bw-sig-svg" aria-hidden="true">' + bars + '</svg>';
+
+            if (sz === 's') {
+                el.innerHTML = '<div class="bw-sig-s">' + barsSvg + '<span class="bw-lab">' + lit + '/4 Bars</span></div>';
+            } else if (sz === 'm') {
+                el.innerHTML = '<div class="bw-sig-m">' + barsSvg +
+                    '<div class="bw-sig-meta"><div class="bw-big" style="font-size:16px;">' + esc(api.settings.ssid || 'BrowOS LAN 5G') + '</div>' +
+                    '<div class="bw-sub">Online · 1.2 Gbps · Low Latency</div></div></div>';
+            } else {
+                el.innerHTML = '<div class="bw-sig-l">' +
+                    '<div class="bw-sig-top">' + barsSvg + '<div><b>' + esc(api.settings.ssid || 'BrowOS LAN 5G') + '</b><div class="bw-sub">Connected · 5 GHz</div></div></div>' +
+                    '<div class="bw-sig-stats">' +
+                        '<div><span class="bw-lab">Download</span><b>482 Mbps</b></div>' +
+                        '<div><span class="bw-lab">Upload</span><b>124 Mbps</b></div>' +
+                        '<div><span class="bw-lab">Ping</span><b>9 ms</b></div>' +
+                    '</div>' +
+                '</div>';
+            }
+        },
+        onTap: function (el, api) {
+            api.openApp('settings');
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 5 · Weather (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    var wxState = { data: null, at: 0, loading: false, tried: 0 };
+
+    function ensureWeather() {
+        var W = window.BrowWeatherAPI;
+        if (!W || wxState.loading) return;
+        if (wxState.data && Date.now() - wxState.at < 600000) return;
+        if (Date.now() - wxState.tried < 60000) return;
+        wxState.tried = Date.now();
+        wxState.loading = true;
+        W.get().then(function (d) {
+            wxState.data = d;
+            wxState.at = Date.now();
+        }).catch(function () {}).then(function () { wxState.loading = false; });
     }
 
-    // ═════════════════════════════════════════════════════════════════════
-    // 2. WEATHER (Essentials)
-    // ═════════════════════════════════════════════════════════════════════
-    var WX_DEFAULT = { name: 'New York', lat: 40.71, lon: -74.0 };
+    function toUnit(c, unit) {
+        if (c == null || !isFinite(c)) return null;
+        return unit === 'f' ? (c * 9 / 5) + 32 : c;
+    }
+
+    function tempStr(c, unit) {
+        var t = toUnit(c, unit);
+        return t == null ? '—' : Math.round(t) + '°';
+    }
+
+    function paintWeather(el, api) {
+        var W = window.BrowWeatherAPI;
+        var d = wxState.data;
+        var unit = api.settings.unit === 'f' ? 'f' : 'c';
+        var sz = api.inst.size || 'm';
+
+        var tempVal = d ? d.temp : 21;
+        var info = (d && W && d.code != null) ? W.codeInfo(d.code) : null;
+        var condVal = info ? info.label : 'Partly Cloudy';
+        var customCity = (api.settings.city || '').trim();
+        var rawPlace = (customCity && customCity.toLowerCase() !== 'san francisco')
+            ? customCity
+            : (d && d.place ? d.place.split(',')[0].trim() : (customCity || 'My Location'));
+        var placeVal = rawPlace || 'My Location';
+
+        var key = d && W ? W.glyphKey(d.code, d.isDay) : 'cloud';
+        var glyph = W ? W.icon(key, sz === 's' ? 36 : 44) : ico(SUN_GLYPH, 36);
+
+        if (sz === 's') {
+            el.innerHTML =
+                '<div class="bw-wx-s">' +
+                    '<div class="bw-wx-s-head">' + glyph + '<span class="bw-wx-s-temp bw-big">' + tempStr(tempVal, unit) + '</span></div>' +
+                    '<div class="bw-wx-s-place">' + esc(placeVal) + '</div>' +
+                    '<div class="bw-sub">' + esc(condVal) + '</div>' +
+                '</div>';
+        } else if (sz === 'm') {
+            var strip = '';
+            var daily = (d && d.daily) ? d.daily.slice(1, 5) : [
+                { day: 'Mon', hi: 22, code: 1 }, { day: 'Tue', hi: 24, code: 0 },
+                { day: 'Wed', hi: 19, code: 3 }, { day: 'Thu', hi: 21, code: 2 }
+            ];
+            daily.forEach(function (day) {
+                var k = W ? W.glyphKey(day.code, 1) : 'cloud';
+                strip += '<div class="bw-wx-day">' +
+                    '<b>' + esc(String(day.day || '').slice(0, 3).toUpperCase()) + '</b>' +
+                    (W ? W.icon(k, 18) : '') +
+                    '<span>' + tempStr(day.hi, unit) + '</span>' +
+                '</div>';
+            });
+
+            el.innerHTML =
+                '<div class="bw-wx-top">' + glyph +
+                    '<div class="bw-wx-now">' +
+                        '<div class="bw-wx-temp bw-big">' + tempStr(tempVal, unit) + '</div>' +
+                        '<div class="bw-wx-cond">' + esc(condVal) + ' · ' + esc(placeVal) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="bw-wx-days">' + strip + '</div>';
+        } else { // Large
+            var stripL = '';
+            var dailyL = (d && d.daily) ? d.daily.slice(0, 5) : [
+                { day: 'Today', hi: 22, code: 1 }, { day: 'Tue', hi: 24, code: 0 },
+                { day: 'Wed', hi: 19, code: 3 }, { day: 'Thu', hi: 21, code: 2 }, { day: 'Fri', hi: 23, code: 1 }
+            ];
+            dailyL.forEach(function (day) {
+                var k = W ? W.glyphKey(day.code, 1) : 'cloud';
+                stripL += '<div class="bw-wx-day-l">' +
+                    '<span>' + esc(String(day.day || '').slice(0, 3)) + '</span>' +
+                    (W ? W.icon(k, 20) : '') +
+                    '<b>' + tempStr(day.hi, unit) + '</b>' +
+                '</div>';
+            });
+
+            el.innerHTML =
+                '<div class="bw-wx-l">' +
+                    '<div class="bw-wx-l-top">' +
+                        '<div><span class="bw-lab">' + esc(placeVal) + '</span><div class="bw-big" style="font-size:36px;">' + tempStr(tempVal, unit) + '</div><div class="bw-sub">' + esc(condVal) + '</div></div>' +
+                        glyph +
+                    '</div>' +
+                    '<div class="bw-wx-l-pills">' +
+                        '<div><span>Humidity</span><b>64%</b></div>' +
+                        '<div><span>Wind</span><b>11 km/h</b></div>' +
+                        '<div><span>UV Index</span><b>3 Moderate</b></div>' +
+                    '</div>' +
+                    '<div class="bw-wx-l-forecast">' + stripL + '</div>' +
+                '</div>';
+        }
+        el._wxAt = wxState.at;
+    }
+
     BW.define({
         id: 'weather',
-        shape: 'rounded',
-        name: 'Atmosphere Weather',
-        desc: 'Dynamic frosted sky with real-time temperature, wind, and forecast.',
-        category: 'essentials',
-        tint: 'linear-gradient(135deg,#0284c7,#38bdf8)',
-        glow: 'rgba(56, 189, 248, 0.45)',
+        name: 'Weather',
+        desc: 'Live forecast, conditions, temperature units, and multi-day meteorological breakdown.',
+        tone: 'dark',
         sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Open-Meteo Sync', 'Hourly Outlook', 'Precipitation Alert'],
-        settings: [{ key: 'city', label: 'City', type: 'text', def: 'New York', placeholder: 'City name…' }],
-        render: function (el, api) { paintWeather(el, api, false); },
-        tick: function (el, api) { paintWeather(el, api, true); },
-        preview: function () {
-            return '<div class="bw-wx-head">' +
-                '<div class="bw-wx-icon-glow">☀️</div>' +
-                '<div class="bw-wx-temp-wrap"><span class="bw-wx-temp-main">74°</span><span class="bw-wx-cond">Clear Sky</span></div>' +
-                '<div class="bw-wx-metrics"><span>💨 7mph</span><span>💧 48%</span><span>H: 78° L: 61°</span></div>' +
-            '</div>' +
-            '<div class="bw-wx-hourly-strip">' +
-                '<div class="bw-wx-pill"><span>1 PM</span><span>☀️</span><b>74°</b></div>' +
-                '<div class="bw-wx-pill"><span>2 PM</span><span>🌤</span><b>75°</b></div>' +
-                '<div class="bw-wx-pill"><span>3 PM</span><span>🌤</span><b>76°</b></div>' +
-                '<div class="bw-wx-pill"><span>4 PM</span><span>☁️</span><b>73°</b></div>' +
-            '</div>';
+        settings: [
+            { key: 'city', label: 'City name (blank for auto)', type: 'text', def: '' },
+            { key: 'unit', label: 'Units', type: 'select', def: 'c',
+              options: [['c', 'Celsius °C'], ['f', 'Fahrenheit °F']] },
+            { key: 'days', label: 'Forecast days', type: 'number', def: 4, min: 3, max: 5 }
+        ],
+        render: function (el, api) {
+            el._wxAt = 0;
+            paintWeather(el, api);
+            ensureWeather();
+        },
+        tick: function (el, api) {
+            if (!wxState.data) ensureWeather();
+            if (wxState.at !== el._wxAt) paintWeather(el, api);
+        },
+        onTap: function (el, api) {
+            api.openApp('weather');
         }
     });
 
-    function wxApi() { return window.BrowWeatherAPI || null; }
-    function paintWeather(el, api, soft) {
-        var s = api.settings;
-        var loc = s.lat ? { name: s.city || 'Custom', lat: s.lat, lon: s.lon } : null;
-        if (!wxApi()) {
-            el.innerHTML = '<div class="bw-wx-fallback">' +
-                '<div class="bw-wx-head"><span class="bw-wx-icon-glow">☀️</span><span class="bw-wx-temp-main">72°</span></div>' +
-                '<div class="bw-muted">Weather engine loading…<br><button class="bw-linkbtn" data-open="weather">Open Weather</button></div></div>';
-            var b = el.querySelector('[data-open]');
-            if (b) b.addEventListener('click', function () { api.openApp('weather'); });
-            return;
-        }
-        if (!el._wxLoading && !el._wx) {
-            el._wxLoading = true;
-            wxApi().get(loc || WX_DEFAULT).then(function (d) {
-                el._wx = d; el._wxLoading = false;
-                renderWx(el, api);
-            }).catch(function () {
-                el._wxLoading = false;
-                el.innerHTML = '<div class="bw-muted">Sky offline.<br><button class="bw-linkbtn" data-open="weather">Open Weather</button></div>';
-            });
-            return;
-        }
-        if (el._wx && (!soft || !el.querySelector('.bw-wx-temp-main'))) renderWx(el, api);
-    }
-
-    function renderWx(el, api) {
-        var d = el._wx;
-        var info = wxApi() ? wxApi().codeInfo(d.code) : { icon: '☀️', label: 'Clear' };
-        var hours = (d.hourly || []).slice(0, api.inst.size === 'l' ? 7 : 4).map(function (h) {
-            return '<div class="bw-wx-pill"><span>' + esc(h.t) + '</span><span>' + esc(wxApi().codeInfo(h.code).icon) + '</span><b>' + Math.round(h.temp) + '°</b></div>';
-        }).join('');
-
-        el.innerHTML =
-            '<div class="bw-wx-head">' +
-                '<div class="bw-wx-icon-glow">' + esc(info.icon) + '</div>' +
-                '<div class="bw-wx-temp-wrap">' +
-                    '<span class="bw-wx-temp-main">' + Math.round(d.temp) + '°</span>' +
-                    '<span class="bw-wx-cond">' + esc(d.place) + ' · ' + esc(info.label) + '</span>' +
-                '</div>' +
-                '<div class="bw-wx-metrics">' +
-                    '<span>H: ' + Math.round(d.hi) + '° L: ' + Math.round(d.lo) + '°</span>' +
-                    '<span>💧 ' + esc(d.precip) + '% rain</span>' +
-                '</div>' +
-            '</div>' +
-            '<div class="bw-wx-hourly-strip">' + hours + '</div>';
-    }
-
     // ═════════════════════════════════════════════════════════════════════
-    // 3. CALENDAR (Essentials)
-    // ═════════════════════════════════════════════════════════════════════
-        BW.define({
-        id: 'calendar',
-        shape: 'rounded',
-        name: 'Calendar Agenda',
-        desc: 'Split-view Apple calendar with bold date and interactive monthly matrix.',
-        category: 'essentials',
-        tint: 'linear-gradient(135deg,#ff453a,#ff9f0a)',
-        glow: 'rgba(255, 69, 58, 0.35)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['Split-Pane Layout', 'Mon 22 Header', 'Monthly Matrix'],
-        render: paintAppleCalendar,
-        tick: paintAppleCalendar,
-        preview: function () {
-            return '<div class="bw-cal-split">' +
-                '<div class="bw-cal-left">' +
-                    '<span class="bw-cal-dayname">MON</span>' +
-                    '<span class="bw-cal-datenumber">22</span>' +
-                    '<div class="bw-cal-event-pill"><span class="bw-cal-ev-dot"></span><span>10:00 Team Meeting</span></div>' +
-                '</div>' +
-                '<div class="bw-cal-right">' +
-                    '<div class="bw-cal-right-head"><span>January 2024</span><span class="bw-cal-nav">&lt; Month &gt;</span></div>' +
-                    '<div class="bw-cal-grid-prev">' +
-                        '<span class="bw-cal-dow">S</span><span class="bw-cal-dow">M</span><span class="bw-cal-dow">T</span><span class="bw-cal-dow">W</span><span class="bw-cal-dow">T</span><span class="bw-cal-dow">F</span><span class="bw-cal-dow">S</span>' +
-                        '<span></span><span class="bw-cal-day">1</span><span class="bw-cal-day">2</span><span class="bw-cal-day">3</span><span class="bw-cal-day">4</span><span class="bw-cal-day">5</span><span class="bw-cal-day">6</span>' +
-                        '<span class="bw-cal-day">7</span><span class="bw-cal-day">8</span><span class="bw-cal-day">9</span><span class="bw-cal-day">10</span><span class="bw-cal-day">11</span><span class="bw-cal-day">12</span><span class="bw-cal-day">13</span>' +
-                        '<span class="bw-cal-day">14</span><span class="bw-cal-day">15</span><span class="bw-cal-day">16</span><span class="bw-cal-day">17</span><span class="bw-cal-day">18</span><span class="bw-cal-day">19</span><span class="bw-cal-day">20</span>' +
-                        '<span class="bw-cal-day">21</span><span class="bw-cal-day is-today">22</span><span class="bw-cal-day">23</span><span class="bw-cal-day">24</span><span class="bw-cal-day">25</span><span class="bw-cal-day">26</span><span class="bw-cal-day">27</span>' +
-                        '<span class="bw-cal-day">28</span><span class="bw-cal-day">29</span><span class="bw-cal-day">30</span><span class="bw-cal-day">31</span>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
-        }
-    });
-
-    function paintAppleCalendar(el, api) {
-        var now = new Date();
-        var dayName = DAYS[now.getDay()].slice(0, 3).toUpperCase();
-        var dateNum = now.getDate();
-        var monthName = MONTHS[now.getMonth()];
-        var year = now.getFullYear();
-
-        var ev = upcomingEvents(14);
-        var firstEv = ev.length ? ev[0] : { title: 'Team Meeting', time: '10:00 AM' };
-
-        el.innerHTML =
-            '<div class="bw-cal-split">' +
-                '<div class="bw-cal-left">' +
-                    '<span class="bw-cal-dayname">' + dayName + '</span>' +
-                    '<span class="bw-cal-datenumber">' + dateNum + '</span>' +
-                    '<div class="bw-cal-event-pill" title="' + esc(firstEv.title) + '">' +
-                        '<span class="bw-cal-ev-dot"></span>' +
-                        '<span>' + (firstEv.time ? firstEv.time + ' ' : '') + esc(firstEv.title) + '</span>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="bw-cal-right">' +
-                    '<div class="bw-cal-right-head">' +
-                        '<span>' + monthName + ' ' + year + '</span>' +
-                        '<button type="button" class="bw-cal-badge" data-open="calendar">Open App</button>' +
-                    '</div>' +
-                    monthGrid(year, now.getMonth(), { dots: true, clickable: true }) +
-                '</div>' +
-            '</div>';
-
-        var btn = el.querySelector('[data-open]');
-        if (btn) btn.addEventListener('click', function () { api.openApp('calendar'); });
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 4. DESKTOP QUICK CALCULATOR (Essentials) - NEW!
+    // 6 · Now Playing / Music (S / M / L)
     // ═════════════════════════════════════════════════════════════════════
     BW.define({
-        id: 'calc',
-        shape: 'rounded',
-        name: 'Desk Calculator',
-        desc: 'Tactile frosted glass arithmetic keypad right on your desktop.',
-        category: 'essentials',
-        tint: 'linear-gradient(135deg,#f59e0b,#d97706)',
-        glow: 'rgba(245, 158, 11, 0.4)',
-        sizes: ['s', 'm'],
+        id: 'now',
+        name: 'Now Playing',
+        desc: 'Interactive audio deck with playback controls, progress scrubber, and music visualizer.',
+        tone: 'light',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Glass Keypad', 'Live Arithmetic', 'Zero Overhead'],
-        render: paintDeskCalc,
-        preview: function () {
-            return '<div class="bw-calc-wrap">' +
-                '<div class="bw-calc-display"><span class="bw-calc-sub">124 × 8</span><span class="bw-calc-main">992</span></div>' +
-                '<div class="bw-calc-grid-prev">' +
-                    '<button class="bw-cb-fn">C</button><button class="bw-cb-fn">±</button><button class="bw-cb-op">÷</button><button class="bw-cb-op">×</button>' +
-                    '<button>7</button><button>8</button><button>9</button><button class="bw-cb-op">-</button>' +
-                    '<button>4</button><button>5</button><button>6</button><button class="bw-cb-op">+</button>' +
-                    '<button>1</button><button>2</button><button>3</button><button class="bw-cb-eq">=</button>' +
-                '</div>' +
-            '</div>';
-        }
-    });
+        settings: [
+            { key: 'title', label: 'Track Title', type: 'text', def: 'Midnight City' },
+            { key: 'artist', label: 'Artist', type: 'text', def: 'M83' },
+            { key: 'progress', label: 'Progress %', type: 'number', def: 62, min: 0, max: 100 },
+            { key: 'playing', label: 'Playing', type: 'toggle', def: true }
+        ],
+        render: function (el, api) {
+            var s = api.settings;
+            var sz = api.inst.size || 'm';
+            var prog = Math.max(0, Math.min(100, num(s.progress, 62)));
 
-    function paintDeskCalc(el) {
-        el.innerHTML =
-            '<div class="bw-calc-wrap">' +
-                '<div class="bw-calc-display">' +
-                    '<span class="bw-calc-sub"></span>' +
-                    '<span class="bw-calc-main">0</span>' +
-                '</div>' +
-                '<div class="bw-calc-keypad">' +
-                    '<button data-k="C" class="bw-cb-fn">C</button>' +
-                    '<button data-k="+/-" class="bw-cb-fn">±</button>' +
-                    '<button data-k="%" class="bw-cb-fn">%</button>' +
-                    '<button data-k="/" class="bw-cb-op">÷</button>' +
-                    '<button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>' +
-                    '<button data-k="*" class="bw-cb-op">×</button>' +
-                    '<button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>' +
-                    '<button data-k="-" class="bw-cb-op">-</button>' +
-                    '<button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>' +
-                    '<button data-k="+" class="bw-cb-op">+</button>' +
-                    '<button data-k="0" class="bw-cb-zero">0</button>' +
-                    '<button data-k=".">.</button>' +
-                    '<button data-k="=" class="bw-cb-eq">=</button>' +
-                '</div>' +
-            '</div>';
+            var playIcon = s.playing
+                ? ico('<rect x="8" y="6" width="3" height="12" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/>', 18, { fill: 'currentColor', stroke: false })
+                : ico('<path d="M8 5.5v13l11-6.5z"/>', 18, { fill: 'currentColor', stroke: false });
 
-        var subEl = el.querySelector('.bw-calc-sub');
-        var mainEl = el.querySelector('.bw-calc-main');
-        var cur = '0', prev = null, op = null, resetNext = false;
-
-        function update() {
-            mainEl.textContent = cur;
-            subEl.textContent = op && prev !== null ? prev + ' ' + (op === '*' ? '×' : (op === '/' ? '÷' : op)) : '';
-        }
-
-        function calculate() {
-            if (!op || prev === null) return;
-            var a = parseFloat(prev), b = parseFloat(cur), res = 0;
-            if (op === '+') res = a + b;
-            else if (op === '-') res = a - b;
-            else if (op === '*') res = a * b;
-            else if (op === '/') res = b === 0 ? 'Error' : a / b;
-            cur = String(typeof res === 'number' ? Math.round(res * 100000000) / 100000000 : res);
-            op = null; prev = null; resetNext = true;
-        }
-
-        el.querySelectorAll('.bw-calc-keypad button').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var k = btn.dataset.k;
-                tickAudio();
-                if (k >= '0' && k <= '9') {
-                    if (cur === '0' || resetNext) { cur = k; resetNext = false; }
-                    else { if (cur.length < 12) cur += k; }
-                } else if (k === '.') {
-                    if (resetNext) { cur = '0.'; resetNext = false; }
-                    else if (cur.indexOf('.') < 0) cur += '.';
-                } else if (k === 'C') {
-                    cur = '0'; prev = null; op = null; resetNext = false;
-                } else if (k === '+/-') {
-                    cur = String(-parseFloat(cur) || 0);
-                } else if (k === '%') {
-                    cur = String(parseFloat(cur) / 100);
-                } else if (k === '=') {
-                    calculate();
-                } else {
-                    if (op && !resetNext) calculate();
-                    prev = cur; op = k; resetNext = true;
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-np-s">' +
+                        '<div class="bw-np-art" style="width:48px;height:48px;">' + ico(NOTE, 24, { sw: 1.6 }) + '</div>' +
+                        '<div class="bw-np-meta" style="text-align:center;">' +
+                            '<b class="bw-np-title">' + esc(s.title || 'Song') + '</b>' +
+                            '<span class="bw-sub">' + esc(s.artist || 'Artist') + '</span>' +
+                        '</div>' +
+                        '<button type="button" class="bw-np-play" data-nodrag data-act="play" aria-label="Play">' + playIcon + '</button>' +
+                    '</div>';
+            } else if (sz === 'm') {
+                el.innerHTML =
+                    '<div class="bw-np-art">' + ico(NOTE, 26, { sw: 1.6 }) + '</div>' +
+                    '<div class="bw-np-meta">' +
+                        '<div class="bw-np-title">' + esc(s.title || 'Nothing playing') + '</div>' +
+                        '<div class="bw-np-artist">' + esc(s.artist || '—') + '</div>' +
+                    '</div>' +
+                    '<div class="bw-np-ctl">' +
+                        '<button type="button" class="bw-np-btn" data-nodrag data-act="prev" aria-label="Previous">' +
+                            ico('<path d="M18 6v12L9 12z"/><rect x="5" y="6" width="2" height="12" rx="1"/>', 18, { fill: 'currentColor', stroke: false }) +
+                        '</button>' +
+                        '<button type="button" class="bw-np-play" data-nodrag data-act="play" aria-label="Play">' + playIcon + '</button>' +
+                        '<button type="button" class="bw-np-btn" data-nodrag data-act="next" aria-label="Next">' +
+                            ico('<path d="M6 6v12l9-6z"/><rect x="17" y="6" width="2" height="12" rx="1"/>', 18, { fill: 'currentColor', stroke: false }) +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="bw-np-track"><div class="bw-np-fill" style="width:' + prog + '%"></div></div>';
+            } else { // Large
+                var bars = '';
+                for (var b = 0; b < 16; b++) {
+                    var h = s.playing ? (20 + 75 * Math.abs(Math.sin((b + 1) * 1.5))) : 15;
+                    bars += '<span style="height:' + Math.round(h) + '%"></span>';
                 }
-                update();
-            });
-        });
-    }
+                el.innerHTML =
+                    '<div class="bw-np-l">' +
+                        '<div class="bw-np-l-head">' +
+                            '<div class="bw-np-art" style="width:68px;height:68px;">' + ico(NOTE, 34, { sw: 1.6 }) + '</div>' +
+                            '<div><span class="bw-lab">NOW PLAYING</span><div class="bw-big" style="font-size:20px;">' + esc(s.title || 'Song') + '</div><div class="bw-sub">' + esc(s.artist || 'Artist') + '</div></div>' +
+                        '</div>' +
+                        '<div class="bw-np-viz">' + bars + '</div>' +
+                        '<div class="bw-np-track"><div class="bw-np-fill" style="width:' + prog + '%"></div></div>' +
+                        '<div class="bw-np-ctl" style="justify-content:center;gap:18px;margin-top:10px;">' +
+                            '<button type="button" class="bw-np-btn" data-nodrag data-act="prev">' + ico('<path d="M18 6v12L9 12z"/><rect x="5" y="6" width="2" height="12" rx="1"/>', 20, { fill: 'currentColor', stroke: false }) + '</button>' +
+                            '<button type="button" class="bw-np-play" data-nodrag data-act="play">' + playIcon + '</button>' +
+                            '<button type="button" class="bw-np-btn" data-nodrag data-act="next">' + ico('<path d="M6 6v12l9-6z"/><rect x="17" y="6" width="2" height="12" rx="1"/>', 20, { fill: 'currentColor', stroke: false }) + '</button>' +
+                        '</div>' +
+                    '</div>';
+            }
 
-    // ═════════════════════════════════════════════════════════════════════
-    // 5. BATTERY HEALTH (Essentials)
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'battery',
-        shape: 'rounded',
-        name: 'Battery Fuel',
-        desc: 'Luminous liquid charge gauge with real-time hardware telemetry.',
-        category: 'essentials',
-        tint: 'linear-gradient(135deg,#10b981,#06b6d4)',
-        glow: 'rgba(16, 185, 129, 0.4)',
-        sizes: ['s', 'm'],
-        defSize: 's',
-        tags: ['Liquid Gauge', 'Charging Pulse', 'Smart Run-Estimate'],
-        render: paintBattery,
-        preview: function () {
-            return '<div class="bw-bat-head"><span>BATTERY</span><span class="bw-bat-pct">88%</span></div>' +
-                '<div class="bw-bat-cylinder"><div class="bw-bat-liquid" style="width:88%"></div><div class="bw-bat-bolt">⚡</div></div>' +
-                '<div class="bw-bat-sub">Fast Charging · approx 28m to full</div>';
+            var playBtn = el.querySelector('[data-act="play"]');
+            if (playBtn) {
+                playBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    api.set('playing', !s.playing);
+                });
+            }
+        },
+        onTap: function (el, api) {
+            api.openApp('music');
         }
     });
 
-    function paintBattery(el) {
-        el.innerHTML =
-            '<div class="bw-bat-head"><span>POWER TELEMETRY</span><span class="bw-bat-pct">--%</span></div>' +
-            '<div class="bw-bat-cylinder">' +
-                '<div class="bw-bat-liquid" style="width:0%"></div>' +
-                '<div class="bw-bat-bolt" style="display:none"><svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></div>' +
-            '</div>' +
-            '<div class="bw-bat-sub">Querying hardware power rail…</div>';
-
-        var fill = el.querySelector('.bw-bat-liquid');
-        var pct = el.querySelector('.bw-bat-pct');
-        var sub = el.querySelector('.bw-bat-sub');
-        var bolt = el.querySelector('.bw-bat-bolt');
-
-        function update(level, charging) {
-            var p = Math.round(level * 100);
-            pct.textContent = p + '%';
-            fill.style.width = p + '%';
-            if (p <= 20 && !charging) fill.style.background = 'linear-gradient(90deg,#ef4444,#f87171)';
-            else fill.style.background = '';
-            bolt.style.display = charging ? 'flex' : 'none';
-            sub.textContent = charging ? '⚡ Connected to AC Fast Charger' : (p >= 98 ? 'Battery Full' : 'Discharging · approx ' + Math.round(p * 4.5) + ' min left');
+    // ═════════════════════════════════════════════════════════════════════
+    // 7 · Music Pill (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    BW.define({
+        id: 'pill',
+        name: 'Music Pill',
+        desc: 'Audio level capsule with real-time reactive equalizer bars.',
+        tone: 'dark',
+        shape: 'capsule',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'bars', label: 'Meter bars', type: 'number', def: 7, min: 3, max: 15 },
+            { key: 'level', label: 'Level %', type: 'number', def: 70, min: 0, max: 100 }
+        ],
+        render: function (el, api) {
+            var n = Math.max(3, Math.min(15, Math.round(num(api.settings.bars, 7))));
+            var level = Math.max(0, Math.min(100, num(api.settings.level, 70)));
+            var bars = '';
+            for (var i = 0; i < n; i++) {
+                var h = 26 + 74 * Math.abs(Math.sin((i + 1) * 1.7));
+                var on = ((i + 1) / n) * 100 <= level;
+                bars += '<span style="height:' + Math.round(h * (on ? 1 : 0.4)) + '%;opacity:' + (on ? 0.9 : 0.3) + '"></span>';
+            }
+            el.innerHTML =
+                '<div class="bw-pill-top">' + ico(NOTE, 36, { sw: 1.7 }) + '<span class="bw-pill-dot"></span></div>' +
+                '<div class="bw-pill-bot"><div class="bw-pill-bars">' + bars + '</div></div>';
+        },
+        onTap: function (el, api) {
+            api.openApp('music');
         }
+    });
 
-        if (navigator.getBattery) {
+    // ═════════════════════════════════════════════════════════════════════
+    // 8 · Voice Recorder (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    BW.define({
+        id: 'rec',
+        name: 'Voice Recorder',
+        desc: 'Record audio memos directly from the desktop canvas.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'live', label: 'Recording active', type: 'toggle', def: true }
+        ],
+        render: function (el, api) {
+            var sz = api.inst.size || 's';
+            var live = !!api.settings.live;
+            el.classList.toggle('is-idle', !live);
+
+            if (sz === 's') {
+                el.innerHTML = '<div class="bw-rec-dot"></div>';
+            } else {
+                el.innerHTML =
+                    '<div class="bw-rec-m">' +
+                        '<div class="bw-rec-dot"></div>' +
+                        '<div><b>' + (live ? 'Recording…' : 'Ready to record') + '</b><div class="bw-sub">00:42 · Tap to ' + (live ? 'pause' : 'start') + '</div></div>' +
+                    '</div>';
+            }
+        },
+        onTap: function (el, api) {
+            api.set('live', !api.settings.live);
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 9 · Battery (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    var batLive = { level: null, charging: false, wired: false };
+
+    function wireBattery() {
+        if (batLive.wired || !navigator.getBattery) return;
+        batLive.wired = true;
+        try {
             navigator.getBattery().then(function (b) {
-                var sync = function () { update(b.level, b.charging); };
+                var sync = function () {
+                    batLive.level = Math.round(b.level * 100);
+                    batLive.charging = !!b.charging;
+                };
+                sync();
                 b.addEventListener('levelchange', sync);
                 b.addEventListener('chargingchange', sync);
-                sync();
-            }).catch(function () { update(0.85, false); });
-        } else {
-            update(0.85, false);
-        }
+            }).catch(function () {});
+        } catch (e) {}
     }
 
-    // ═════════════════════════════════════════════════════════════════════
-    // 6. NOW PLAYING & VINYL VISUALIZER (Media & Audio) - NEW!
-    // ═════════════════════════════════════════════════════════════════════
-    var TRACKS = [
-        { title: 'Midnight City', artist: 'M83', album: 'Hurry Up, We’re Dreaming', dur: 244, tint: '#0284c7' },
-        { title: 'Resonance', artist: 'HOME', album: 'Odyssey', dur: 212, tint: '#8b5cf6' },
-        { title: 'Starry Night', artist: 'Peggy Gou', album: 'Moment', dur: 238, tint: '#06b6d4' },
-        { title: 'Sunset Lover', artist: 'Petit Biscuit', album: 'Presence', dur: 237, tint: '#f59e0b' }
-    ];
+    function batteryReading(api) {
+        if (batLive.level != null) return { level: batLive.level, charging: batLive.charging };
+        return { level: num(api.settings.level, 82), charging: !!api.settings.charging };
+    }
 
     BW.define({
-        id: 'nowplaying',
-        shape: 'rounded',
-        name: 'Vinyl Visualizer',
-        desc: 'Spinning grooved vinyl player with real-time animated frequency audio EQ bars.',
-        category: 'media',
-        tint: 'linear-gradient(135deg,#0284c7,#8b5cf6)',
-        glow: 'rgba(2, 132, 199, 0.35)',
-        sizes: ['m', 'l'],
+        id: 'bat',
+        name: 'Battery',
+        desc: 'Charge cells, charging bolt, real battery sensor, and power stats.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Spinning Vinyl', 'Animated EQ Bars', 'Interactive Controls'],
-        render: paintNowPlaying,
-        preview: function () {
-            return '<div class="bw-np-wrap">' +
-                '<div class="bw-vinyl-disc is-playing"><div class="bw-vinyl-grooves"></div><div class="bw-vinyl-center">♫</div></div>' +
-                '<div class="bw-np-meta">' +
-                    '<div class="bw-np-title">Midnight City</div>' +
-                    '<div class="bw-np-artist">M83 · Synthetic Wave</div>' +
-                    '<div class="bw-eq-bars is-active">' +
-                        '<span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>' +
+        settings: [
+            { key: 'level', label: 'Charge %', type: 'number', def: 82, min: 0, max: 100 },
+            { key: 'charging', label: 'Charging', type: 'toggle', def: true }
+        ],
+        render: function (el, api) {
+            wireBattery();
+            var r = batteryReading(api);
+            var level = Math.max(0, Math.min(100, r.level));
+            var sz = api.inst.size || 'm';
+
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-bat-s">' +
+                        '<span class="bw-lab">BATTERY</span>' +
+                        '<div class="bw-bat-pct bw-big" style="font-size:32px;">' + level + '%</div>' +
+                        '<div class="bw-sub">' + (r.charging ? '⚡ Charging' : 'On Battery') + '</div>' +
+                    '</div>';
+            } else if (sz === 'm') {
+                var segs = 10;
+                var lit = Math.round((level / 100) * segs);
+                var cells = '';
+                for (var i = 0; i < segs; i++) cells += '<i class="' + (i < lit ? 'on' : '') + '"></i>';
+                el.innerHTML =
+                    '<div class="bw-bat-head">' +
+                        '<span class="bw-lab">Battery</span>' +
+                        '<div class="bw-bat-pct bw-big">' + level + '%</div>' +
                     '</div>' +
-                    '<div class="bw-np-scrub"><div class="bw-np-bar"><div class="bw-np-fill" style="width:48%"></div></div></div>' +
-                '</div>' +
-            '</div>';
-        }
-    });
-
-    function paintNowPlaying(el) {
-        var trackIdx = 0;
-        var isPlaying = true;
-        var progress = 112;
-
-        function renderTrack() {
-            var t = TRACKS[trackIdx % TRACKS.length];
-            var pct = Math.min(100, Math.round((progress / t.dur) * 100));
-            var elap = Math.floor(progress / 60) + ':' + pad2(progress % 60);
-            var total = Math.floor(t.dur / 60) + ':' + pad2(t.dur % 60);
-
-            el.innerHTML =
-                '<div class="bw-np-wrap">' +
-                    '<div class="bw-vinyl-disc ' + (isPlaying ? 'is-playing' : '') + '">' +
-                        '<div class="bw-vinyl-grooves"></div>' +
-                        '<div class="bw-vinyl-center" style="background:' + t.tint + '">♫</div>' +
-                    '</div>' +
-                    '<div class="bw-np-meta">' +
-                        '<div class="bw-np-title">' + esc(t.title) + '</div>' +
-                        '<div class="bw-np-artist">' + esc(t.artist) + ' · ' + esc(t.album) + '</div>' +
-                        '<div class="bw-eq-bars ' + (isPlaying ? 'is-active' : '') + '">' +
-                            '<span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>' +
+                    '<div class="bw-bat-cell">' + cells +
+                        (r.charging ? '<div class="bw-bat-bolt">' + ico('<path d="M13 2 5.5 13.5H11L10 22l7.5-11.5H12z"/>', 16, { fill: 'currentColor', stroke: false }) + '</div>' : '') +
+                    '</div>';
+            } else { // Large
+                el.innerHTML =
+                    '<div class="bw-bat-l">' +
+                        '<div class="bw-bat-l-head">' +
+                            '<div><span class="bw-lab">POWER & BATTERY</span><div class="bw-big" style="font-size:32px;">' + level + '%</div></div>' +
+                            '<b>' + (r.charging ? '⚡ Fast Charging' : 'Normal Discharge') + '</b>' +
                         '</div>' +
-                        '<div class="bw-np-scrub">' +
-                            '<div class="bw-np-bar"><div class="bw-np-fill" style="width:' + pct + '%"></div></div>' +
-                            '<div class="bw-np-times"><span>' + elap + '</span><span>' + total + '</span></div>' +
+                        '<div class="bw-bat-l-devices">' +
+                            '<div class="bw-bat-dev"><span>BrowOS Host</span><b>' + level + '%</b></div>' +
+                            '<div class="bw-bat-dev"><span>Wireless Mouse</span><b>88%</b></div>' +
+                            '<div class="bw-bat-dev"><span>Bluetooth Audio</span><b>65%</b></div>' +
                         '</div>' +
-                        '<div class="bw-np-btns">' +
-                            '<button class="bw-np-prev" title="Previous"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg></button>' +
-                            '<button class="bw-np-play" title="Play/Pause">' + (isPlaying
-                                ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
-                                : '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>') +
-                            '</button>' +
-                            '<button class="bw-np-next" title="Next"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg></button>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>';
-
-            el.querySelector('.bw-np-play').addEventListener('click', function () {
-                isPlaying = !isPlaying;
-                tickAudio();
-                renderTrack();
-            });
-            el.querySelector('.bw-np-next').addEventListener('click', function () {
-                trackIdx++; progress = 0;
-                tickAudio();
-                renderTrack();
-            });
-            el.querySelector('.bw-np-prev').addEventListener('click', function () {
-                trackIdx = (trackIdx - 1 + TRACKS.length); progress = 0;
-                tickAudio();
-                renderTrack();
-            });
-        }
-
-        renderTrack();
-
-        var timer = setInterval(function () {
-            if (isPlaying) {
-                progress++;
-                var t = TRACKS[trackIdx % TRACKS.length];
-                if (progress > t.dur) { trackIdx++; progress = 0; }
-                var fill = el.querySelector('.bw-np-fill');
-                var timeSpan = el.querySelector('.bw-np-times span:first-child');
-                if (fill && timeSpan) {
-                    fill.style.width = Math.min(100, Math.round((progress / t.dur) * 100)) + '%';
-                    timeSpan.textContent = Math.floor(progress / 60) + ':' + pad2(progress % 60);
-                }
+                    '</div>';
             }
-        }, 1000);
-
-        return function () { clearInterval(timer); };
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 7. AMBIENT SOUNDSCAPES (Media & Audio) - NEW!
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'soundscapes',
-        shape: 'rounded',
-        name: 'Ambient Oasis',
-        desc: 'Synthesized focus audio generator for rain, crackling fire, and deep space.',
-        category: 'media',
-        tint: 'linear-gradient(135deg,#6366f1,#06b6d4)',
-        glow: 'rgba(99, 102, 241, 0.4)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['Offline Audio Synth', 'Rain & Thunder', 'Deep Space Tone'],
-        render: paintSoundscapes,
-        preview: function () {
-            return '<div class="bw-amb-wrap">' +
-                '<div class="bw-amb-head"><span>SOUNDSCAPE</span><span class="bw-amb-stat is-active">Active</span></div>' +
-                '<div class="bw-amb-modes">' +
-                    '<button class="is-active">🌧️ Rain</button><button>🔥 Hearth</button><button>🌌 Space</button><button>☕ Cafe</button>' +
-                '</div>' +
-                '<div class="bw-amb-visual"><div class="bw-amb-wave"></div><div class="bw-amb-wave"></div><div class="bw-amb-wave"></div></div>' +
-            '</div>';
+        },
+        tick: function (el, api) {
+            var r = batteryReading(api);
+            if (el._batLevel !== r.level || el._batCharging !== r.charging) {
+                el._batLevel = r.level;
+                el._batCharging = r.charging;
+                BW.renderInstance({ id: 'bat', uid: el.parentElement.dataset.uid });
+            }
+        },
+        onTap: function (el, api) {
+            api.openApp('settings');
         }
     });
 
-    function paintSoundscapes(el) {
-        var mode = 'rain', playing = false;
-        var audioCtx = null, noiseNode = null, filterNode = null, gainNode = null;
-
-        function startAudio() {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                var bufferSize = audioCtx.sampleRate * 2;
-                var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                var data = buffer.getChannelData(0);
-                var lastOut = 0.0;
-                for (var i = 0; i < bufferSize; i++) {
-                    var white = Math.random() * 2 - 1;
-                    data[i] = (lastOut + (0.02 * white)) / 1.02;
-                    lastOut = data[i];
-                    data[i] *= 3.5;
-                }
-
-                noiseNode = audioCtx.createBufferSource();
-                noiseNode.buffer = buffer;
-                noiseNode.loop = true;
-
-                filterNode = audioCtx.createBiquadFilter();
-                if (mode === 'rain') {
-                    filterNode.type = 'lowpass';
-                    filterNode.frequency.value = 800;
-                } else if (mode === 'hearth') {
-                    filterNode.type = 'bandpass';
-                    filterNode.frequency.value = 450;
-                    filterNode.Q.value = 2.0;
-                } else if (mode === 'space') {
-                    filterNode.type = 'lowpass';
-                    filterNode.frequency.value = 220;
-                } else {
-                    filterNode.type = 'lowpass';
-                    filterNode.frequency.value = 1200;
-                }
-
-                gainNode = audioCtx.createGain();
-                gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
-
-                noiseNode.connect(filterNode);
-                filterNode.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                noiseNode.start();
-            } catch (e) {}
-        }
-
-        function stopAudio() {
-            try {
-                if (noiseNode) { noiseNode.stop(); noiseNode.disconnect(); noiseNode = null; }
-            } catch (e) {}
-        }
-
-        function render() {
+    // ═════════════════════════════════════════════════════════════════════
+    // 10 · Toggle Switch (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    BW.define({
+        id: 'toggle',
+        name: 'Toggle Switch',
+        desc: 'Tactile oversized switch that toggles system state or custom actions.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
+        defSize: 'm',
+        settings: [
+            { key: 'on', label: 'Switched on', type: 'toggle', def: true },
+            { key: 'labelOff', label: 'Off label', type: 'text', def: 'OFF' },
+            { key: 'labelOn', label: 'On label', type: 'text', def: 'ON' }
+        ],
+        render: function (el, api) {
+            var s = api.settings;
             el.innerHTML =
-                '<div class="bw-amb-wrap">' +
-                    '<div class="bw-amb-head">' +
-                        '<span>FOCUS ATMOSPHERE</span>' +
-                        '<span class="bw-amb-stat ' + (playing ? 'is-active' : '') + '">' + (playing ? 'Playing' : 'Paused') + '</span>' +
-                    '</div>' +
-                    '<div class="bw-amb-modes">' +
-                        '<button data-m="rain" class="' + (mode === 'rain' ? 'is-active' : '') + '">🌧️ Rain</button>' +
-                        '<button data-m="hearth" class="' + (mode === 'hearth' ? 'is-active' : '') + '">🔥 Fire</button>' +
-                        '<button data-m="space" class="' + (mode === 'space' ? 'is-active' : '') + '">🌌 Cosmos</button>' +
-                        '<button data-m="cafe" class="' + (mode === 'cafe' ? 'is-active' : '') + '">☕ Cafe</button>' +
-                    '</div>' +
-                    '<div class="bw-amb-visual ' + (playing ? 'is-playing' : '') + '">' +
-                        '<div class="bw-amb-wave"></div><div class="bw-amb-wave"></div><div class="bw-amb-wave"></div>' +
-                    '</div>' +
-                    '<button class="bw-amb-toggle ' + (playing ? 'is-playing' : '') + '">' +
-                        (playing ? 'Pause Ambience' : 'Play Ambience') +
-                    '</button>' +
-                '</div>';
-
-            el.querySelectorAll('.bw-amb-modes button').forEach(function (b) {
-                b.addEventListener('click', function () {
-                    mode = b.dataset.m;
-                    tickAudio();
-                    if (playing) { stopAudio(); startAudio(); }
-                    render();
-                });
+                '<button type="button" class="bw-tog' + (s.on ? ' is-on' : '') + '" data-nodrag aria-label="Toggle">' +
+                    '<i class="bw-tog-knob"></i>' +
+                    '<span>' + esc(s.labelOff || 'OFF') + '</span>' +
+                    '<span>' + esc(s.labelOn || 'ON') + '</span>' +
+                '</button>';
+            el.querySelector('.bw-tog').addEventListener('click', function (e) {
+                e.stopPropagation();
+                api.set('on', !s.on);
             });
-
-            el.querySelector('.bw-amb-toggle').addEventListener('click', function () {
-                playing = !playing;
-                tickAudio();
-                if (playing) startAudio(); else stopAudio();
-                render();
-            });
+        },
+        onTap: function (el, api) {
+            api.set('on', !api.settings.on);
         }
-
-        render();
-        return function () { stopAudio(); };
-    }
+    });
 
     // ═════════════════════════════════════════════════════════════════════
-    // 8. PHOTO FRAME (Media & Audio)
+    // 11 · Volume / Sound (S / M / L)
     // ═════════════════════════════════════════════════════════════════════
-    var WALLS = ['sonoma', 'forest', 'midnight', 'ocean', 'sunset'];
     BW.define({
-        id: 'photos',
-        shape: 'rounded',
-        name: 'Gallery Frame',
-        desc: 'Curated desktop slideshow with smooth glass vignette transitions.',
-        category: 'media',
-        tint: 'linear-gradient(135deg,#38bdf8,#fb923c)',
-        glow: 'rgba(37, 99, 235, 0.35)',
-        sizes: ['m', 'l'],
+        id: 'audio',
+        name: 'Volume & Sound',
+        desc: 'Audio level equalizer, volume output slider, and mute toggle.',
+        tone: 'light',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Wallpaper Rotation', 'Smooth Ken-Burns', 'Click to Cycle'],
-        settings: [{ key: 'seconds', label: 'Cycle seconds', type: 'number', def: 12, min: 5, max: 120 }],
-        render: paintPhotos,
-        preview: function () {
-            return '<div class="bw-photo-frame"><div class="bw-photo-img" style="background-image:url(assets/wallpapers/sonoma.svg)"></div><div class="bw-photo-title">Sonoma Horizon</div></div>';
-        }
-    });
+        settings: [
+            { key: 'volume', label: 'Volume %', type: 'number', def: 62, min: 0, max: 100 },
+            { key: 'muted', label: 'Muted', type: 'toggle', def: false }
+        ],
+        render: function (el, api) {
+            var vol = api.settings.muted ? 0 : Math.max(0, Math.min(100, num(api.settings.volume, 62)));
+            var sz = api.inst.size || 'm';
 
-    function paintPhotos(el, api) {
-        var idx = Math.floor(Math.random() * WALLS.length);
-        el.innerHTML = '<div class="bw-photo-frame"><div class="bw-photo-img"></div><div class="bw-photo-title"></div></div>';
-        var img = el.querySelector('.bw-photo-img'), name = el.querySelector('.bw-photo-title');
-        var timer = null;
+            var speaker = vol === 0
+                ? '<path d="M11 5 6 9H2.5v6H6l5 4z"/><path d="M16 9.5l4 5M20 9.5l-4 5"/>'
+                : '<path d="M11 5 6 9H2.5v6H6l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>';
 
-        function show() {
-            var w = WALLS[idx % WALLS.length];
-            img.style.backgroundImage = "url('assets/wallpapers/" + w + ".svg')";
-            name.textContent = w.charAt(0).toUpperCase() + w.slice(1) + ' Vista';
-        }
-        function arm() {
-            if (timer) clearInterval(timer);
-            var s = Math.max(5, Math.min(120, Number(api.settings.seconds) || 12));
-            timer = setInterval(function () { idx++; show(); }, s * 1000);
-        }
-        el.addEventListener('click', function (e) {
-            if (e.target.closest('button')) return;
-            idx++; show(); arm();
-        });
-        show(); arm();
-        return function () { if (timer) clearInterval(timer); };
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 9. REMINDERS & CHECKLIST (Productivity)
-    // ═════════════════════════════════════════════════════════════════════
-    var TODO_KEY = 'browos_todo_v1';
-        BW.define({
-        id: 'todo',
-        shape: 'rounded',
-        name: 'Tasks',
-        desc: 'Minimalist Apple tasks checklist with interactive checkmarks.',
-        category: 'productivity',
-        tint: 'linear-gradient(135deg,#0a84ff,#5e5ce6)',
-        glow: 'rgba(10, 132, 255, 0.4)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['Checklist Hub', 'Apple Reminders', 'Persistent Store'],
-        render: paintAppleTasks,
-        preview: function () {
-            return '<div class="bw-tasks-wrap">' +
-                '<div class="bw-tasks-head"><span>TASKS</span><span>2 done</span></div>' +
-                '<div class="bw-tasks-list">' +
-                    '<div class="bw-task-item is-done"><span class="bw-task-check"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="bw-task-title">Design Review</span></div>' +
-                    '<div class="bw-task-item is-done"><span class="bw-task-check"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="bw-task-title">Client Email</span></div>' +
-                    '<div class="bw-task-item"><span class="bw-task-check"></span><span class="bw-task-title">Finalize Proposal</span></div>' +
-                    '<div class="bw-task-item"><span class="bw-task-check"></span><span class="bw-task-title">Research Tools</span></div>' +
-                    '<div class="bw-task-item"><span class="bw-task-check"></span><span class="bw-task-title">Meeting Prep</span></div>' +
-                '</div>' +
-                '<div class="bw-task-footer"><span>San Francisco Pro</span></div>' +
-            '</div>';
-        }
-    });
-
-    var DEFAULT_APPLE_TASKS = [
-        { id: 't1', text: 'Design Review', done: true },
-        { id: 't2', text: 'Client Email', done: true },
-        { id: 't3', text: 'Finalize Proposal', done: false },
-        { id: 't4', text: 'Research Tools', done: false },
-        { id: 't5', text: 'Meeting Prep', done: false }
-    ];
-
-    function todoAll() { return storeGet('browos_apple_tasks_v2', DEFAULT_APPLE_TASKS); }
-
-    function paintAppleTasks(el, api) {
-        var items = todoAll();
-        var doneCount = items.filter(function (t) { return t.done; }).length;
-
-        el.innerHTML =
-            '<div class="bw-tasks-wrap">' +
-                '<div class="bw-tasks-head">' +
-                    '<span>TASKS</span>' +
-                    '<span class="bw-tasks-counter">' + doneCount + ' of ' + items.length + ' done</span>' +
-                '</div>' +
-                '<div class="bw-tasks-list">' +
-                    items.map(function (t) {
-                        return '<div class="bw-task-item' + (t.done ? ' is-done' : '') + '" data-id="' + t.id + '">' +
-                            '<span class="bw-task-check">' +
-                                '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>' +
-                            '</span>' +
-                            '<span class="bw-task-title">' + esc(t.text) + '</span>' +
-                            '<button type="button" class="bw-task-del" title="Delete">×</button>' +
-                        '</div>';
-                    }).join('') +
-                '</div>' +
-                '<div class="bw-task-footer">' +
-                    '<input type="text" class="bw-task-add-input" placeholder="+ Add new task…" maxlength="60">' +
-                    '<span class="bw-task-font-note">San Francisco Pro</span>' +
-                '</div>' +
-            '</div>';
-
-        var input = el.querySelector('.bw-task-add-input');
-        if (input) {
-            input.addEventListener('keydown', function (e) {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                    var v = input.value.trim();
-                    if (!v) return;
-                    var list = todoAll();
-                    list.push({ id: 't' + Date.now().toString(36), text: v, done: false });
-                    storeSet('browos_apple_tasks_v2', list);
-                    paintAppleTasks(el, api);
-                    tickAudio();
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-au-s">' +
+                        '<button type="button" class="bw-au-btn" data-nodrag aria-label="Mute">' + ico(speaker, 26, { sw: 1.8 }) + '</button>' +
+                        '<div class="bw-big">' + vol + '%</div>' +
+                        '<span class="bw-sub">' + (api.settings.muted ? 'Muted' : 'Volume') + '</span>' +
+                    '</div>';
+            } else {
+                var n = 14;
+                var eq = '';
+                for (var i = 0; i < n; i++) {
+                    var h = 24 + 76 * Math.abs(Math.sin((i + 2) * 1.3));
+                    var on = ((i + 1) / n) * 100 <= vol;
+                    eq += '<span class="' + (on ? 'on' : '') + '" style="height:' + Math.round(h) + '%"></span>';
                 }
-            });
-        }
 
-        el.querySelectorAll('.bw-task-item').forEach(function (row) {
-            var id = row.dataset.id;
-            row.querySelector('.bw-task-check').addEventListener('click', function (e) {
-                e.stopPropagation();
-                var list = todoAll();
-                var it = list.find(function (x) { return x.id === id; });
-                if (it) it.done = !it.done;
-                storeSet('browos_apple_tasks_v2', list);
-                paintAppleTasks(el, api);
-                tickAudio();
-            });
-            var del = row.querySelector('.bw-task-del');
-            if (del) {
-                del.addEventListener('click', function (e) {
+                el.innerHTML =
+                    '<button type="button" class="bw-au-btn" data-nodrag aria-label="Mute">' + ico(speaker, 20, { sw: 1.8 }) + '</button>' +
+                    '<div class="bw-au-body">' +
+                        '<div class="bw-au-eq">' + eq + '</div>' +
+                        '<div class="bw-au-line"><i style="left:' + vol + '%"></i></div>' +
+                    '</div>';
+            }
+
+            var btn = el.querySelector('.bw-au-btn');
+            if (btn) {
+                btn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    var list = todoAll().filter(function (x) { return x.id !== id; });
-                    storeSet('browos_apple_tasks_v2', list);
-                    paintAppleTasks(el, api);
+                    api.set('muted', !api.settings.muted);
                 });
             }
-        });
-    }
+        },
+        onTap: function (el, api) {
+            api.openApp('settings');
+        }
+    });
 
     // ═════════════════════════════════════════════════════════════════════
-    // 10. STICKY NOTE PRO (Productivity)
+    // 12 · Compass (S / M / L)
     // ═════════════════════════════════════════════════════════════════════
-    var NOTE_COLORS = ['#fef08a', '#fbcfe8', '#bae6fd', '#bbf7d0', '#e9d5ff'];
     BW.define({
-        id: 'notes',
-        shape: 'rounded',
-        name: 'Sticky Canvas',
-        desc: 'Frosted glass paper note with instant editing and colorful glass pins.',
-        category: 'productivity',
-        tint: 'linear-gradient(135deg,#eab308,#f59e0b)',
-        glow: 'rgba(234, 179, 8, 0.4)',
+        id: 'compass',
+        name: 'Compass',
+        desc: 'Cardinal rose navigation dial with degrees and bearing indicator.',
+        tone: 'dark',
         sizes: ['s', 'm', 'l'],
         defSize: 's',
-        tags: ['Glass Paper', 'Instant Edit', 'Color Presets'],
         settings: [
-            { key: 'text', label: 'Note text', type: 'textarea', def: 'Double click to edit note…', placeholder: 'Write note…' },
-            { key: 'color', label: 'Paper color', type: 'color', def: NOTE_COLORS[0], options: NOTE_COLORS }
+            { key: 'heading', label: 'Heading (°)', type: 'number', def: 32, min: 0, max: 360 }
         ],
-        render: paintNote,
-        preview: function () {
-            return '<div class="bw-note-card" style="background:#fef08a;color:#1e293b;">' +
-                '<div class="bw-note-pin">📌</div>' +
-                '<div class="bw-note-body">Remember to ship the new widget suite! 🚀</div>' +
-            '</div>';
-        }
-    });
+        render: function (el, api) {
+            var sz = api.inst.size || 's';
+            var heading = ((num(api.settings.heading, 32) % 360) + 360) % 360;
 
-    function paintNote(el, api) {
-        var s = api.settings;
-        el.innerHTML =
-            '<div class="bw-note-card" style="background:' + esc(s.color || NOTE_COLORS[0]) + '">' +
-                '<div class="bw-note-pin">📌</div>' +
-                '<div class="bw-note-body" contenteditable="false">' + esc(s.text || 'Double click to edit note…') + '</div>' +
-                '<div class="bw-note-footer"><span class="bw-note-hint">Double click to write</span></div>' +
-            '</div>';
+            var dial =
+                '<svg class="bw-compass-svg" viewBox="0 0 100 100" aria-hidden="true">' +
+                    '<circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>' +
+                    '<text class="cp-t" x="50" y="14" text-anchor="middle">N</text>' +
+                    '<text class="cp-t" x="86" y="52" text-anchor="middle">E</text>' +
+                    '<text class="cp-t" x="50" y="90" text-anchor="middle">S</text>' +
+                    '<text class="cp-t" x="14" y="52" text-anchor="middle">W</text>' +
+                    '<g transform="rotate(' + heading + ' 50 50)">' +
+                        '<path class="cp-tri" d="M50 17 57 50 50 45.5 43 50Z" fill="#ff3b30"/>' +
+                        '<path class="cp-tri" d="M50 83 57 50 50 54.5 43 50Z" fill="rgba(255,255,255,0.5)"/>' +
+                    '</g>' +
+                    '<circle class="cp-tri" cx="50" cy="50" r="2.4" fill="#fff"/></svg>';
 
-        var note = el.querySelector('.bw-note-body');
-        note.addEventListener('dblclick', function (e) {
-            e.stopPropagation();
-            note.contentEditable = 'true';
-            note.focus();
-        });
-        note.addEventListener('blur', function () {
-            note.contentEditable = 'false';
-            api.set('text', note.innerText.trim());
-        });
-        note.addEventListener('keydown', function (e) { e.stopPropagation(); });
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 11. FOCUS TIMER (Productivity)
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'timer',
-        shape: 'rounded',
-        name: 'Focus Chrono',
-        desc: 'Circular Pomodoro, stopwatch, and break countdown with audio alert.',
-        category: 'productivity',
-        tint: 'linear-gradient(135deg,#06b6d4,#3b82f6)',
-        glow: 'rgba(6, 182, 212, 0.4)',
-        sizes: ['m'],
-        defSize: 'm',
-        tags: ['Pomodoro 25/5', 'Precision Stopwatch', 'Sound Chime'],
-        render: paintTimer,
-        preview: function () {
-            return '<div class="bw-timer-box">' +
-                '<div class="bw-timer-tabs"><button class="is-active">Pomodoro</button><button>Break</button><button>Stopwatch</button></div>' +
-                '<div class="bw-timer-circle"><span class="bw-timer-digits">24:45</span><span class="bw-timer-status">Focusing · Cycle 1</span></div>' +
-                '<div class="bw-timer-controls"><button class="bw-tb-start">Start</button><button class="bw-tb-reset">Reset</button></div>' +
-            '</div>';
-        }
-    });
-
-    function paintTimer(el) {
-        var mode = 'pom', run = false, t0 = 0, acc = 25 * 60000, timer = null;
-
-        function fmt(ms) {
-            var s = Math.max(0, Math.floor(ms / 1000));
-            return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60);
-        }
-
-        function draw() {
-            var remain = run ? Math.max(0, acc - (Date.now() - t0)) : acc;
-            var digits = el.querySelector('.bw-timer-digits');
-            var startBtn = el.querySelector('.bw-tb-start');
-            if (digits) digits.textContent = fmt(remain);
-            if (startBtn) startBtn.textContent = run ? 'Pause' : 'Start';
-        }
-
-        el.innerHTML =
-            '<div class="bw-timer-box">' +
-                '<div class="bw-timer-tabs">' +
-                    '<button data-m="pom" class="is-active">Pomodoro</button>' +
-                    '<button data-m="break">Break</button>' +
-                    '<button data-m="sw">Stopwatch</button>' +
-                '</div>' +
-                '<div class="bw-timer-circle">' +
-                    '<span class="bw-timer-digits">25:00</span>' +
-                    '<span class="bw-timer-status">25 min Focus Interval</span>' +
-                '</div>' +
-                '<div class="bw-timer-controls">' +
-                    '<button class="bw-tb-start">Start</button>' +
-                    '<button class="bw-tb-reset">Reset</button>' +
-                '</div>' +
-            '</div>';
-
-        el.querySelector('.bw-tb-start').addEventListener('click', function () {
-            tickAudio();
-            if (run) {
-                acc = Math.max(0, acc - (Date.now() - t0));
-                run = false;
-                clearInterval(timer);
+            if (sz === 's') {
+                el.innerHTML = dial;
             } else {
-                t0 = Date.now();
-                run = true;
-                timer = setInterval(function () {
-                    draw();
-                    var remain = Math.max(0, acc - (Date.now() - t0));
-                    if (remain <= 0) {
-                        run = false;
-                        clearInterval(timer);
-                        playAlert();
-                    }
-                }, 250);
+                el.innerHTML =
+                    '<div class="bw-cp-m">' + dial +
+                        '<div class="bw-cp-info">' +
+                            '<span class="bw-lab">HEADING</span>' +
+                            '<div class="bw-big">' + heading + '° NE</div>' +
+                            '<div class="bw-sub">Elevation 48m · GPS Calibrated</div>' +
+                        '</div>' +
+                    '</div>';
             }
-            draw();
-        });
-
-        el.querySelector('.bw-tb-reset').addEventListener('click', function () {
-            tickAudio();
-            run = false;
-            clearInterval(timer);
-            acc = mode === 'pom' ? 25 * 60000 : (mode === 'break' ? 5 * 60000 : 0);
-            draw();
-        });
-
-        el.querySelectorAll('.bw-timer-tabs button').forEach(function (b) {
-            b.addEventListener('click', function () {
-                mode = b.dataset.m;
-                el.querySelectorAll('.bw-timer-tabs button').forEach(function (x) { x.classList.toggle('is-active', x === b); });
-                run = false;
-                clearInterval(timer);
-                acc = mode === 'pom' ? 25 * 60000 : (mode === 'break' ? 5 * 60000 : 0);
-                el.querySelector('.bw-timer-status').textContent = mode === 'pom' ? '25 min Focus Interval' : (mode === 'break' ? '5 min Rest Interval' : 'Count-up Stopwatch');
-                draw();
-            });
-        });
-
-        return function () { if (timer) clearInterval(timer); };
-    }
+        },
+        onTap: function (el, api) {
+            var next = (num(api.settings.heading, 32) + 45) % 360;
+            api.set('heading', next);
+        }
+    });
 
     // ═════════════════════════════════════════════════════════════════════
-    // 12. COUNTDOWN (Productivity)
+    // 13 · Sleep Mode (S / M / L)
     // ═════════════════════════════════════════════════════════════════════
     BW.define({
-        id: 'countdown',
-        shape: 'rounded',
-        name: 'Event Horizon',
-        desc: 'Glass digit flip counters towards your milestone or product launch.',
-        category: 'productivity',
-        tint: 'linear-gradient(135deg,#8b5cf6,#0284c7)',
-        glow: 'rgba(139, 92, 246, 0.4)',
-        sizes: ['s', 'm'],
+        id: 'sleep',
+        name: 'Sleep Mode',
+        desc: 'Quiet sleep toggle for resting your machine and dimming display.',
+        tone: 'dark',
+        shape: 'capsule',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Milestone Tracker', 'Days & Hours', 'Live Precision'],
         settings: [
-            { key: 'label', label: 'Event label', type: 'text', def: 'BrowOS 2.0 Launch', placeholder: 'Event name…' },
-            { key: 'target', label: 'Date & time', type: 'datetime', def: '2026-12-31T00:00' }
+            { key: 'label', label: 'Label', type: 'text', def: 'Sleep Mode' },
+            { key: 'on', label: 'Enabled', type: 'toggle', def: true }
         ],
-        render: paintCountdown,
-        tick: paintCountdown,
-        preview: function () {
-            return '<div class="bw-cd-head"><span>LAUNCH COUNTDOWN</span><strong>BrowOS 2.0</strong></div>' +
-                '<div class="bw-cd-quad">' +
-                    '<div><b>14</b><span>days</span></div>' +
-                    '<div><b>08</b><span>hours</span></div>' +
-                    '<div><b>32</b><span>mins</span></div>' +
-                    '<div><b>45</b><span>secs</span></div>' +
-                '</div>';
+        render: function (el, api) {
+            var glyph = api.settings.on === false ? SUN_GLYPH : MOON_GLYPH;
+            el.innerHTML = ico(glyph, 22, { sw: 1.8 }) +
+                '<b>' + esc(api.settings.label || 'Sleep Mode') + '</b>';
+        },
+        onTap: function (el, api) {
+            api.set('on', !api.settings.on);
         }
     });
 
-    function paintCountdown(el, api) {
-        var label = api.settings.label || 'Launch Day';
-        var target = api.settings.target ? new Date(api.settings.target).getTime() : (Date.now() + 14 * 86400000);
-        var diff = Math.max(0, target - Date.now());
-        var s = Math.floor(diff / 1000);
-        var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-
-        el.innerHTML =
-            '<div class="bw-cd-head"><span>COUNTDOWN</span><strong>' + esc(label) + '</strong></div>' +
-            '<div class="bw-cd-quad">' +
-                '<div><b>' + d + '</b><span>days</span></div>' +
-                '<div><b>' + pad2(h) + '</b><span>hours</span></div>' +
-                '<div><b>' + pad2(m) + '</b><span>mins</span></div>' +
-                '<div><b>' + pad2(sec) + '</b><span>secs</span></div>' +
-            '</div>';
-    }
-
     // ═════════════════════════════════════════════════════════════════════
-    // 13. ACTIVITY & HABIT RINGS (Productivity) - NEW!
+    // 14 · Reminders / Tasks (S / M / L)
     // ═════════════════════════════════════════════════════════════════════
     BW.define({
-        id: 'habits',
-        shape: 'rounded',
-        name: 'Activity Rings',
-        desc: 'Concentric glowing activity rings for Hydration, Focus, and Task goals.',
-        category: 'productivity',
-        tint: 'linear-gradient(135deg,#06b6d4,#10b981)',
-        glow: 'rgba(6, 182, 212, 0.4)',
-        sizes: ['m', 'l'],
+        id: 'todo',
+        name: 'Reminders',
+        desc: 'Interactive checklist with real-time completion tracking and inline task creation.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Apple-Inspired Rings', 'Water Logger', 'Daily Streak'],
-        render: paintHabits,
-        preview: function () {
-            return '<div class="bw-habits-wrap">' +
-                '<div class="bw-habits-head"><span>DAILY METRICS</span><span class="bw-streak-badge">🔥 6 Day Streak</span></div>' +
-                '<div class="bw-rings-stage">' +
-                    '<svg class="bw-rings-svg" viewBox="0 0 120 120">' +
-                        '<circle class="bw-rc-bg" cx="60" cy="60" r="48"/>' +
-                        '<circle class="bw-rc-fg r-water" cx="60" cy="60" r="48" stroke-dasharray="301" stroke-dashoffset="60"/>' +
-                        '<circle class="bw-rc-bg" cx="60" cy="60" r="36"/>' +
-                        '<circle class="bw-rc-fg r-focus" cx="60" cy="60" r="36" stroke-dasharray="226" stroke-dashoffset="40"/>' +
-                        '<circle class="bw-rc-bg" cx="60" cy="60" r="24"/>' +
-                        '<circle class="bw-rc-fg r-tasks" cx="60" cy="60" r="24" stroke-dasharray="150" stroke-dashoffset="25"/>' +
-                    '</svg>' +
-                    '<div class="bw-rings-legend">' +
-                        '<div><span class="dot-water"></span> Water: 1.7L</div>' +
-                        '<div><span class="dot-focus"></span> Focus: 3.5h</div>' +
-                        '<div><span class="dot-tasks"></span> Tasks: 5/6</div>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
-        }
-    });
+        settings: [
+            { key: 'title', label: 'Title', type: 'text', def: 'Reminders' },
+            { key: 'items', label: 'Tasks (comma separated)', type: 'text',
+              def: 'Ship new widget suite, Review design tokens, Water office plants, Book flight tickets' },
+            { key: 'done', label: 'Done indices', type: 'text', def: '1' }
+        ],
+        render: function (el, api) {
+            var s = api.settings;
+            var sz = api.inst.size || 'm';
+            var maxItems = sz === 's' ? 2 : (sz === 'm' ? 4 : 7);
+            var items = list(s.items).slice(0, maxItems);
+            var doneSet = list(s.done).map(Number);
 
-    function paintHabits(el) {
-        var water = storeGet('brow_habits_water', 1500);
+            var rows = items.map(function (text, i) {
+                var isDone = doneSet.indexOf(i + 1) >= 0;
+                return '<div class="bw-todo-row' + (isDone ? ' done' : '') + '" data-nodrag data-i="' + (i + 1) + '">' +
+                    '<span class="box' + (isDone ? ' filled' : '') + '"></span>' +
+                    '<span>' + esc(text) + '</span>' +
+                '</div>';
+            }).join('');
 
-        function draw() {
-            var waterGoal = 2000;
-            var waterCirc = 2 * Math.PI * 48;
-            var waterOff = Math.max(0, waterCirc - (water / waterGoal) * waterCirc);
+            var doneCount = items.filter(function (_, i) { return doneSet.indexOf(i + 1) >= 0; }).length;
 
             el.innerHTML =
-                '<div class="bw-habits-wrap">' +
-                    '<div class="bw-habits-head"><span>DAILY DISCIPLINE</span><span class="bw-streak-badge">🔥 6 Day Streak</span></div>' +
-                    '<div class="bw-rings-stage">' +
-                        '<svg class="bw-rings-svg" viewBox="0 0 120 120">' +
-                            '<circle class="bw-rc-bg" cx="60" cy="60" r="48"/>' +
-                            '<circle class="bw-rc-fg r-water" cx="60" cy="60" r="48" stroke-dasharray="' + Math.round(waterCirc) + '" stroke-dashoffset="' + Math.round(waterOff) + '"/>' +
-                            '<circle class="bw-rc-bg" cx="60" cy="60" r="36"/>' +
-                            '<circle class="bw-rc-fg r-focus" cx="60" cy="60" r="36" stroke-dasharray="226" stroke-dashoffset="45"/>' +
-                            '<circle class="bw-rc-bg" cx="60" cy="60" r="24"/>' +
-                            '<circle class="bw-rc-fg r-tasks" cx="60" cy="60" r="24" stroke-dasharray="150" stroke-dashoffset="20"/>' +
-                        '</svg>' +
-                        '<div class="bw-rings-legend">' +
-                            '<div><span class="dot-water"></span> Hydration: ' + (water / 1000).toFixed(1) + 'L / 2L</div>' +
-                            '<div><span class="dot-focus"></span> Focus: 3.5h / 4h</div>' +
-                            '<div><span class="dot-tasks"></span> Tasks: 5 of 6</div>' +
-                            '<button class="bw-habits-add-water">+250ml Water</button>' +
+                '<div class="bw-todo-top"><b>' + esc(s.title || 'Reminders') + '</b>' +
+                    '<i>' + doneCount + '/' + items.length + '</i></div>' +
+                '<div class="bw-todo-list">' + rows + '</div>' +
+                '<div class="bw-todo-bar"><i style="width:' + pct(doneCount, items.length) + '%"></i></div>' +
+                (sz === 'l' ? '<div class="bw-todo-add-box"><input type="text" placeholder="+ Add reminder..." class="bw-todo-input" data-nodrag></div>' : '');
+
+            el.querySelectorAll('.bw-todo-row').forEach(function (row) {
+                row.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var idx = Number(row.dataset.i);
+                    var next = doneSet.slice();
+                    var at = next.indexOf(idx);
+                    if (at >= 0) next.splice(at, 1); else next.push(idx);
+                    next.sort(function (a, b) { return a - b; });
+                    api.set('done', next.join(','));
+                });
+            });
+
+            var addInput = el.querySelector('.bw-todo-input');
+            if (addInput) {
+                addInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && addInput.value.trim()) {
+                        e.stopPropagation();
+                        var current = list(s.items);
+                        current.push(addInput.value.trim());
+                        api.set('items', current.join(', '));
+                    }
+                });
+            }
+        },
+        onTap: function (el, api) {
+            api.openApp('brownote');
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 15 · Water / Hydration (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    BW.define({
+        id: 'water',
+        name: 'Hydration Tracker',
+        desc: 'Daily water intake tracker with interactive quick-log buttons.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
+        defSize: 's',
+        settings: [
+            { key: 'current', label: 'Intake (L)', type: 'number', def: 1.5, min: 0 },
+            { key: 'goal', label: 'Daily Goal (L)', type: 'number', def: 2.5, min: 0.5 }
+        ],
+        render: function (el, api) {
+            var s = api.settings;
+            var sz = api.inst.size || 's';
+            var cur = num(s.current, 1.5);
+            var goal = num(s.goal, 2.5);
+            var percent = Math.round(pct(cur, goal));
+
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-water-wave"></div>' +
+                    '<div class="bw-water-body">' +
+                        '<span class="bw-lab">WATER</span>' +
+                        '<div class="bw-water-val bw-big">' + cur.toFixed(1) + 'L</div>' +
+                        '<button type="button" class="bw-water-btn" data-nodrag>+ 250ml</button>' +
+                    '</div>';
+            } else {
+                el.innerHTML =
+                    '<div class="bw-water-wave"></div>' +
+                    '<div class="bw-water-body" style="padding:16px 20px;">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+                            '<span class="bw-lab">DAILY HYDRATION</span>' +
+                            '<b>' + percent + '% OF GOAL</b>' +
+                        '</div>' +
+                        '<div class="bw-water-val bw-big" style="font-size:32px;">' + cur.toFixed(2) + ' / ' + goal.toFixed(1) + ' L</div>' +
+                        '<div style="display:flex;gap:8px;margin-top:8px;">' +
+                            '<button type="button" class="bw-water-btn" data-nodrag data-add="0.25">+ 250ml</button>' +
+                            '<button type="button" class="bw-water-btn" data-nodrag data-add="0.50">+ 500ml</button>' +
+                            '<button type="button" class="bw-water-btn" data-nodrag data-reset="true" style="opacity:0.6;">Reset</button>' +
+                        '</div>' +
+                    '</div>';
+            }
+
+            el.querySelectorAll('.bw-water-btn').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (btn.dataset.reset) {
+                        api.set('current', 0);
+                    } else {
+                        var add = Number(btn.dataset.add || 0.25);
+                        api.set('current', Math.round((cur + add) * 100) / 100);
+                    }
+                });
+            });
+        },
+        onTap: function (el, api) {
+            var cur = num(api.settings.current, 1.5);
+            api.set('current', Math.round((cur + 0.25) * 100) / 100);
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 16 · Focus Pomodoro (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    function fmtClock(sec) {
+        sec = Math.max(0, Math.round(sec));
+        return Math.floor(sec / 60) + ':' + pad2(sec % 60);
+    }
+
+    function focusState(el, api) {
+        var focusLen = Math.max(1, Math.round(num(api.settings.focusMin, 25))) * 60;
+        var breakLen = Math.max(1, Math.round(num(api.settings.breakMin, 5))) * 60;
+        var st = el._pomo;
+        if (!st || st.focusLen !== focusLen || st.breakLen !== breakLen) {
+            st = el._pomo = {
+                focusLen: focusLen, breakLen: breakLen,
+                phase: 'focus', sessions: (st && st.sessions) || 0,
+                remaining: focusLen, endsAt: 0, running: false
+            };
+        }
+        return st;
+    }
+
+    BW.define({
+        id: 'focus',
+        name: 'Focus Timer',
+        desc: 'Pomodoro timer with focus & break intervals, session counters, and sound chimes.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
+        defSize: 'm',
+        settings: [
+            { key: 'focusMin', label: 'Focus minutes', type: 'number', def: 25, min: 5, max: 90 },
+            { key: 'breakMin', label: 'Break minutes', type: 'number', def: 5, min: 1, max: 30 }
+        ],
+        render: function (el, api) {
+            var st = focusState(el, api);
+            var sz = api.inst.size || 'm';
+
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-focus-s">' +
+                        '<span class="bw-focus-phase">' + (st.phase === 'focus' ? 'Focus' : 'Break') + '</span>' +
+                        '<div class="bw-focus-time bw-big">' + fmtClock(st.remaining) + '</div>' +
+                        '<button type="button" class="bw-focus-btn" data-nodrag data-act="toggle">' + (st.running ? 'Pause' : 'Start') + '</button>' +
+                    '</div>';
+            } else {
+                el.innerHTML =
+                    '<div class="bw-focus-top">' +
+                        '<span class="bw-focus-phase">' + (st.phase === 'focus' ? 'Focus Session' : 'Break Time') + '</span>' +
+                        '<b>' + st.sessions + ' Sessions Completed</b>' +
+                    '</div>' +
+                    '<div class="bw-focus-time bw-big" style="font-size:36px;">' + fmtClock(st.remaining) + '</div>' +
+                    '<div class="bw-focus-bar"><i style="width:' + pct((st.phase === 'focus' ? st.focusLen : st.breakLen) - st.remaining, (st.phase === 'focus' ? st.focusLen : st.breakLen)) + '%"></i></div>' +
+                    '<div class="bw-focus-ctl">' +
+                        '<button type="button" class="bw-focus-btn" data-nodrag data-act="toggle">' + (st.running ? 'Pause' : 'Start') + '</button>' +
+                        '<button type="button" class="bw-focus-reset" data-nodrag data-act="reset">Reset</button>' +
+                    '</div>';
+            }
+
+            el.querySelector('[data-act="toggle"]').addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (st.running) {
+                    st.remaining = Math.max(0, Math.round((st.endsAt - Date.now()) / 1000));
+                    st.running = false;
+                    st.endsAt = 0;
+                } else {
+                    st.endsAt = Date.now() + st.remaining * 1000;
+                    st.running = true;
+                }
+                api.refresh();
+            });
+
+            var rst = el.querySelector('[data-act="reset"]');
+            if (rst) {
+                rst.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    st.running = false;
+                    st.endsAt = 0;
+                    st.phase = 'focus';
+                    st.remaining = st.focusLen;
+                    api.refresh();
+                });
+            }
+        },
+        tick: function (el) {
+            var st = el._pomo;
+            if (!st || !st.running) return;
+            st.remaining = Math.max(0, Math.round((st.endsAt - Date.now()) / 1000));
+            if (st.remaining <= 0) {
+                try { window.BrowSettings && window.BrowSettings.audio && window.BrowSettings.audio.play('tick'); } catch (e) {}
+                if (st.phase === 'focus') { st.sessions++; st.phase = 'break'; st.remaining = st.breakLen; }
+                else { st.phase = 'focus'; st.remaining = st.focusLen; }
+                st.endsAt = Date.now() + st.remaining * 1000;
+            }
+            var t = el.querySelector('.bw-focus-time');
+            if (t) t.textContent = fmtClock(st.remaining);
+        },
+        onTap: function (el, api) {
+            api.openApp('clock');
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 17 · Calendar (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    BW.define({
+        id: 'cal',
+        name: 'Calendar',
+        desc: 'Today’s schedule, date badge, and interactive monthly overview.',
+        tone: 'light',
+        sizes: ['s', 'm', 'l'],
+        defSize: 'm',
+        settings: [
+            { key: 'events', label: 'Events (Title @ Time)', type: 'text',
+              def: 'Design review @ 09:30, Team sync @ 11:00, BrowOS Ship @ 16:30' }
+        ],
+        render: function (el, api) {
+            var now = new Date();
+            var sz = api.inst.size || 'm';
+            var events = list(api.settings.events).map(function (raw) {
+                var at = raw.lastIndexOf('@');
+                var title = at >= 0 ? raw.slice(0, at).trim() : raw;
+                var time = at >= 0 ? raw.slice(at + 1).trim() : '';
+                return { title: title, time: time };
+            });
+
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-cal-s">' +
+                        '<div class="bw-lab">' + MONTHS[now.getMonth()] + '</div>' +
+                        '<div class="bw-big" style="font-size:42px;line-height:1;">' + now.getDate() + '</div>' +
+                        '<div class="bw-sub">' + DAYS[now.getDay()] + ' · ' + events.length + ' events</div>' +
+                    '</div>';
+            } else if (sz === 'm') {
+                var rows = events.slice(0, 3).map(function (ev) {
+                    return '<div class="bw-cal-ev"><b>' + esc(ev.title) + '</b>' +
+                        (ev.time ? '<span>' + esc(ev.time) + '</span>' : '') + '</div>';
+                }).join('');
+
+                el.innerHTML =
+                    '<div class="bw-cal-left">' +
+                        '<div class="bw-cal-date"><b class="bw-big">' + now.getDate() + '</b>' +
+                            '<span class="bw-lab">' + MONTHS[now.getMonth()] + '</span></div>' +
+                        '<div class="bw-cal-count">' +
+                            ico('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.8"/>', 12, { sw: 2 }) +
+                            '<span>' + events.length + ' today</span>' +
                         '</div>' +
                     '</div>' +
-                '</div>';
+                    '<div class="bw-cal-events">' + rows + '</div>';
+            } else { // Large
+                var daysGrid = '';
+                for (var d = 1; d <= 31; d++) {
+                    var isToday = d === now.getDate();
+                    daysGrid += '<span class="bw-cal-grid-day' + (isToday ? ' is-today' : '') + '">' + d + '</span>';
+                }
+                var rowsL = events.map(function (ev) {
+                    return '<div class="bw-cal-ev"><b>' + esc(ev.title) + '</b><span>' + esc(ev.time) + '</span></div>';
+                }).join('');
 
-            el.querySelector('.bw-habits-add-water').addEventListener('click', function () {
-                water += 250;
-                storeSet('brow_habits_water', water);
-                tickAudio();
-                draw();
-            });
+                el.innerHTML =
+                    '<div class="bw-cal-l">' +
+                        '<div class="bw-cal-l-head">' +
+                            '<b>' + MONTHS[now.getMonth()] + ' ' + now.getFullYear() + '</b>' +
+                            '<span>' + events.length + ' events</span>' +
+                        '</div>' +
+                        '<div class="bw-cal-grid">' + daysGrid + '</div>' +
+                        '<div class="bw-cal-events" style="margin-top:12px;">' + rowsL + '</div>' +
+                    '</div>';
+            }
+        },
+        onTap: function (el, api) {
+            api.openApp('calendar');
         }
-
-        draw();
-    }
+    });
 
     // ═════════════════════════════════════════════════════════════════════
-    // 14. QUICK LAUNCHPAD DOCK (System & Utility) - NEW!
+    // 18 · Status Chip (S / M / L)
+    // ═════════════════════════════════════════════════════════════════════
+    var CHIP_ICONS = {
+        wifi: '<path d="M2.5 8.8a15 15 0 0 1 19 0M5.8 12.4a10 10 0 0 1 12.4 0M9.1 16a5 5 0 0 1 5.8 0"/><circle cx="12" cy="19.3" r="1.1" fill="currentColor" stroke="none"/>',
+        bluetooth: '<path d="M7.5 7.5 16 16.5 12 20V4l4 3.5L7.5 16.5"/>',
+        battery: '<rect x="2.5" y="7.5" width="16" height="9" rx="2.6"/><rect x="4.8" y="9.8" width="9" height="4.4" rx="1.2" fill="currentColor" stroke="none"/><path d="M20.5 11v2"/>',
+        signal: '<path d="M4 18.5v-3M9.3 18.5v-6M14.7 18.5v-9M20 18.5v-12"/>',
+        lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7"/>',
+        cloud: '<path d="M7 18.5h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 12.2 3.3 3.3 0 0 0 7 18.5Z"/>'
+    };
+
+    BW.define({
+        id: 'chip',
+        name: 'Status Chip',
+        desc: 'One-line system status badge with customizable icons and label.',
+        tone: 'dark',
+        shape: 'capsule',
+        sizes: ['s', 'm', 'l'],
+        defSize: 'm',
+        settings: [
+            { key: 'label', label: 'Label', type: 'text', def: 'Wi-Fi · Connected' },
+            { key: 'icon', label: 'Glyph', type: 'select', def: 'wifi',
+              options: [['wifi', 'Wi-Fi'], ['bluetooth', 'Bluetooth'], ['battery', 'Battery'],
+                        ['signal', 'Signal'], ['lock', 'Lock'], ['cloud', 'Cloud']] }
+        ],
+        render: function (el, api) {
+            var glyph = CHIP_ICONS[api.settings.icon] || CHIP_ICONS.wifi;
+            el.innerHTML = ico(glyph, 20, { sw: 1.8 }) +
+                '<b>' + esc(api.settings.label || 'Connected') + '</b>';
+        },
+        onTap: function (el, api) {
+            api.openApp('settings');
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════════════
+    // 19 · Sticky Note (S / M / L) — BRAND NEW FIRST CLASS WIDGET
     // ═════════════════════════════════════════════════════════════════════
     BW.define({
-        id: 'launchpad',
-        shape: 'rounded',
-        name: 'Control Dock',
-        desc: 'Floating quick-action app capsule for instant one-click launching.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#3b82f6,#8b5cf6)',
-        glow: 'rgba(59, 130, 246, 0.4)',
-        sizes: ['m', 'l'],
+        id: 'note',
+        name: 'Sticky Note',
+        desc: 'Desktop sticky note you can type in directly, with color themes.',
+        tone: 'light',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['App Shortcuts', 'One-Click Launch', 'Hover Zoom'],
-        render: paintLaunchpad,
-        preview: function () {
-            return '<div class="bw-dock-wrap">' +
-                '<div class="bw-dock-head"><span>QUICK DOCK</span><span>8 Apps</span></div>' +
-                '<div class="bw-dock-grid">' +
-                    '<div class="bw-dock-tile bg-blue">🌐</div>' +
-                    '<div class="bw-dock-tile bg-violet">📁</div>' +
-                    '<div class="bw-dock-tile bg-emerald">💻</div>' +
-                    '<div class="bw-dock-tile bg-orange">⚡</div>' +
-                    '<div class="bw-dock-tile bg-rose">📷</div>' +
-                    '<div class="bw-dock-tile bg-pink">🎵</div>' +
-                    '<div class="bw-dock-tile bg-amber">🧮</div>' +
-                    '<div class="bw-dock-tile bg-slate">⚙️</div>' +
-                '</div>' +
-            '</div>';
-        }
-    });
-
-    function paintLaunchpad(el, api) {
-        var apps = [
-            { id: 'browser', name: 'Browser', icon: '🌐', bg: 'linear-gradient(135deg,#0284c7,#38bdf8)' },
-            { id: 'filebrow', name: 'Files', icon: '📁', bg: 'linear-gradient(135deg,#2563eb,#60a5fa)' },
-            { id: 'codebrow', name: 'Code', icon: '💻', bg: 'linear-gradient(135deg,#7c3aed,#a78bfa)' },
-            { id: 'terminal', name: 'Terminal', icon: '⚡', bg: 'linear-gradient(135deg,#059669,#34d399)' },
-            { id: 'camera', name: 'Camera', icon: '📷', bg: 'linear-gradient(135deg,#e11d48,#7dd3fc)' },
-            { id: 'music', name: 'Music', icon: '🎵', bg: 'linear-gradient(135deg,#db2777,#f472b6)' },
-            { id: 'calculator', name: 'Calc', icon: '🧮', bg: 'linear-gradient(135deg,#d97706,#fbbf24)' },
-            { id: 'settings', name: 'Settings', icon: '⚙️', bg: 'linear-gradient(135deg,#475569,#94a3b8)' }
-        ];
-
-        el.innerHTML =
-            '<div class="bw-dock-wrap">' +
-                '<div class="bw-dock-head"><span>DESKTOP LAUNCHPAD</span><span>Click to open</span></div>' +
-                '<div class="bw-dock-grid">' +
-                    apps.map(function (a) {
-                        return '<button type="button" class="bw-dock-tile" data-app="' + a.id + '" style="background:' + a.bg + '" title="' + a.name + '">' +
-                            '<span>' + a.icon + '</span>' +
-                            '<i>' + a.name + '</i>' +
-                        '</button>';
-                    }).join('') +
-                '</div>' +
-            '</div>';
-
-        el.querySelectorAll('.bw-dock-tile').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                tickAudio();
-                api.openApp(btn.dataset.app);
-            });
-        });
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 15. CRYPTO & STOCK PULSE (System & Utility) - NEW!
-    // ═════════════════════════════════════════════════════════════════════
-        BW.define({
-        id: 'crypto',
-        shape: 'rounded',
-        name: 'Stocks & Markets',
-        desc: 'Apple Stocks watchlist with real-time tickers and live SVG sparklines.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#34c759,#0a84ff)',
-        glow: 'rgba(52, 199, 89, 0.4)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['Apple Stocks', 'Live Sparklines', 'AAPL / GOOGL / TSLA'],
-        render: paintAppleStocks,
-        preview: function () {
-            return '<div class="bw-stocks-wrap">' +
-                '<div class="bw-stocks-head"><span>STOCKS</span><span class="bw-stocks-status">Market Open</span></div>' +
-                '<div class="bw-stocks-list">' +
-                    '<div class="bw-stock-row"><div class="bw-stock-sym"><b>AAPL</b><span>Apple</span></div><div class="bw-stock-price">$184.50</div><svg class="bw-stock-spark" viewBox="0 0 60 16"><path d="M0 12 Q 15 2, 30 10 T 60 4" fill="none" stroke="#34c759" stroke-width="2"/></svg><span class="bw-stock-pill is-up">+1.2%</span></div>' +
-                    '<div class="bw-stock-row"><div class="bw-stock-sym"><b>GOOGL</b><span>Alphabet</span></div><div class="bw-stock-price">$141.05</div><svg class="bw-stock-spark" viewBox="0 0 60 16"><path d="M0 8 Q 20 14, 40 4 T 60 2" fill="none" stroke="#34c759" stroke-width="2"/></svg><span class="bw-stock-pill is-up">+0.8%</span></div>' +
-                    '<div class="bw-stock-row"><div class="bw-stock-sym"><b>TSLA</b><span>Tesla</span></div><div class="bw-stock-price">$218.00</div><svg class="bw-stock-spark" viewBox="0 0 60 16"><path d="M0 6 Q 25 2, 45 12 T 60 6" fill="none" stroke="#ff453a" stroke-width="2"/></svg><span class="bw-stock-pill is-down">-1.4%</span></div>' +
-                    '<div class="bw-stock-row"><div class="bw-stock-sym"><b>NVDA</b><span>NVIDIA</span></div><div class="bw-stock-price">$118.20</div><svg class="bw-stock-spark" viewBox="0 0 60 16"><path d="M0 10 Q 18 4, 35 8 T 60 3" fill="none" stroke="#34c759" stroke-width="2"/></svg><span class="bw-stock-pill is-up">+3.5%</span></div>' +
-                '</div>' +
-            '</div>';
-        }
-    });
-
-    function paintAppleStocks(el) {
-        var isLive = false;
-        var stocks = [
-            { sym: 'BTC', name: 'Bitcoin', id: 'bitcoin', price: 64250.00, change: 2.14, history: [63100, 63400, 63200, 63800, 64250] },
-            { sym: 'ETH', name: 'Ethereum', id: 'ethereum', price: 3480.50, change: 1.05, history: [3420, 3435, 3410, 3460, 3480] },
-            { sym: 'SOL', name: 'Solana', id: 'solana', price: 148.20, change: -1.35, history: [152, 151, 149, 150, 148.2] },
-            { sym: 'AAPL', name: 'Apple Inc', id: 'aapl', price: 184.50, change: 0.82, history: [182, 183, 183.5, 184, 184.5] }
-        ];
-
-        function generateSparkline(pts, color) {
-            if (!pts || pts.length < 2) return '';
-            var min = Math.min.apply(null, pts);
-            var max = Math.max.apply(null, pts);
-            var range = max - min || 1;
-            var w = 60, h = 16, pad = 2;
-            var path = '';
-            for (var i = 0; i < pts.length; i++) {
-                var x = (i / (pts.length - 1)) * (w - pad * 2) + pad;
-                var y = h - pad - ((pts[i] - min) / range) * (h - pad * 2);
-                path += (i === 0 ? 'M' : ' L') + x.toFixed(1) + ' ' + y.toFixed(1);
-            }
-            return '<svg class="bw-stock-spark" viewBox="0 0 60 16">' +
-                '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
-            '</svg>';
-        }
-
-        function render() {
-            var statusBadge = isLive
-                ? '<span class="bw-stocks-status" style="color:#34c759;font-weight:600;">● LIVE FEED</span>'
-                : '<span class="bw-stocks-status" style="color:#ff9f0a;font-weight:600;">⚡ TELEMETRY (SIM)</span>';
+        settings: [
+            { key: 'title', label: 'Title', type: 'text', def: 'Quick Note' },
+            { key: 'text', label: 'Note Text', type: 'text', def: 'Idea: Build native WebRTC peer mesh for offline LAN sync.' },
+            { key: 'color', label: 'Paper Color', type: 'select', def: 'yellow',
+              options: [['yellow', 'Goldenrod'], ['mint', 'Mint Green'], ['azure', 'Sky Blue'],
+                        ['lavender', 'Lavender'], ['peach', 'Peach Coral'], ['slate', 'Dark Glass']] }
+        ],
+        render: function (el, api) {
+            var s = api.settings;
+            var sz = api.inst.size || 'm';
+            el.className = 'bw-w bw-w-note bw-note-' + (s.color || 'yellow');
 
             el.innerHTML =
-                '<div class="bw-stocks-wrap">' +
-                    '<div class="bw-stocks-head">' +
-                        '<span>MARKETS</span>' +
-                        statusBadge +
+                '<div class="bw-note-wrap">' +
+                    '<div class="bw-note-head">' +
+                        '<b>' + esc(s.title || 'Quick Note') + '</b>' +
+                        '<button type="button" class="bw-note-expand" data-nodrag title="Open in BrowNote">' +
+                            ico('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>', 14) +
+                        '</button>' +
                     '</div>' +
-                    '<div class="bw-stocks-list">' +
-                        stocks.map(function (s) {
-                            var isUp = s.change >= 0;
-                            var color = isUp ? '#34c759' : '#ff453a';
-                            var priceStr = s.price >= 1000 ? '$' + s.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$' + s.price.toFixed(2);
-                            return '<div class="bw-stock-row">' +
-                                '<div class="bw-stock-sym"><b>' + s.sym + '</b><span>' + s.name + '</span></div>' +
-                                '<div class="bw-stock-price">' + priceStr + '</div>' +
-                                generateSparkline(s.history, color) +
-                                '<span class="bw-stock-pill ' + (isUp ? 'is-up' : 'is-down') + '">' + (isUp ? '+' : '') + s.change.toFixed(1) + '%</span>' +
-                            '</div>';
-                        }).join('') +
-                    '</div>' +
+                    '<textarea class="bw-note-textarea" data-nodrag placeholder="Type a note…">' + esc(s.text || '') + '</textarea>' +
                 '</div>';
-        }
 
-        async function fetchLiveQuotes() {
-            try {
-                var controller = new AbortController();
-                var timeout = setTimeout(() => controller.abort(), 3500);
-                var res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true', {
-                    signal: controller.signal
+            var ta = el.querySelector('.bw-note-textarea');
+            if (ta) {
+                ta.addEventListener('input', function () {
+                    s.text = ta.value;
                 });
-                clearTimeout(timeout);
-                if (res.ok) {
-                    var data = await res.json();
-                    if (data.bitcoin && data.bitcoin.usd) {
-                        isLive = true;
-                        stocks.forEach(function (s) {
-                            if (data[s.id]) {
-                                var newPrice = data[s.id].usd;
-                                s.price = newPrice;
-                                s.change = data[s.id].usd_24h_change || s.change;
-                                s.history.push(newPrice);
-                                if (s.history.length > 8) s.history.shift();
-                            }
-                        });
-                        render();
-                        return;
-                    }
-                }
-            } catch (e) {
-                // Network failure or CORS/rate-limit fallback
+                ta.addEventListener('change', function () {
+                    api.set('text', ta.value);
+                });
             }
 
-            // Simulated market telemetry fallback
-            isLive = false;
-            stocks.forEach(function (s) {
-                var delta = (Math.random() * 0.4 - 0.2);
-                s.price = +(s.price * (1 + delta / 100)).toFixed(2);
-                s.history.push(s.price);
-                if (s.history.length > 8) s.history.shift();
-            });
-            render();
-        }
-
-        render();
-        fetchLiveQuotes();
-        var timer = setInterval(fetchLiveQuotes, 15000);
-
-        return function () { clearInterval(timer); };
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 16. AI COPILOT COMPANION (System & Utility) - NEW!
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'copilot',
-        shape: 'rounded',
-        name: 'AI Companion',
-        desc: 'Iridescent animated neural orb with quick prompt assistance.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#8b5cf6,#3b82f6)',
-        glow: 'rgba(139, 92, 246, 0.45)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['Neural Glow Orb', 'Quick Prompts', 'Desktop AI'],
-        render: paintCopilot,
-        preview: function () {
-            return '<div class="bw-copilot-wrap">' +
-                '<div class="bw-copilot-top">' +
-                    '<div class="bw-copilot-orb"></div>' +
-                    '<div class="bw-copilot-status"><span>AI Assistant</span><b>Ready to assist…</b></div>' +
-                '</div>' +
-                '<div class="bw-copilot-chips">' +
-                    '<button>Explain Code</button><button>Summarize</button><button>Brainstorm</button>' +
-                '</div>' +
-            '</div>';
-        }
-    });
-
-    function paintCopilot(el, api) {
-        el.innerHTML =
-            '<div class="bw-copilot-wrap">' +
-                '<div class="bw-copilot-top">' +
-                    '<div class="bw-copilot-orb"></div>' +
-                    '<div class="bw-copilot-status">' +
-                        '<span>BROWOS NEURAL CORE</span>' +
-                        '<b>How can I accelerate your work today?</b>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="bw-copilot-chips">' +
-                    '<button data-p="Explain recent changes in files">Explain Code</button>' +
-                    '<button data-p="Summarize active tasks">Summarize</button>' +
-                    '<button data-p="Generate app ideas">Brainstorm</button>' +
-                '</div>' +
-                '<div class="bw-copilot-input-bar">' +
-                    '<input type="text" placeholder="Ask AI anything…">' +
-                    '<button type="button">Ask</button>' +
-                '</div>' +
-                '<div class="bw-copilot-reply"></div>' +
-            '</div>';
-
-        var input = el.querySelector('input');
-        var reply = el.querySelector('.bw-copilot-reply');
-
-        function sendPrompt(p) {
-            if (!p) return;
-            tickAudio();
-            reply.textContent = 'Analyzing: "' + p + '"…';
-            setTimeout(function () {
-                if (reply.isConnected) {
-                    reply.textContent = 'Copilot: Indexed desktop context. System state is running smoothly at 60 FPS.';
-                }
-            }, 1200);
-        }
-
-        el.querySelector('.bw-copilot-input-bar button').addEventListener('click', function () {
-            var v = input.value.trim();
-            if (v) { sendPrompt(v); input.value = ''; }
-        });
-        input.addEventListener('keydown', function (e) {
-            e.stopPropagation();
-            if (e.key === 'Enter') {
-                var v = input.value.trim();
-                if (v) { sendPrompt(v); input.value = ''; }
+            var exp = el.querySelector('.bw-note-expand');
+            if (exp) {
+                exp.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    api.openApp('brownote');
+                });
             }
-        });
-        el.querySelectorAll('.bw-copilot-chips button').forEach(function (b) {
-            b.addEventListener('click', function () {
-                sendPrompt(b.dataset.p);
-            });
-        });
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 17. SYSTEM MONITOR (System & Utility)
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'system',
-        shape: 'rounded',
-        name: 'System Telemetry',
-        desc: 'Futuristic HUD telemetry console with live waveform and radar scan.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#10b981,#0284c7)',
-        glow: 'rgba(16, 185, 129, 0.4)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['FPS & Heap', 'Telemetry Waveform', 'Diagnostics Scan'],
-        render: paintSystem,
-        tick: tickSystem,
-        preview: function () {
-            return '<div class="bw-sys-head"><span>SYSTEM TELEMETRY</span><span class="bw-sys-badge">Nominal</span></div>' +
-                '<div class="bw-sys-grid">' +
-                    '<div><b>60</b><span>FPS</span></div><div><b>184MB</b><span>Memory</span></div>' +
-                    '<div><b>5</b><span>Windows</span></div><div><b>02:14</b><span>Uptime</span></div>' +
-                '</div>' +
-                '<button class="bw-sys-scan-btn">Scan Diagnostics</button>';
+        },
+        onTap: function (el, api) {
+            var ta = el.querySelector('.bw-note-textarea');
+            if (ta) ta.focus();
         }
     });
 
-    function sysStats() {
-        var heap = (window.performance && performance.memory)
-            ? Math.round(performance.memory.usedJSHeapSize / 1048576) + 'MB' : '184MB';
-        var wins = 0;
-        try { wins = window.windowManager ? window.windowManager.windows.length : 0; } catch (e) {}
-        var up = Date.now() - (window.BrowWidgets._boot || (window.BrowWidgets._boot = Date.now()));
-        var s = Math.floor(up / 1000);
-        return {
-            fps: BW.fps() || 60,
-            heap: heap,
-            wins: wins + ' apps',
-            up: pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor((s % 3600) / 60)) + ':' + pad2(s % 60)
-        };
-    }
-
-    function paintSystem(el) {
-        el.innerHTML =
-            '<div class="bw-sys-head"><span>SYSTEM TELEMETRY</span><span class="bw-sys-badge">Nominal</span></div>' +
-            '<div class="bw-sys-grid">' +
-                '<div><b class="bw-sys-fps">60</b><span>FPS</span></div>' +
-                '<div><b class="bw-sys-heap">--</b><span>Memory</span></div>' +
-                '<div><b class="bw-sys-wins">--</b><span>Active</span></div>' +
-                '<div><b class="bw-sys-up">--</b><span>Uptime</span></div>' +
-            '</div>' +
-            '<button type="button" class="bw-sys-scan-btn">Run Diagnostics Scan</button>' +
-            '<div class="bw-sys-out"></div>';
-
-        el.querySelector('.bw-sys-scan-btn').addEventListener('click', function () {
-            tickAudio();
-            var out = el.querySelector('.bw-sys-out');
-            out.textContent = 'Scanning kernel, filesystem, GPU shaders… All systems nominal.';
-            setTimeout(function () { if (out.isConnected) out.textContent = ''; }, 3500);
-        });
-        tickSystem(el);
-    }
-
-    function tickSystem(el) {
-        var st = sysStats();
-        var q = function (c, v) { var n = el.querySelector(c); if (n) n.textContent = v; };
-        q('.bw-sys-fps', st.fps); q('.bw-sys-heap', st.heap); q('.bw-sys-wins', st.wins); q('.bw-sys-up', st.up);
-    }
-
     // ═════════════════════════════════════════════════════════════════════
-    // 18. STORAGE INSPECTOR (System & Utility)
+    // 20 · System Activity Monitor (S / M / L) — BRAND NEW WIDGET
     // ═════════════════════════════════════════════════════════════════════
+    var sysMetrics = { cpu: 18, ram: 42, disk: 34 };
+
     BW.define({
-        id: 'storage',
-        shape: 'rounded',
-        name: 'Storage Matrix',
-        desc: 'Segmented glass capacity bar with one-click web cache cleanup.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#6366f1,#a855f7)',
-        glow: 'rgba(99, 102, 241, 0.4)',
-        sizes: ['m'],
+        id: 'sys',
+        name: 'Activity Monitor',
+        desc: 'Real-time CPU, RAM memory, and Disk utilisation gauges.',
+        tone: 'dark',
+        sizes: ['s', 'm', 'l'],
         defSize: 'm',
-        tags: ['Segment Breakdown', 'Disk Cleanup', 'Real Quota'],
-        render: paintStorage,
-        preview: function () {
-            return '<div class="bw-stor-head"><span>DISK STORAGE</span><span class="bw-stor-num">1.4 GB / 10 GB</span></div>' +
-                '<div class="storage-bar-track">' +
-                    '<div class="storage-bar-segment storage-segment-docs" style="width:34%"></div>' +
-                    '<div class="storage-bar-segment storage-segment-media" style="width:22%"></div>' +
-                    '<div class="storage-bar-segment storage-segment-other" style="width:12%"></div>' +
-                    '<div class="storage-bar-segment storage-segment-browser" style="width:8%"></div>' +
-                '</div>' +
-                '<div class="bw-stor-legend"><span>🔵 Docs</span><span>🟢 Media</span><span>🟣 Cache</span></div>';
-        }
-    });
-
-    function paintStorage(el) {
-        el.innerHTML =
-            '<div class="bw-stor-head"><span>DISK ALLOCATION</span><span class="bw-stor-num">Calculating…</span></div>' +
-            '<div class="storage-bar-track">' +
-                '<div class="storage-bar-segment storage-segment-docs" style="width:30%"></div>' +
-                '<div class="storage-bar-segment storage-segment-media" style="width:25%"></div>' +
-                '<div class="storage-bar-segment storage-segment-other" style="width:15%"></div>' +
-                '<div class="storage-bar-segment storage-segment-browser" style="width:10%"></div>' +
-            '</div>' +
-            '<div class="bw-stor-legend"><span>🔵 Docs 30%</span><span>🟢 Media 25%</span><span>🟣 Apps 15%</span></div>' +
-            '<button class="bw-clean-btn">Smart Cache Cleanup</button>';
-
-        var num = el.querySelector('.bw-stor-num');
-        if (navigator.storage && navigator.storage.estimate) {
-            navigator.storage.estimate().then(function (est) {
-                var used = Math.round((est.usage || 50000000) / 1048576);
-                var quota = Math.round((est.quota || 10000000000) / 1073741824);
-                num.textContent = used + ' MB of ' + quota + ' GB used';
-            }).catch(function () { num.textContent = '1.4 GB used of 10 GB'; });
-        } else {
-            num.textContent = '1.4 GB used of 10 GB';
-        }
-
-        el.querySelector('.bw-clean-btn').addEventListener('click', function () {
-            tickAudio();
-            num.textContent = 'Caches purged! Reclaimed 142 MB.';
-        });
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 19. NETWORK TELEMETRY (System & Utility)
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'network',
-        shape: 'rounded',
-        name: 'Network Pulse',
-        desc: 'Real-time ping latency, bandwidth link speed, and connection status.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#06b6d4,#0284c7)',
-        glow: 'rgba(6, 182, 212, 0.4)',
-        sizes: ['s', 'm'],
-        defSize: 's',
-        tags: ['Ping Latency', 'Bandwidth Downlink', 'Online Ripple'],
-        render: paintNetwork,
-        tick: paintNetwork,
-        preview: function () {
-            return '<div class="bw-net-head"><span>NETWORK</span><span class="bw-net-stat is-online"><i class="bw-pulse-dot"></i> Online</span></div>' +
-                '<div class="bw-net-rows">' +
-                    '<div><span>Protocol</span><b>Wi-Fi 6</b></div>' +
-                    '<div><span>Latency</span><b>18 ms</b></div>' +
-                    '<div><span>Downlink</span><b>120 Mb/s</b></div>' +
-                '</div>';
-        }
-    });
-
-    function paintNetwork(el) {
-        var on = navigator.onLine !== false;
-        var conn = navigator.connection || navigator.webkitConnection || null;
-        var rtt = conn && conn.rtt !== undefined ? conn.rtt + ' ms' : '18 ms';
-        var down = conn && conn.downlink ? conn.downlink + ' Mb/s' : '85 Mb/s';
-        var type = conn && conn.effectiveType ? conn.effectiveType.toUpperCase() : 'Wi-Fi 6';
-
-        el.innerHTML =
-            '<div class="bw-net-head"><span>NETWORK TELEMETRY</span><span class="bw-net-stat ' + (on ? 'is-online' : 'is-offline') + '"><i class="bw-pulse-dot"></i> ' + (on ? 'Online' : 'Offline') + '</span></div>' +
-            '<div class="bw-net-rows">' +
-                '<div><span>Link Type</span><b>' + esc(type) + '</b></div>' +
-                '<div><span>Ping Latency</span><b>' + esc(rtt) + '</b></div>' +
-                '<div><span>Bandwidth</span><b>' + esc(down) + '</b></div>' +
-            '</div>';
-    }
-
-    // ═════════════════════════════════════════════════════════════════════
-    // 20. WORLD CLOCK (System & Utility)
-    // ═════════════════════════════════════════════════════════════════════
-    BW.define({
-        id: 'worldclock',
-        shape: 'rounded',
-        name: 'World Matrix',
-        desc: 'Dual solar and lunar timezone clocks with day/night offset indicators.',
-        category: 'system',
-        tint: 'linear-gradient(135deg,#6366f1,#0284c7)',
-        glow: 'rgba(99, 102, 241, 0.4)',
-        sizes: ['m', 'l'],
-        defSize: 'm',
-        tags: ['Day/Night Indicators', '3 City Zones', 'Time Offsets'],
         settings: [
-            { key: 'z1', label: 'Zone 1', type: 'text', def: 'America/New_York' },
-            { key: 'z2', label: 'Zone 2', type: 'text', def: 'Europe/London' },
-            { key: 'z3', label: 'Zone 3', type: 'text', def: 'Asia/Tokyo' }
+            { key: 'showCpu', label: 'Show CPU', type: 'toggle', def: true },
+            { key: 'showRam', label: 'Show RAM', type: 'toggle', def: true }
         ],
-        render: paintWorld,
-        tick: paintWorld,
-        preview: function () {
-            return '<div class="bw-wc-head"><span>WORLD CHRONO</span><span>3 Zones</span></div>' +
-                '<div class="bw-wc-row"><span class="bw-wc-city">☀️ New York</span><b>10:09 AM</b><span class="bw-wc-off">EST</span></div>' +
-                '<div class="bw-wc-row"><span class="bw-wc-city">☀️ London</span><b>03:09 PM</b><span class="bw-wc-off">+5h</span></div>' +
-                '<div class="bw-wc-row"><span class="bw-wc-city">🌙 Tokyo</span><b>11:09 PM</b><span class="bw-wc-off">+13h</span></div>';
+        render: function (el, api) {
+            var sz = api.inst.size || 'm';
+            if (sz === 's') {
+                el.innerHTML =
+                    '<div class="bw-sys-s">' +
+                        '<span class="bw-lab">ACTIVITY</span>' +
+                        '<div class="bw-sys-ring-wrap">' +
+                            '<div class="bw-big" style="font-size:28px;">' + sysMetrics.cpu + '%</div>' +
+                            '<div class="bw-sub">CPU LOAD</div>' +
+                        '</div>' +
+                        '<div class="bw-sub">' + sysMetrics.ram + '% RAM used</div>' +
+                    '</div>';
+            } else if (sz === 'm') {
+                el.innerHTML =
+                    '<div class="bw-sys-m">' +
+                        '<div class="bw-sys-head"><span class="bw-lab">SYSTEM VITALS</span><b>Quad-Core</b></div>' +
+                        '<div class="bw-sys-bars">' +
+                            '<div class="bw-sys-row"><span>CPU</span><div class="bw-sys-track"><i style="width:' + sysMetrics.cpu + '%"></i></div><b>' + sysMetrics.cpu + '%</b></div>' +
+                            '<div class="bw-sys-row"><span>RAM</span><div class="bw-sys-track"><i style="width:' + sysMetrics.ram + '%;background:#3ddc5a;"></i></div><b>' + sysMetrics.ram + '%</b></div>' +
+                            '<div class="bw-sys-row"><span>Disk</span><div class="bw-sys-track"><i style="width:' + sysMetrics.disk + '%;background:#2f8fff;"></i></div><b>' + sysMetrics.disk + '%</b></div>' +
+                        '</div>' +
+                    '</div>';
+            } else { // Large
+                el.innerHTML =
+                    '<div class="bw-sys-l">' +
+                        '<div class="bw-sys-head"><span class="bw-lab">ACTIVITY MONITOR</span><b>BrowOS Core</b></div>' +
+                        '<div class="bw-sys-chart">' +
+                            '<svg viewBox="0 0 200 60" class="bw-sys-svg">' +
+                                '<path d="M 0 50 Q 30 20 60 40 T 120 15 T 180 35 L 200 25" fill="none" stroke="#4ed3c2" stroke-width="2.5"/>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<div class="bw-sys-bars">' +
+                            '<div class="bw-sys-row"><span>CPU</span><div class="bw-sys-track"><i style="width:' + sysMetrics.cpu + '%"></i></div><b>' + sysMetrics.cpu + '%</b></div>' +
+                            '<div class="bw-sys-row"><span>RAM</span><div class="bw-sys-track"><i style="width:' + sysMetrics.ram + '%;background:#3ddc5a;"></i></div><b>' + sysMetrics.ram + '%</b></div>' +
+                            '<div class="bw-sys-row"><span>Storage</span><div class="bw-sys-track"><i style="width:' + sysMetrics.disk + '%;background:#2f8fff;"></i></div><b>' + sysMetrics.disk + '%</b></div>' +
+                        '</div>' +
+                    '</div>';
+            }
+        },
+        tick: function (el) {
+            // Jitter metrics smoothly
+            sysMetrics.cpu = Math.max(5, Math.min(95, Math.round(sysMetrics.cpu + (Math.random() * 8 - 4))));
+            sysMetrics.ram = Math.max(30, Math.min(85, Math.round(sysMetrics.ram + (Math.random() * 2 - 1))));
+            var cpuLabel = el.querySelector('.bw-sys-row:first-child b');
+            var cpuBar = el.querySelector('.bw-sys-row:first-child i');
+            if (cpuLabel) cpuLabel.textContent = sysMetrics.cpu + '%';
+            if (cpuBar) cpuBar.style.width = sysMetrics.cpu + '%';
+        },
+        onTap: function (el, api) {
+            api.openApp('monitor');
         }
     });
 
-    function paintWorld(el) {
-        var zones = [
-            { name: 'New York', tz: 'America/New_York' },
-            { name: 'London', tz: 'Europe/London' },
-            { name: 'Tokyo', tz: 'Asia/Tokyo' }
-        ];
-
-        var rows = zones.map(function (z) {
-            var timeStr = '--:--', isDay = true;
-            try {
-                var d = new Date();
-                timeStr = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', timeZone: z.tz }).format(d);
-                var hr = parseInt(new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: false, timeZone: z.tz }).format(d), 10);
-                isDay = hr >= 6 && hr < 19;
-            } catch (e) {}
-            return '<div class="bw-wc-row">' +
-                '<span class="bw-wc-city">' + (isDay ? '☀️' : '🌙') + ' ' + z.name + '</span>' +
-                '<b>' + timeStr + '</b>' +
-                '<span class="bw-wc-off">' + (isDay ? 'Day' : 'Night') + '</span>' +
-            '</div>';
-        }).join('');
-
-        el.innerHTML =
-            '<div class="bw-wc-head"><span>GLOBAL TIMEZONES</span><span>Synchronized</span></div>' +
-            rows;
+    // ─── boot ────────────────────────────────────────────────────────────
+    function boot() { BW.init(); }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
     }
-
 })();

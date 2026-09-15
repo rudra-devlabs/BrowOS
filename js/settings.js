@@ -11,7 +11,7 @@
     const STORAGE_KEY = 'browos_settings_v2';
 
     const DEFAULTS = {
-        theme: 'dark',              // 'light' | 'dark' | 'auto'
+        theme: 'dark',              // 'light' | 'dark' | 'system' (legacy 'auto' accepted)
         accent: '#0a84ff',
         reduceTransparency: false,
         glassBlur: 24,              // px, backdrop blur radius for chrome surfaces
@@ -25,8 +25,8 @@
         dockAutohide: false,
         dockPosition: 'bottom',
         minimizeEffect: 'scale',
-        widgets: true,
         animateWallpaper: true,
+        showWidgets: true,
         wasmAcceleration: true,
         username: 'BrowOS User'
     };
@@ -51,7 +51,14 @@
     const state = Object.assign({}, DEFAULTS);
     const listeners = {};
     let persistTimer = null;
-    let autoThemeQuery = null;
+    let systemThemeQuery = null;
+    let systemWatcherBound = false;
+
+    // 'system' is the canonical "follow the OS" value. 'auto' is the legacy
+    // spelling persisted by earlier builds and is still accepted everywhere.
+    const SYSTEM_THEME_VALUES = ['system', 'auto'];
+    const isSystemTheme = v => SYSTEM_THEME_VALUES.indexOf(v) !== -1;
+    const VALID_THEMES = ['light', 'dark', 'system', 'auto'];
 
     function load() {
         // Migrate pre-store legacy keys on first run.
@@ -73,6 +80,15 @@
                 migrated = true;
             }
         } catch (e) { /* corrupt blob falls back to defaults/legacy */ }
+
+        // Migrate the legacy 'auto' spelling to the canonical 'system'.
+        // Same meaning (follow the OS), so this preserves the user's intent;
+        // it is written back to storage on the next persist().
+        if (state.theme === 'auto') state.theme = 'system';
+        // Defensive: an unknown/garbage theme value falls back to the default
+        // rather than being passed through to the data-theme attribute.
+        if (VALID_THEMES.indexOf(state.theme) === -1) state.theme = DEFAULTS.theme;
+
         return migrated;
     }
 
@@ -104,14 +120,41 @@
         s.setProperty('--brow-accent-strong', hex);
     }
 
+    function systemQuery() {
+        if (!systemThemeQuery) {
+            systemThemeQuery = root.matchMedia('(prefers-color-scheme: dark)');
+        }
+        return systemThemeQuery;
+    }
+
+    /**
+     * Resolve the theme that should actually be painted.
+     * 'light' / 'dark' are used verbatim; 'system' (and legacy 'auto') defer
+     * to the OS preference.
+     */
     function effectiveTheme() {
-        if (state.theme !== 'auto') return state.theme;
-        if (!autoThemeQuery) autoThemeQuery = root.matchMedia('(prefers-color-scheme: dark)');
-        return autoThemeQuery.matches ? 'dark' : 'light';
+        if (!isSystemTheme(state.theme)) return state.theme;
+        const mq = systemQuery();
+        return (mq && mq.matches) ? 'dark' : 'light';
     }
 
     function applyTheme() {
         rootEl().dataset.theme = effectiveTheme();
+    }
+
+    /**
+     * Bind the OS-preference listener exactly once. The handler re-checks the
+     * current setting on every fire, so switching into/out of 'system' needs
+     * no add/remove bookkeeping and cannot accumulate duplicate listeners.
+     */
+    function bindSystemWatcher() {
+        if (systemWatcherBound) return;
+        const mq = systemQuery();
+        if (!mq) return;
+        const onOsChange = () => { if (isSystemTheme(state.theme)) applyTheme(); };
+        if (mq.addEventListener) mq.addEventListener('change', onOsChange);
+        else if (mq.addListener) mq.addListener(onOsChange); // Safari < 14
+        systemWatcherBound = true;
     }
 
     function applyFlags() {
@@ -119,7 +162,7 @@
         cl.toggle('theme-reduce-transparency', !!state.reduceTransparency);
         cl.toggle('theme-reduce-motion', !!state.reduceMotion);
         cl.toggle('theme-static-wallpaper', !state.animateWallpaper);
-        cl.toggle('theme-hide-widgets', !state.widgets);
+        cl.toggle('theme-hide-widgets', state.showWidgets === false);
     }
 
     function applyBlur() {
@@ -279,14 +322,10 @@
                 case 'theme': applyTheme(); break;
                 case 'accent': applyAccent(value); break;
                 case 'glassBlur': applyBlur(); break;
-                case 'reduceTransparency': case 'reduceMotion': case 'widgets': case 'animateWallpaper':
+                case 'reduceTransparency': case 'reduceMotion': case 'animateWallpaper':
                     applyFlags(); break;
                 case 'volume': case 'mute': case 'alertVolume':
                     BrowAudio.applyVolumes(); break;
-            }
-            if (key === 'theme' && state.theme === 'auto' && !autoThemeQuery) {
-                autoThemeQuery = root.matchMedia('(prefers-color-scheme: dark)');
-                autoThemeQuery.addEventListener('change', applyTheme);
             }
             (listeners[key] || []).forEach(fn => { try { fn(value); } catch (e) {} });
             (listeners['*'] || []).forEach(fn => { try { fn(key, value); } catch (e) {} });
@@ -328,10 +367,10 @@
 
     function applyAllAndWatch() {
         load();
-        if (state.theme === 'auto') {
-            autoThemeQuery = root.matchMedia('(prefers-color-scheme: dark)');
-            autoThemeQuery.addEventListener('change', applyTheme);
-        }
+        // Always bound (once), regardless of the current mode: the handler
+        // itself only reacts while the setting is 'system'. This is what makes
+        // system mode live-update when the OS preference flips.
+        bindSystemWatcher();
         store.applyAll();
         root.dispatchEvent(new CustomEvent('browos-settings-ready'));
     }

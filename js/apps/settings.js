@@ -88,9 +88,9 @@
                                                 <span class="setting-desc">System chrome color scheme</span>
                                             </div>
                                             <div class="seg-control" data-setting="theme">
-                                                <button data-value="light">Light</button>
                                                 <button data-value="dark">Dark</button>
-                                                <button data-value="auto">Auto</button>
+                                                <button data-value="light">Light</button>
+                                                <button data-value="system">System</button>
                                             </div>
                                         </div>
                                         <div class="setting-row">
@@ -207,6 +207,16 @@
                                                 <span class="toggle-slider"></span>
                                             </label>
                                         </div>
+                                        <div class="setting-row">
+                                            <div class="setting-label">
+                                                <span class="setting-title">Show Widgets</span>
+                                                <span class="setting-desc">Widget tiles on the desktop — press F8 for the gallery</span>
+                                            </div>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" data-setting="showWidgets">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="settings-section hidden" id="settings-desktop">
@@ -262,18 +272,6 @@
                                                 <option value="scale">Scale effect (Smooth 120 FPS)</option>
                                                 <option value="genie">Genie effect (Funnel)</option>
                                             </select>
-                                        </div>
-                                    </div>
-                                    <div class="settings-card">
-                                        <div class="setting-row">
-                                            <div class="setting-label">
-                                                <span class="setting-title">Show Widgets</span>
-                                                <span class="setting-desc">Clock, health and storage widgets on the right</span>
-                                            </div>
-                                            <label class="toggle-switch">
-                                                <input type="checkbox" data-setting="widgets">
-                                                <span class="toggle-slider"></span>
-                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -567,7 +565,10 @@
         $$('.seg-control').forEach(seg => {
             const key = seg.dataset.setting;
             const sync = () => {
-                const cur = String(S.get(key));
+                // 'auto' is the legacy spelling of 'system'; normalize so the
+                // System button lights up for users migrating from older builds.
+                let cur = String(S.get(key));
+                if (key === 'theme' && cur === 'auto') cur = 'system';
                 seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.value === cur));
             };
             seg.addEventListener('click', (e) => {
@@ -892,7 +893,7 @@
             });
         }
 
-        // ─── Storage (same shared snapshot as the desktop widget) ──────────
+        // ─── Storage (shared filesystem snapshot) ──────────────────────────
         const storageInfo = $('#storage-info');
         const storageBar = $('#storage-bar');
 

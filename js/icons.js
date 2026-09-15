@@ -29,7 +29,6 @@ const BrowOSIcons = {
         clock: 'assets/icons/apps/clock.svg',
         camera: 'assets/icons/apps/camera.svg',
         calendar: 'assets/icons/apps/calendar.svg',
-        widgets: 'assets/icons/apps/widgets.svg',
         codebrow: 'assets/icons/apps/codebrow.svg',
         starship: 'assets/icons/apps/starship.svg',
         browrio: 'assets/icons/apps/browrio.svg',
@@ -37,6 +36,8 @@ const BrowOSIcons = {
         snake: 'assets/icons/apps/snake.svg',
         terrario: 'assets/icons/apps/terrario.svg',
         browcut: 'assets/icons/apps/browcut.svg',
+        browdrop: 'assets/icons/apps/browdrop.svg',
+        widgets: 'assets/icons/apps/widgets.svg',
     },
 
     // Window chrome & toolbars
@@ -99,7 +100,6 @@ const BrowOSIcons = {
             weather: this.apps.weather,
             calendar: this.apps.calendar,
             monitor: this.apps.monitor,
-            widgets: this.apps.widgets,
             music: this.apps.music,
             photos: this.apps.photos,
             files: this.apps.files,

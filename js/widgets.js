@@ -1,41 +1,76 @@
-/* BrowWidgets — desktop widget engine, gallery, and built-in widget set.
+/* BrowWidgets — desktop widget engine + Widgets app.
  *
- * One system owns every desktop widget: a live layer of free-position cards,
- * a registry of widget definitions, drag + jiggle edit mode, per-widget
- * settings, and localStorage persistence. The Widgets app window (gallery)
- * is the add/remove/edit surface, reachable from the menu-bar button,
- * the desktop context menu, or F8.
+ * Two surfaces share one registry of widget definitions:
+ *
+ *   · the desktop layer — free-position tiles you can drag, remove and
+ *     re-configure, persisted to localStorage
+ *   · the Widgets app   — a poster grid of every widget on a grey canvas.
+ *     Clicking a tile opens an options sheet holding a live preview, a size
+ *     picker, the widget's own settings and an "Add to Desktop" action.
+ *
+ * Definition contract:
+ *
+ *   BW.define({
+ *       id, name, desc,
+ *       tone: 'dark' | 'light',        // opaque black or opaque white tile
+ *       shape: 'rounded' | 'circle' | 'capsule',
+ *       sizes: ['s','m','l'], defSize: 'm',
+ *       settings: [{ key, label, type, def, options, min, max }],
+ *       render(el, api),               // paint the interior; may return a cleanup fn
+ *       tick(el, api),                 // once a second, while mounted
+ *       onTap(el, api)                 // a press that did not turn into a drag
+ *   });
+ *
+ * `onTap` is what makes a whole tile actionable without any extra markup: the
+ * drag handler already swallows the press to move the tile, so a press that
+ * never moved is a tap. Presses that land on a `data-nodrag` control never
+ * reach it — those controls own their own click.
+ *
+ * The interior markup is written into an element that already carries
+ * `bw-w bw-w-<id>`, so CSS owns all layout and the renderer owns only data.
  */
 (function () {
     'use strict';
 
-    var LAYOUT_KEY = 'browos_widgets_v1';
+    var LAYOUT_KEY = 'browos_widgets_v2';
     var LAYER_ID = 'brow-widget-layer';
+    // The size system is deliberately self-consistent, the way macOS sizes its
+    // widgets: a medium is exactly two smalls plus one gutter, and a large is
+    // two mediums stacked. That single property is what lets the gallery lay
+    // out on a real grid with flush edges — 170 + 18 + 170 = 358. It is also
+    // what a "medium" should mean on the desktop: twice a small, not a third
+    // width that tiles with nothing. If you change the gutter, change
+    // .bw-g-grid's `gap` in css/widgets.css to match or the grid stops tiling.
     var SIZES = {
         s: { w: 170, h: 170, label: 'Small' },
-        m: { w: 290, h: 170, label: 'Medium' },
-        l: { w: 290, h: 290, label: 'Large' }
+        m: { w: 358, h: 170, label: 'Medium' },
+        l: { w: 358, h: 358, label: 'Large' }
     };
-    var GRID = 4;
+    var UNIT = SIZES.s.w;      // gallery grid column width
+    var GRID = 4;              // desktop drag snap, in px
+    var STAGE_BOX = 208;       // options-sheet preview bounding box
 
     var defs = {};
     var defOrder = [];
-    var instances = []; // {uid,id,size,x,y,settings,el,body}
+    var instances = [];        // { uid, id, size, x, y, settings, el, body }
     var uidSeq = 1;
     var editMode = false;
+    var initialized = false;
     var layer = null;
-    var popover = null;
+    var sheet = null;          // { scrim, close }
     var tickTimer = null;
+    var galleryLive = [];      // live previews inside the gallery grid
     var fpsState = { frames: 0, last: 0, fps: 0 };
-    var sessionStart = Date.now();
 
-    // ─── tiny helpers ────────────────────────────────────────────────────
+    // ─── helpers ─────────────────────────────────────────────────────────
     function $(sel, root) { return (root || document).querySelector(sel); }
+
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
     }
+
     function storeGet(key, fallback) {
         try {
             var raw = localStorage.getItem(key);
@@ -43,10 +78,15 @@
             return JSON.parse(raw);
         } catch (e) { return fallback; }
     }
+
     function storeSet(key, val) {
         try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
     }
+
+    function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
     function pad2(n) { return String(n).padStart(2, '0'); }
+
     function tickSound(ok) {
         try {
             if (window.BrowSettings && window.BrowSettings.audio) {
@@ -54,9 +94,14 @@
             }
         } catch (e) {}
     }
-    function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 
-    // Shared 1s-fps meter (single rAF loop for the whole engine).
+    function openApp(app) {
+        try {
+            if (window.appsManager && window.appsManager.launchApp) window.appsManager.launchApp(app);
+            else if (window.desktop && window.desktop.launchApp) window.desktop.launchApp(app);
+        } catch (e) {}
+    }
+
     function fpsLoop(ts) {
         if (!fpsState.last) fpsState.last = ts;
         fpsState.frames++;
@@ -72,121 +117,46 @@
     function defaultLayout() {
         var vw = Math.max(900, window.innerWidth);
         var vh = Math.max(600, window.innerHeight);
+        // Derive from SIZES so the starter layout cannot drift when a size
+        // changes — the old hardcoded `vw - 310` assumed a 290px medium.
+        var MW = SIZES.m.w, MH = SIZES.m.h, SW = SIZES.s.w, PAD = 20, GAP = 14;
         return [
-            { uid: 'w-cal', id: 'calendar', size: 'm', x: vw - 310, y: 44, settings: {} },
-            { uid: 'w-tasks', id: 'todo', size: 'm', x: vw - 310, y: 228, settings: {} },
-            { uid: 'w-stocks', id: 'crypto', size: 'm', x: Math.max(40, vw - 790), y: vh - 220, settings: {} },
-            { uid: 'w-weather', id: 'weather', size: 'm', x: Math.max(340, vw - 490), y: vh - 220, settings: {} },
-            { uid: 'w-clock', id: 'clock', size: 's', x: vw - 190, y: vh - 220, settings: {} }
+            { uid: 'w-cal',     id: 'cal',     size: 'm', x: vw - MW - PAD, y: 44, settings: {} },
+            { uid: 'w-todo',    id: 'todo',    size: 'm', x: vw - MW - PAD, y: 44 + MH + GAP, settings: {} },
+            { uid: 'w-weather', id: 'weather', size: 'm', x: Math.max(40, vw - SW - PAD - 24 - MW), y: vh - MH - 50, settings: {} },
+            { uid: 'w-clock',   id: 'clock',   size: 's', x: vw - SW - PAD, y: vh - MH - 50, settings: {} }
         ];
     }
+
     function loadLayout() {
         var saved = storeGet(LAYOUT_KEY, null);
         if (!Array.isArray(saved)) return defaultLayout();
-        // Drop entries for unknown widgets (forward-compatible).
+        // Drop entries whose widget no longer exists (forward-compatible).
         return saved.filter(function (e) { return e && defs[e.id]; });
     }
+
     function saveLayout() {
         storeSet(LAYOUT_KEY, instances.map(function (inst) {
-            return { uid: inst.uid, id: inst.id, size: inst.size, x: Math.round(inst.x), y: Math.round(inst.y), settings: inst.settings || {} };
+            return {
+                uid: inst.uid, id: inst.id, size: inst.size,
+                x: Math.round(inst.x), y: Math.round(inst.y),
+                settings: inst.settings || {}
+            };
         }));
     }
 
-    // ─── engine core ─────────────────────────────────────────────────────
+    // ─── engine ──────────────────────────────────────────────────────────
     function define(def) {
         if (!def || !def.id || typeof def.render !== 'function') return;
-        def.sizes = def.sizes || ['m'];
-        if (!def.sizes.includes(def.defSize)) def.defSize = def.sizes[0];
+        def.sizes = (def.sizes && def.sizes.length) ? def.sizes : ['m'];
+        if (def.sizes.indexOf(def.defSize) < 0) def.defSize = def.sizes[0];
+        def.tone = def.tone || 'dark';
+        def.shape = def.shape || 'rounded';
         if (!defs[def.id]) defOrder.push(def.id);
         defs[def.id] = def;
     }
 
-    function apiFor(inst) {
-        return {
-            inst: inst,
-            settings: inst.settings,
-            el: inst.body,
-            refresh: function () { renderInstance(inst); },
-            set: function (key, val) { inst.settings[key] = val; saveLayout(); renderInstance(inst); },
-            openApp: function (app) {
-                try {
-                    if (window.appsManager) window.appsManager.launchApp(app);
-                    else if (window.desktop) window.desktop.launchApp(app);
-                } catch (e) {}
-            }
-        };
-    }
-
-    function renderInstance(inst) {
-        var def = defs[inst.id];
-        if (!def || !inst.body) return;
-        try {
-            if (inst._cleanup) { try { inst._cleanup(); } catch (e) {} inst._cleanup = null; }
-            inst.body.innerHTML = '';
-            var api = apiFor(inst);
-            var cleanup = def.render(inst.body, api);
-            if (typeof cleanup === 'function') inst._cleanup = cleanup;
-        } catch (e) { console.warn('[widgets] render failed for ' + inst.id, e); }
-    }
-
-        function getDim(d, sz) {
-        return SIZES[sz] || SIZES.m;
-    }
-
-    function applyGeometry(inst) {
-        var s = SIZES[inst.size] || SIZES.m;
-        inst.el.style.width = s.w + 'px';
-        inst.el.style.height = s.h + 'px';
-        inst.el.style.transform = 'translate(' + inst.x + 'px,' + inst.y + 'px)';
-        inst.el.dataset.size = inst.size;
-    }
-
-    function makeBadges(inst) {
-        var remove = document.createElement('button');
-        remove.className = 'bw-badge bw-remove';
-        remove.textContent = '×';
-        remove.title = 'Remove widget';
-        remove.addEventListener('click', function (e) { e.stopPropagation(); removeInstance(inst.uid); });
-        var gear = document.createElement('button');
-        gear.className = 'bw-badge bw-gear';
-        gear.textContent = '⚙';
-        gear.title = 'Widget settings';
-        gear.addEventListener('click', function (e) { e.stopPropagation(); openPopover(inst, gear); });
-        inst.el.appendChild(remove);
-        inst.el.appendChild(gear);
-    }
-
-    function spawnInstance(entry) {
-        var def = defs[entry.id];
-        if (!def) return null;
-        var inst = {
-            uid: entry.uid || ('w' + Date.now().toString(36) + (uidSeq++)),
-            id: entry.id,
-            size: def.sizes.includes(entry.size) ? entry.size : def.defSize,
-            x: typeof entry.x === 'number' ? entry.x : 120,
-            y: typeof entry.y === 'number' ? entry.y : 80,
-            settings: Object.assign(defaultSettings(def), entry.settings || {})
-        };
-        var el = document.createElement('div');
-        el.className = 'desktop-widget brow-widget';
-        if (def.shape) el.classList.add('bw-shape-' + def.shape);
-        el.dataset.shape = def.shape || 'rounded';
-        el.dataset.uid = inst.uid;
-        el.dataset.wid = inst.id;
-        el.style.setProperty('--w-tint', def.tint || 'linear-gradient(135deg,#0a84ff,#5e5ce6)');
-        var body = document.createElement('div');
-        body.className = 'bw-body';
-        el.appendChild(body);
-        inst.el = el;
-        inst.body = body;
-        makeBadges(inst);
-        bindDrag(inst);
-        layer.appendChild(el);
-        applyGeometry(inst);
-        renderInstance(inst);
-        instances.push(inst);
-        return inst;
-    }
+    function getDim(def, sz) { return SIZES[sz] || SIZES.m; }
 
     function defaultSettings(def) {
         var out = {};
@@ -194,572 +164,740 @@
         return out;
     }
 
+    function makeApi(def, size, settings, el, refresh) {
+        return {
+            inst: { id: def.id, size: size, settings: settings },
+            settings: settings,
+            el: el,
+            refresh: refresh,
+            set: function (key, val) { settings[key] = val; refresh(); },
+            openApp: openApp
+        };
+    }
+
+    function renderInto(def, el, settings, size, refresh) {
+        el.innerHTML = '';
+        try {
+            return def.render(el, makeApi(def, size, settings, el, refresh));
+        } catch (e) {
+            console.warn('[widgets] render failed for ' + def.id, e);
+            el.innerHTML = '<div class="bw-sub" style="margin:auto">' + esc(def.name) + '</div>';
+            return null;
+        }
+    }
+
+    function renderInstance(inst) {
+        var def = defs[inst.id];
+        if (!def || !inst.body) return;
+        if (inst._cleanup) { try { inst._cleanup(); } catch (e) {} inst._cleanup = null; }
+        var cleanup = renderInto(def, inst.body, inst.settings, inst.size, function () {
+            renderInstance(inst);
+        });
+        if (typeof cleanup === 'function') inst._cleanup = cleanup;
+    }
+
+    function applyGeometry(inst) {
+        var s = getDim(defs[inst.id], inst.size);
+        inst.el.style.width = s.w + 'px';
+        inst.el.style.height = s.h + 'px';
+        inst.el.style.transform = 'translate(' + inst.x + 'px,' + inst.y + 'px)';
+        inst.el.dataset.size = inst.size;
+    }
+
+    // ─── a scaled widget surface (shared by the gallery and the sheet) ───
+    // Returns a box whose layout size is the scaled size; the widget inside
+    // is laid out at its natural size and scaled about its own centre, so
+    // every internal proportion (type, radius, hairlines) stays exact.
+    function buildSurface(def, size, k) {
+        var dim = getDim(def, size);
+        var box = document.createElement('div');
+        box.className = 'bw-sbox';
+        box.style.width = Math.round(dim.w * k) + 'px';
+        box.style.height = Math.round(dim.h * k) + 'px';
+
+        var shell = document.createElement('div');
+        shell.className = 'desktop-widget';
+        shell.dataset.tone = def.tone;
+        if (def.shape !== 'rounded') shell.classList.add('bw-shape-' + def.shape);
+        shell.style.width = dim.w + 'px';
+        shell.style.height = dim.h + 'px';
+        shell.style.transform = 'translate(-50%,-50%) scale(' + k + ')';
+
+        var body = document.createElement('div');
+        body.className = 'bw-w bw-w-' + def.id;
+
+        shell.appendChild(body);
+        box.appendChild(shell);
+        return { box: box, shell: shell, body: body, dim: dim };
+    }
+
+    // ─── desktop instances ───────────────────────────────────────────────
+    function resizeInstance(uid, newSize) {
+        var inst = null;
+        for (var i = 0; i < instances.length; i++) {
+            if (instances[i].uid === uid) { inst = instances[i]; break; }
+        }
+        if (!inst) return;
+        var def = defs[inst.id];
+        if (!def || (def.sizes && def.sizes.indexOf(newSize) < 0)) return;
+
+        inst.size = newSize;
+        var dim = getDim(def, newSize);
+        var r = layer ? layer.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
+        inst.x = clamp(inst.x, 16, Math.max(16, r.width - dim.w - 16));
+        inst.y = clamp(inst.y, 40, Math.max(40, r.height - dim.h - 16));
+
+        // Update size badge label if present
+        var sizeBadge = inst.el.querySelector('.bw-size-badge');
+        if (sizeBadge) sizeBadge.textContent = newSize.toUpperCase();
+
+        applyGeometry(inst);
+        renderInstance(inst);
+        saveLayout();
+        tickSound(true);
+        refreshGallery();
+    }
+
+    function showWidgetContextMenu(x, y, inst) {
+        // Remove any open context menus
+        document.querySelectorAll('.mac-context-menu').forEach(function (m) { m.remove(); });
+
+        var def = defs[inst.id];
+        if (!def) return;
+
+        var menu = document.createElement('div');
+        menu.className = 'mac-context-menu visible bw-widget-ctx';
+        menu.dataset.source = 'widget';
+
+        var titleItem = document.createElement('div');
+        titleItem.className = 'mac-context-menu-item bw-ctx-header';
+        titleItem.textContent = def.name || 'Widget';
+        menu.appendChild(titleItem);
+
+        var div1 = document.createElement('div');
+        div1.className = 'mac-context-menu-divider';
+        menu.appendChild(div1);
+
+        // Size options: Small, Medium, Large
+        var sizes = def.sizes || ['s', 'm', 'l'];
+        sizes.forEach(function (s) {
+            var label = SIZES[s] ? SIZES[s].label : s.toUpperCase();
+            var item = document.createElement('div');
+            item.className = 'mac-context-menu-item';
+            var isCurrent = inst.size === s;
+            item.innerHTML = (isCurrent ? '✓ ' : '&nbsp;&nbsp;&nbsp;') + esc(label);
+            item.addEventListener('click', function () {
+                menu.remove();
+                if (inst.size !== s) resizeInstance(inst.uid, s);
+            });
+            menu.appendChild(item);
+        });
+
+        var div2 = document.createElement('div');
+        div2.className = 'mac-context-menu-divider';
+        menu.appendChild(div2);
+
+        // Configure Widget option
+        var editItem = document.createElement('div');
+        editItem.className = 'mac-context-menu-item';
+        editItem.innerHTML = '⚙ Configure Widget...';
+        editItem.addEventListener('click', function () {
+            menu.remove();
+            openSheet(def, null, inst);
+        });
+        menu.appendChild(editItem);
+
+        // Remove Widget option
+        var removeItem = document.createElement('div');
+        removeItem.className = 'mac-context-menu-item danger';
+        removeItem.innerHTML = '✕ Remove Widget';
+        removeItem.addEventListener('click', function () {
+            menu.remove();
+            removeInstance(inst.uid);
+        });
+        menu.appendChild(removeItem);
+
+        document.body.appendChild(menu);
+
+        // Keep inside screen bounds
+        var rect = menu.getBoundingClientRect();
+        var left = Math.min(x, window.innerWidth - rect.width - 8);
+        var top = Math.min(y, window.innerHeight - rect.height - 8);
+        menu.style.left = Math.max(8, left) + 'px';
+        menu.style.top = Math.max(8, top) + 'px';
+
+        function dismiss(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('pointerdown', dismiss);
+            }
+        }
+        setTimeout(function () { document.addEventListener('pointerdown', dismiss); }, 10);
+    }
+
+    // ─── desktop instances ───────────────────────────────────────────────
+    function makeBadges(inst) {
+        var remove = document.createElement('button');
+        remove.className = 'bw-badge bw-remove';
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.title = 'Remove widget';
+        remove.addEventListener('click', function (e) {
+            e.stopPropagation();
+            removeInstance(inst.uid);
+        });
+
+        var gear = document.createElement('button');
+        gear.className = 'bw-badge bw-gear';
+        gear.type = 'button';
+        gear.textContent = '⚙';
+        gear.title = 'Widget options';
+        gear.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openSheet(defs[inst.id], null, inst);
+        });
+
+        // Size cycle badge in edit mode
+        var sizeBadge = document.createElement('button');
+        sizeBadge.className = 'bw-badge bw-size-badge';
+        sizeBadge.type = 'button';
+        sizeBadge.textContent = inst.size.toUpperCase();
+        sizeBadge.title = 'Cycle size (S/M/L)';
+        sizeBadge.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var def = defs[inst.id];
+            var sizes = (def && def.sizes) || ['s', 'm', 'l'];
+            var nextIdx = (sizes.indexOf(inst.size) + 1) % sizes.length;
+            resizeInstance(inst.uid, sizes[nextIdx]);
+        });
+
+        // Bottom-right corner resize handle
+        var resizeHandle = document.createElement('div');
+        resizeHandle.className = 'bw-resize-handle';
+        resizeHandle.title = 'Drag or click to resize';
+        resizeHandle.setAttribute('data-nodrag', 'true');
+
+        // Click on handle cycles size
+        resizeHandle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var def = defs[inst.id];
+            var sizes = (def && def.sizes) || ['s', 'm', 'l'];
+            var nextIdx = (sizes.indexOf(inst.size) + 1) % sizes.length;
+            resizeInstance(inst.uid, sizes[nextIdx]);
+        });
+
+        // Drag on handle resizes dynamically
+        bindResizeHandle(resizeHandle, inst);
+
+        inst.el.appendChild(remove);
+        inst.el.appendChild(gear);
+        inst.el.appendChild(sizeBadge);
+        inst.el.appendChild(resizeHandle);
+    }
+
+    function bindResizeHandle(handle, inst) {
+        handle.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0 && e.pointerType === 'mouse') return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            var startX = e.clientX;
+            var startY = e.clientY;
+            var initialSize = inst.size;
+            var def = defs[inst.id];
+            var sizes = (def && def.sizes) || ['s', 'm', 'l'];
+            var moved = false;
+
+            handle.classList.add('is-resizing');
+            try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+
+            function onMove(ev) {
+                var dx = ev.clientX - startX;
+                var dy = ev.clientY - startY;
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) moved = true;
+
+                // Thresholds based on current size
+                var targetSize = initialSize;
+                if (dx > 100 && dy > 100) {
+                    targetSize = sizes.indexOf('l') >= 0 ? 'l' : (sizes.indexOf('m') >= 0 ? 'm' : sizes[0]);
+                } else if (dx > 90 || dy > 60) {
+                    targetSize = sizes.indexOf('m') >= 0 ? 'm' : (sizes.indexOf('l') >= 0 ? 'l' : sizes[0]);
+                } else if (dx < -60 || dy < -60) {
+                    targetSize = sizes[0];
+                }
+
+                if (targetSize !== inst.size) {
+                    resizeInstance(inst.uid, targetSize);
+                }
+            }
+
+            function onUp(ev) {
+                handle.classList.remove('is-resizing');
+                handle.removeEventListener('pointermove', onMove);
+                handle.removeEventListener('pointerup', onUp);
+                handle.removeEventListener('pointercancel', onUp);
+                if (!moved) {
+                    // Quick click: cycle size
+                    var nextIdx = (sizes.indexOf(inst.size) + 1) % sizes.length;
+                    resizeInstance(inst.uid, sizes[nextIdx]);
+                }
+            }
+
+            handle.addEventListener('pointermove', onMove);
+            handle.addEventListener('pointerup', onUp);
+            handle.addEventListener('pointercancel', onUp);
+        });
+    }
+
+    function spawnInstance(entry) {
+        var def = defs[entry.id];
+        if (!def) return null;
+
+        var inst = {
+            uid: entry.uid || ('w' + Date.now().toString(36) + (uidSeq++)),
+            id: entry.id,
+            size: (def.sizes && def.sizes.indexOf(entry.size) >= 0) ? entry.size : def.defSize,
+            x: typeof entry.x === 'number' ? entry.x : 120,
+            y: typeof entry.y === 'number' ? entry.y : 80,
+            settings: Object.assign(defaultSettings(def), entry.settings || {})
+        };
+
+        var el = document.createElement('div');
+        el.className = 'brow-widget';
+        el.dataset.uid = inst.uid;
+        el.dataset.wid = inst.id;
+
+        var shell = document.createElement('div');
+        shell.className = 'desktop-widget';
+        shell.dataset.tone = def.tone;
+        if (def.shape !== 'rounded') shell.classList.add('bw-shape-' + def.shape);
+
+        var body = document.createElement('div');
+        body.className = 'bw-w bw-w-' + def.id;
+
+        shell.appendChild(body);
+        el.appendChild(shell);
+
+        inst.el = el;
+        inst.shell = shell;
+        inst.body = body;
+
+        makeBadges(inst);
+        bindDrag(inst);
+
+        // Right-click context menu
+        el.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showWidgetContextMenu(e.clientX, e.clientY, inst);
+        });
+
+        layer.appendChild(el);
+        applyGeometry(inst);
+        renderInstance(inst);
+        instances.push(inst);
+        return inst;
+    }
+
     function removeInstance(uid) {
-        var i = instances.findIndex(function (x) { return x.uid === uid; });
+        var i = -1;
+        instances.forEach(function (x, n) { if (x.uid === uid) i = n; });
         if (i < 0) return;
         var inst = instances[i];
-        try { if (inst._cleanup) inst._cleanup(); } catch (e) {}
+        if (inst._cleanup) { try { inst._cleanup(); } catch (e) {} }
         if (inst.el && inst.el.parentNode) inst.el.parentNode.removeChild(inst.el);
         instances.splice(i, 1);
         saveLayout();
         tickSound(true);
-        refreshGalleryLists();
+        refreshGallery();
     }
 
     function addWidget(id, size) {
         var def = defs[id];
         if (!def) return null;
-        var s = def.sizes.includes(size) ? size : def.defSize;
-        // Cascade new cards down the right side, clear of the menu bar.
+        var s = (def.sizes && def.sizes.indexOf(size) >= 0) ? size : def.defSize;
+        // Cascade new tiles down the right edge, clear of the menu bar.
         var n = instances.length;
-        var x = Math.max(16, window.innerWidth - SIZES[s].w - 48 - (n % 3) * 24);
+        var dim = getDim(def, s);
+        var x = Math.max(16, window.innerWidth - dim.w - 48 - (n % 3) * 24);
         var y = 56 + (n % 5) * 32;
         var inst = spawnInstance({ id: id, size: s, x: x, y: y, settings: {} });
-        if (inst) { saveLayout(); tickSound(true); refreshGalleryLists(); }
+        if (inst) { saveLayout(); tickSound(true); refreshGallery(); }
         return inst;
     }
 
     function setEditMode(on) {
         editMode = !!on;
         document.body.classList.toggle('brow-widgets-edit', editMode);
-        var btn = $('.bw-edit-toggle');
-        if (btn) {
-            btn.textContent = editMode ? 'Done' : 'Edit Widgets';
-            btn.classList.toggle('is-active', editMode);
-        }
-        if (!editMode) closePopover();
+        if (!editMode) closeSheet();
     }
 
-    // ─── drag ────────────────────────────────────────────────────────────
-    var INTERACTIVE = 'input,textarea,button,select,a,[contenteditable],[data-nodrag],.bw-badge,.bw-pop';
+    // ─── drag & tap ──────────────────────────────────────────────────────
+    var INTERACTIVE = 'input,textarea,button,select,a,[contenteditable],[data-nodrag],.bw-badge,.bw-resize-handle';
+
     function bindDrag(inst) {
         inst.el.addEventListener('pointerdown', function (e) {
             if (e.button !== 0 && e.pointerType === 'mouse') return;
             if (e.target.closest(INTERACTIVE)) return;
             e.preventDefault();
+
             var sx = e.clientX - inst.x, sy = e.clientY - inst.y;
             var moved = false;
             var el = inst.el;
             el.classList.add('is-dragging');
             try { el.setPointerCapture(e.pointerId); } catch (err) {}
-            var onMove = function (ev) {
-                var layerRect = layer.getBoundingClientRect();
-                var nx = clamp(ev.clientX - layerRect.left - sx, -SIZES[inst.size].w + 60, layerRect.width - 60);
-                var ny = clamp(ev.clientY - layerRect.top - sy, 40, layerRect.height - 60);
+
+            function onMove(ev) {
+                var r = layer.getBoundingClientRect();
+                var dim = getDim(defs[inst.id], inst.size);
+                var nx = clamp(ev.clientX - r.left - sx, -dim.w + 60, r.width - 60);
+                var ny = clamp(ev.clientY - r.top - sy, 40, r.height - 60);
                 nx = Math.round(nx / GRID) * GRID;
                 ny = Math.round(ny / GRID) * GRID;
                 if (nx !== inst.x || ny !== inst.y) moved = true;
-                inst.x = nx; inst.y = ny;
+                inst.x = nx;
+                inst.y = ny;
                 applyGeometry(inst);
-            };
-            var onUp = function () {
+            }
+
+            function onUp(ev) {
                 el.classList.remove('is-dragging');
                 el.removeEventListener('pointermove', onMove);
                 el.removeEventListener('pointerup', onUp);
                 el.removeEventListener('pointercancel', onUp);
-                if (moved) saveLayout();
-            };
+                if (moved) { saveLayout(); return; }
+
+                // A press that never moved is a tap!
+                if (!ev || ev.type !== 'pointerup') return;
+                var def = defs[inst.id];
+                if (!def) return;
+
+                if (typeof def.onTap === 'function') {
+                    try {
+                        def.onTap(inst.body, makeApi(def, inst.size, inst.settings, inst.body,
+                            function () { renderInstance(inst); }), ev);
+                    } catch (e) { console.warn('[widgets] onTap failed for ' + inst.id, e); }
+                } else {
+                    // Default fallback action: launch the matching application!
+                    openApp(inst.id);
+                }
+            }
+
             el.addEventListener('pointermove', onMove);
             el.addEventListener('pointerup', onUp);
             el.addEventListener('pointercancel', onUp);
         });
     }
 
-    // ─── settings popover ────────────────────────────────────────────────
-    function closePopover() {
-        if (popover && popover.parentNode) popover.parentNode.removeChild(popover);
-        popover = null;
-    }
-
-    function openPopover(inst, anchor) {
-        closePopover();
-        var def = defs[inst.id];
-        popover = document.createElement('div');
-        popover.className = 'bw-pop';
-        var html = '<div class="bw-pop-title">' + esc(def.name) + ' settings</div>';
-        html += '<div class="bw-pop-row"><span>Size</span><div class="bw-sizepills">' +
-            def.sizes.map(function (s) {
-                return '<button data-size="' + s + '" class="' + (inst.size === s ? 'is-active' : '') + '">' + SIZES[s].label + '</button>';
-            }).join('') + '</div></div>';
-        (def.settings || []).forEach(function (f) {
-            html += '<div class="bw-pop-row"><span>' + esc(f.label) + '</span>' + fieldHtml(inst, f) + '</div>';
-        });
-        html += '<button class="bw-pop-remove">Remove widget</button>';
-        popover.innerHTML = html;
-        layer.appendChild(popover);
-        // Position near the widget, clamped on screen.
-        var lr = layer.getBoundingClientRect();
-        var r = inst.el.getBoundingClientRect();
-        var pw = 264, ph = Math.min(380, 130 + (def.settings || []).length * 44);
-        var px = clamp(r.right - lr.left + 10, 8, Math.max(8, lr.width - pw - 8));
-        var py = clamp(r.top - lr.top, 48, Math.max(48, lr.height - ph - 8));
-        popover.style.left = px + 'px';
-        popover.style.top = py + 'px';
-        popover.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-        popover.querySelectorAll('[data-size]').forEach(function (b) {
-            b.addEventListener('click', function () {
-                inst.size = b.dataset.size;
-                applyGeometry(inst);
-                saveLayout();
-                renderInstance(inst);
-                openPopover(inst, anchor);
-                refreshGalleryLists();
-            });
-        });
-        (def.settings || []).forEach(function (f) {
-            var input = popover.querySelector('[data-field="' + f.key + '"]');
-            if (!input) return;
-            var commit = function () {
-                var v = fieldValue(input, f);
-                inst.settings[f.key] = v;
-                saveLayout();
-                renderInstance(inst);
-            };
-            input.addEventListener('change', commit);
-            if (f.type === 'text' || f.type === 'datetime' || f.type === 'number') {
-                input.addEventListener('keydown', function (e) { e.stopPropagation(); });
-            }
-        });
-        var rm = popover.querySelector('.bw-pop-remove');
-        if (rm) rm.addEventListener('click', function () { closePopover(); removeInstance(inst.uid); });
-        setTimeout(function () {
-            document.addEventListener('pointerdown', outsideCloser);
-        }, 0);
-    }
-
-    function outsideCloser(e) {
-        if (popover && !popover.contains(e.target) && !e.target.closest('.bw-gear')) {
-            closePopover();
-            document.removeEventListener('pointerdown', outsideCloser);
-        }
-    }
-
-    function fieldHtml(inst, f) {
-        var v = inst.settings[f.key] !== undefined ? inst.settings[f.key] : f.def;
-        if (f.type === 'select') {
-            return '<select data-field="' + f.key + '">' + (f.options || []).map(function (o) {
-                var val = Array.isArray(o) ? o[0] : o, label = Array.isArray(o) ? o[1] : o;
-                return '<option value="' + esc(val) + '"' + (String(val) === String(v) ? ' selected' : '') + '>' + esc(label) + '</option>';
-            }).join('') + '</select>';
-        }
-        if (f.type === 'toggle') {
-            return '<input type="checkbox" data-field="' + f.key + '"' + (v ? ' checked' : '') + '>';
-        }
-        if (f.type === 'color') {
-            return '<div class="bw-swatches" data-fieldwrap="' + f.key + '">' + (f.options || []).map(function (c) {
-                return '<button data-field="' + f.key + '" data-val="' + esc(c) + '" class="bw-swatch' +
-                    (String(c).toLowerCase() === String(v).toLowerCase() ? ' is-active' : '') +
-                    '" style="background:' + esc(c) + '"></button>';
-            }).join('') + '</div>';
-        }
-        if (f.type === 'datetime') {
-            return '<input type="datetime-local" data-field="' + f.key + '" value="' + esc(v || '') + '">';
-        }
-        if (f.type === 'number') {
-            return '<input type="number" data-field="' + f.key + '" value="' + esc(v) + '"' +
-                (f.min !== undefined ? ' min="' + f.min + '"' : '') +
-                (f.max !== undefined ? ' max="' + f.max + '"' : '') + '>';
-        }
-        if (f.type === 'textarea') {
-            return '<textarea data-field="' + f.key + '" rows="3" placeholder="' + esc(f.placeholder || '') + '">' + esc(v || '') + '</textarea>';
-        }
-        return '<input type="text" data-field="' + f.key + '" value="' + esc(v || '') + '" placeholder="' + esc(f.placeholder || '') + '">';
-    }
-
-    function fieldValue(input, f) {
-        if (input.classList && input.classList.contains('bw-swatch')) {
-            var wrap = input.parentNode;
-            wrap.querySelectorAll('.bw-swatch').forEach(function (s) { s.classList.remove('is-active'); });
-            input.classList.add('is-active');
-            return input.dataset.val;
-        }
-        if (f.type === 'toggle') return !!input.checked;
-        if (f.type === 'number') return Number(input.value);
-        return input.value;
-    }
-
-    // swatch clicks behave like change events
-    document.addEventListener('click', function (e) {
-        var sw = e.target.closest && e.target.closest('.bw-swatch[data-field]');
-        if (!sw || !popover || !popover.contains(sw)) return;
-        var key = sw.dataset.field;
-        var wrap = sw.parentNode;
-        wrap.querySelectorAll('.bw-swatch').forEach(function (s) { s.classList.remove('is-active'); });
-        sw.classList.add('is-active');
-        // find owning instance via open popover context
-        if (popover._inst) {
-            popover._inst.settings[key] = sw.dataset.val;
-            saveLayout();
-            renderInstance(popover._inst);
-        }
-    });
-
-    // ─── gallery (Widgets app window) ────────────────────────────────────
-    var galleryState = {
-        cat: 'all',
-        query: ''
-    };
-
-    var CAT_LABELS = {
-        all: 'All Widgets',
-        essentials: 'Essentials',
-        productivity: 'Productivity',
-        media: 'Media & Audio',
-        system: 'System & Utility'
-    };
-
-    function openGallery(edit) {
-        try {
-            if (window.appsManager) window.appsManager.launchApp('widgets');
-            else if (window.desktop) window.desktop.launchApp('widgets');
-        } catch (e) {}
+    // ─── gallery (the Widgets app) ───────────────────────────────────────
+    function openGallery() {
+        openApp('widgets');
         setTimeout(function () {
             var host = document.querySelector('.bw-gallery-host');
-            if (host) mountGallery(host);
-            if (edit) setEditMode(true);
-        }, 250);
+            if (host && !host.querySelector('.bw-gallery')) mountGallery(host);
+        }, 240);
     }
 
     function mountGallery(host) {
         host.innerHTML = '';
+        galleryLive = [];
+
         var root = document.createElement('div');
         root.className = 'bw-gallery';
-
-        var catCounts = { all: defOrder.length, essentials: 0, productivity: 0, media: 0, system: 0 };
-        defOrder.forEach(function (id) {
-            var d = defs[id];
-            var c = (d && d.category) || 'essentials';
-            if (catCounts[c] !== undefined) catCounts[c]++;
-        });
-
         root.innerHTML =
             '<div class="bw-g-head">' +
-                '<div class="bw-g-head-text">' +
-                    '<div class="bw-g-title-badge">' +
-                        '<div class="bw-g-icon-bubble">' +
-                            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="3.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>' +
-                        '</div>' +
-                        '<h2>Widget Studio</h2>' +
-                        '<span class="bw-g-badge-count">' + defOrder.length + ' Available</span>' +
-                    '</div>' +
-                    '<p>Luminous glass surfaces for your desktop — choose a size, preview live, and place with a single click.</p>' +
-                '</div>' +
-                '<div class="bw-g-head-actions">' +
-                    '<div class="bw-g-search-wrap">' +
-                        '<svg class="bw-g-search-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>' +
-                        '<input class="bw-g-search" type="search" placeholder="Search ' + defOrder.length + ' widgets…">' +
-                    '</div>' +
-                    '<button class="bw-edit-toggle' + (editMode ? ' is-active' : '') + '">' +
-                        '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ' +
-                        (editMode ? 'Done' : 'Arrange') +
-                    '</button>' +
-                '</div>' +
+                '<h2>Widgets</h2>' +
+                '<p>Pick a widget to choose its size and options, then add it to your desktop.</p>' +
             '</div>' +
-            '<div class="bw-g-filters">' +
-                '<button class="bw-filter-pill is-active" data-cat="all">' +
-                    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>' +
-                    '<span>All</span><span class="bw-pill-count">' + catCounts.all + '</span>' +
-                '</button>' +
-                '<button class="bw-filter-pill" data-cat="essentials">' +
-                    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
-                    '<span>Essentials</span><span class="bw-pill-count">' + (catCounts.essentials || 0) + '</span>' +
-                '</button>' +
-                '<button class="bw-filter-pill" data-cat="productivity">' +
-                    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
-                    '<span>Productivity</span><span class="bw-pill-count">' + (catCounts.productivity || 0) + '</span>' +
-                '</button>' +
-                '<button class="bw-filter-pill" data-cat="media">' +
-                    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>' +
-                    '<span>Media &amp; Audio</span><span class="bw-pill-count">' + (catCounts.media || 0) + '</span>' +
-                '</button>' +
-                '<button class="bw-filter-pill" data-cat="system">' +
-                    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>' +
-                    '<span>System &amp; Telemetry</span><span class="bw-pill-count">' + (catCounts.system || 0) + '</span>' +
-                '</button>' +
-            '</div>' +
-            '<div class="bw-g-placed-strip"></div>' +
-            '<div class="bw-g-sec">' +
-                '<div class="bw-g-sec-head">' +
-                    '<div class="bw-sec-title-wrap">' +
-                        '<h3>Widget Showcase</h3>' +
-                        '<span class="bw-sec-rule">1 widget per row · full preview · interactive controls</span>' +
-                    '</div>' +
-                    '<span class="bw-g-match-count"></span>' +
-                '</div>' +
-                '<div class="bw-g-grid"></div>' +
-            '</div>' +
-            '<div class="bw-g-foot">Press <kbd>F8</kbd> anytime to open this gallery. Drag widgets across your wallpaper by their glass surface.</div>';
-        
+            '<div class="bw-g-grid"></div>';
+
         host.appendChild(root);
-
-        root.querySelector('.bw-edit-toggle').addEventListener('click', function () {
-            setEditMode(!editMode);
-            this.innerHTML = (editMode
-                ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Done'
-                : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Arrange');
-            this.classList.toggle('is-active', editMode);
-        });
-
-        var search = root.querySelector('.bw-g-search');
-        search.addEventListener('input', function () {
-            galleryState.query = search.value;
-            renderGalleryGrid(root);
-        });
-        search.addEventListener('keydown', function (e) { e.stopPropagation(); });
-
-        root.querySelectorAll('.bw-filter-pill').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                galleryState.cat = btn.dataset.cat;
-                root.querySelectorAll('.bw-filter-pill').forEach(function (b) {
-                    b.classList.toggle('is-active', b === btn);
-                });
-                renderGalleryGrid(root);
-            });
-        });
-
         renderGalleryGrid(root);
-        renderGalleryList(root);
-        root._isGallery = true;
-        host._galleryRoot = root;
-    }
-
-    function monogram(name) {
-        var words = String(name || '?').split(/\s+/);
-        return ((words[0] || '?')[0] + (words[1] ? words[1][0] : '')).toUpperCase();
-    }
-
-    function previewFor(def, size) {
-        try {
-            if (def && typeof def.preview === 'function') return def.preview(size || def.defSize || 'm');
-            if (def && typeof def.preview === 'string') return def.preview;
-        } catch (e) {}
-        return '<div class="bw-prev-mono">' + esc(monogram(def && def.name)) + '</div>';
     }
 
     function renderGalleryGrid(root) {
         var grid = root.querySelector('.bw-g-grid');
         if (!grid) return;
-        var q = (galleryState.query || '').toLowerCase().trim();
-        var cat = galleryState.cat || 'all';
+
+        galleryLive = [];
         grid.innerHTML = '';
 
-        var matches = 0;
         defOrder.forEach(function (id) {
             var def = defs[id];
             if (!def) return;
-            var widgetCat = def.category || 'essentials';
-            if (cat !== 'all' && widgetCat !== cat) return;
-            if (q) {
-                var searchStr = (def.name + ' ' + (def.desc || '') + ' ' + (def.tags || []).join(' ')).toLowerCase();
-                if (searchStr.indexOf(q) < 0) return;
-            }
-            matches++;
 
-            var placedInsts = instances.filter(function (x) { return x.id === id; });
-            var chosen = def.defSize || def.sizes[0] || 'm';
+            var size = def.defSize;
+            var settings = instanceSettingsFor(id, def);
 
-            var card = document.createElement('div');
-            card.className = 'bw-g-card';
-            card.style.setProperty('--w-tint', def.tint || 'linear-gradient(135deg,#0a84ff,#5e5ce6)');
-            card.style.setProperty('--w-glow', def.glow || 'rgba(10, 132, 255, 0.3)');
+            var tile = document.createElement('button');
+            tile.type = 'button';
+            tile.className = 'bw-g-tile';
+            tile.dataset.wid = id;
+            // Lay the tile out on the shared 170px grid: a small is one column,
+            // a medium/large is two (358 = 170 + 18 + 170). Declaring the span
+            // from the real dimensions — rather than a size->span lookup — means
+            // a future size cannot silently fall out of the grid.
+            tile.style.gridColumn = 'span ' + Math.max(1, Math.round(getDim(def, size).w / UNIT));
+            if (getDim(def, size).h > UNIT) tile.style.gridRow = 'span 2';
+            // No caption — the name is the tooltip, and the sheet repeats it.
+            tile.title = def.name;
+            tile.setAttribute('aria-label', def.name + ' — options');
 
-            var categoryBadge = CAT_LABELS[widgetCat] || 'Widget';
+            // Natural size (scale 1). Upscaling a small widget to fill a column
+            // would misrepresent the tile you are about to place.
+            var surf = buildSurface(def, size, 1);
+            var repaint = function () { renderInto(def, surf.body, settings, size, repaint); };
+            var api = makeApi(def, size, settings, surf.body, repaint);
+            repaint();
+            tile.appendChild(surf.box);
 
-            function makePreviewHtml(sz) {
-                var shape = def.shape || 'rounded';
-                return '<div class="bw-prev-card bw-prev-card-' + sz + ' bw-shape-' + shape + '" data-wid="' + def.id + '" data-shape="' + shape + '" data-size="' + sz + '">' +
-                    previewFor(def, sz) +
-                '</div>';
-            }
+            tile.addEventListener('click', function () { openSheet(def, tile); });
+            grid.appendChild(tile);
 
-            var tagsHtml = (def.tags || []).map(function (t) {
-                return '<span class="bw-tag">' + esc(t) + '</span>';
-            }).join('');
-
-            var sizesHtml = def.sizes.map(function (s) {
-                var activeCls = s === chosen ? ' is-active' : '';
-                return '<button type="button" class="bw-size-btn' + activeCls + '" data-size="' + s + '">' + s.toUpperCase() + '</button>';
-            }).join('');
-
-            var placedBadgeHtml = placedInsts.length
-                ? '<span class="bw-g-placed-pill"><i class="bw-pulse-dot"></i> ' + placedInsts.length + ' on desktop</span>'
-                : '';
-
-            var locateBtnHtml = placedInsts.length
-                ? '<button type="button" class="bw-g-locate-btn" title="Locate on desktop"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/></svg> Locate</button>'
-                : '';
-
-            card.innerHTML =
-                makePreviewHtml(chosen) +
-                '<div class="bw-g-info">' +
-                    '<div class="bw-g-meta-line">' +
-                        '<span class="bw-g-cat-tag">' + esc(categoryBadge) + '</span>' +
-                        placedBadgeHtml +
-                    '</div>' +
-                    '<h3 class="bw-g-title">' + esc(def.name) + '</h3>' +
-                    '<p class="bw-g-desc">' + esc(def.desc || '') + '</p>' +
-                    (tagsHtml ? '<div class="bw-g-tags-row">' + tagsHtml + '</div>' : '') +
-                '</div>' +
-                '<div class="bw-g-actions">' +
-                    '<div class="bw-g-size-block">' +
-                        '<span class="bw-size-hdr">CHOOSE SIZE</span>' +
-                        '<div class="bw-g-sizes">' + sizesHtml + '</div>' +
-                        '<span class="bw-size-hint">' + SIZES[chosen].label + ' · ' + getDim(def, chosen).w + ' × ' + getDim(def, chosen).h + ' px</span>' +
-                    '</div>' +
-                    '<div class="bw-g-btn-group">' +
-                        '<button type="button" class="bw-g-add">' +
-                            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> ' +
-                            (placedInsts.length ? 'Add Another' : 'Add to Desktop') +
-                        '</button>' +
-                        locateBtnHtml +
-                    '</div>' +
-                '</div>';
-
-            // Wire size buttons
-            var sizeHint = card.querySelector('.bw-size-hint');
-            card.querySelectorAll('.bw-size-btn').forEach(function (b) {
-                b.addEventListener('click', function () {
-                    chosen = b.dataset.size;
-                    card.querySelectorAll('.bw-size-btn').forEach(function (x) {
-                        x.classList.toggle('is-active', x === b);
-                    });
-                    if (sizeHint) {
-                        var dim = getDim(def, chosen); sizeHint.textContent = SIZES[chosen].label + ' · ' + dim.w + ' × ' + dim.h + ' px';
-                    }
-                    var prevEl = card.querySelector('.bw-prev-card');
-                    if (prevEl) {
-                        var shape = def.shape || 'rounded';
-                        prevEl.className = 'bw-prev-card bw-prev-card-' + chosen + ' bw-shape-' + shape;
-                        prevEl.dataset.size = chosen;
-                        prevEl.dataset.shape = shape;
-                        prevEl.innerHTML = previewFor(def, chosen);
-                    }
-                });
-            });
-
-            // Wire Add button
-            var addBtn = card.querySelector('.bw-g-add');
-            if (addBtn) {
-                addBtn.addEventListener('click', function () {
-                    addWidget(id, chosen);
-                    addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Added!';
-                    addBtn.classList.add('is-success');
-                    setTimeout(function () {
-                        if (addBtn.isConnected) {
-                            addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Another';
-                            addBtn.classList.remove('is-success');
-                        }
-                    }, 1400);
-                });
-            }
-
-            // Wire Locate button
-            var locateBtn = card.querySelector('.bw-g-locate-btn');
-            if (locateBtn && placedInsts.length) {
-                locateBtn.addEventListener('click', function () {
-                    placedInsts.forEach(function (inst) {
-                        if (inst.el) {
-                            inst.el.classList.remove('bw-flash');
-                            void inst.el.offsetWidth;
-                            inst.el.classList.add('bw-flash');
-                            setTimeout(function () { inst.el.classList.remove('bw-flash'); }, 1400);
-                        }
-                    });
-                });
-            }
-
-            grid.appendChild(card);
+            galleryLive.push({ def: def, el: surf.body, api: api });
         });
-
-        var matchEl = root.querySelector('.bw-g-match-count');
-        if (matchEl) {
-            matchEl.textContent = matches + (matches === 1 ? ' widget' : ' widgets');
-        }
-
-        if (!matches) {
-            grid.innerHTML =
-                '<div class="bw-g-empty-card">' +
-                    '<div class="bw-empty-icon">🔍</div>' +
-                    '<h4>No widgets found</h4>' +
-                    '<p>No widgets matched "' + esc(q || cat) + '". Try searching for something else or pick "All".</p>' +
-                '</div>';
-        }
     }
 
-    function renderGalleryList(root) {
-        var strip = root.querySelector('.bw-g-placed-strip');
-        if (!strip) return;
-
-        if (!instances.length) {
-            strip.innerHTML =
-                '<div class="bw-strip-empty">' +
-                    '<span class="bw-strip-dot"></span> No widgets currently placed on your desktop. Browse below to add your first one!' +
-                '</div>';
-            return;
+    // A tile previews the settings you already have on the desktop, so the
+    // gallery and the desktop never disagree about what a widget looks like.
+    function instanceSettingsFor(id, def) {
+        for (var i = 0; i < instances.length; i++) {
+            if (instances[i].id === id) return instances[i].settings;
         }
-
-        var chips = instances.map(function (inst) {
-            var def = defs[inst.id];
-            var name = def ? def.name : inst.id;
-            return '<div class="bw-placed-chip" data-uid="' + inst.uid + '">' +
-                '<span class="bw-chip-name">' + esc(name) + '</span>' +
-                '<span class="bw-chip-size">' + SIZES[inst.size].label + '</span>' +
-                '<button type="button" class="bw-chip-flash" title="Locate"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/></svg></button>' +
-                '<button type="button" class="bw-chip-del" title="Remove">×</button>' +
-            '</div>';
-        }).join('');
-
-        strip.innerHTML =
-            '<div class="bw-strip-header">' +
-                '<span>ON DESKTOP (' + instances.length + ')</span>' +
-                '<button type="button" class="bw-strip-clear">Clear All</button>' +
-            '</div>' +
-            '<div class="bw-strip-chips">' + chips + '</div>';
-
-        strip.querySelectorAll('.bw-placed-chip').forEach(function (chip) {
-            var uid = chip.dataset.uid;
-            var inst = instances.find(function (x) { return x.uid === uid; });
-            if (!inst) return;
-            var flashBtn = chip.querySelector('.bw-chip-flash');
-            if (flashBtn) {
-                flashBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    if (inst.el) {
-                        inst.el.classList.remove('bw-flash');
-                        void inst.el.offsetWidth;
-                        inst.el.classList.add('bw-flash');
-                        setTimeout(function () { inst.el.classList.remove('bw-flash'); }, 1400);
-                    }
-                });
-            }
-            var delBtn = chip.querySelector('.bw-chip-del');
-            if (delBtn) {
-                delBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    removeInstance(uid);
-                });
-            }
-        });
-
-        var clearBtn = strip.querySelector('.bw-strip-clear');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', function () {
-                while (instances.length) {
-                    removeInstance(instances[0].uid);
-                }
-            });
-        }
+        return defaultSettings(def);
     }
 
-    function refreshGalleryLists() {
+    function refreshGallery() {
         document.querySelectorAll('.bw-gallery').forEach(function (root) {
             renderGalleryGrid(root);
-            renderGalleryList(root);
         });
     }
 
-    // ─── shortcut (registered with the universal BrowShortcuts layer) ────
-    // Gallery opens on the F8 desktop key — see js/shortcuts.js.
+    // ─── options sheet ───────────────────────────────────────────────────
+    // Opened by clicking a gallery tile, or by the gear on a desktop widget.
+    function closeSheet() {
+        if (!sheet) return;
+        document.removeEventListener('keydown', sheet.onKey, true);
+        if (sheet.scrim && sheet.scrim.parentNode) sheet.scrim.parentNode.removeChild(sheet.scrim);
+        sheet = null;
+    }
+
+    function sheetHost() {
+        var el = document.querySelector('.bw-gallery') ||
+                 document.querySelector('.window.is-active') ||
+                 document.body;
+        while (el && el.nodeType === 1 && el !== document.body) {
+            if (getComputedStyle(el).position !== 'static') return el;
+            el = el.parentNode;
+        }
+        return document.body;
+    }
+
+    function openSheet(def, anchor, existing) {
+        if (!def) return;
+        closeSheet();
+
+        var size = existing ? existing.size : def.defSize;
+        var draft = Object.assign(
+            defaultSettings(def),
+            existing ? existing.settings : (function () {
+                for (var i = 0; i < instances.length; i++) {
+                    if (instances[i].id === def.id) return instances[i].settings;
+                }
+                return {};
+            })()
+        );
+
+        var scrim = document.createElement('div');
+        scrim.className = 'bw-sheet-scrim';
+        scrim.innerHTML =
+            '<div class="bw-sheet" role="dialog" aria-modal="true" aria-label="' + esc(def.name) + ' options">' +
+                '<div class="bw-sheet-top">' +
+                    '<h3>' + esc(def.name) + '</h3>' +
+                    '<button type="button" class="bw-sheet-x" aria-label="Close">✕</button>' +
+                '</div>' +
+                '<div class="bw-sheet-mid">' +
+                    '<div class="bw-sheet-stage"></div>' +
+                    '<div class="bw-sheet-info">' +
+                        '<p>' + esc(def.desc || '') + '</p>' +
+                        '<div class="bw-field">' +
+                            '<label>Size</label>' +
+                            '<div class="bw-seg">' +
+                                def.sizes.map(function (s) {
+                                    return '<button type="button" class="bw-seg-btn' +
+                                        (s === size ? ' is-active' : '') + '" data-size="' + s + '">' +
+                                        esc(SIZES[s].label) + '</button>';
+                                }).join('') +
+                            '</div>' +
+                        '</div>' +
+                        (def.settings || []).map(function (f) {
+                            return fieldHtml(f, draft[f.key]);
+                        }).join('') +
+                    '</div>' +
+                '</div>' +
+                '<div class="bw-sheet-foot">' +
+                    '<button type="button" class="bw-btn-add">' +
+                        (existing ? 'Save Changes' : 'Add to Desktop') +
+                    '</button>' +
+                    '<button type="button" class="bw-btn-ghost">' + (existing ? 'Remove' : 'Close') + '</button>' +
+                '</div>' +
+            '</div>';
+
+        sheetHost().appendChild(scrim);
+        sheet = { scrim: scrim, onKey: onKey };
+        document.addEventListener('keydown', onKey, true);
+
+        var stage = scrim.querySelector('.bw-sheet-stage');
+        var painting = false;
+
+        function paint() {
+            if (painting) return;
+            painting = true;
+            stage.innerHTML = '';
+            var dim = getDim(def, size);
+            var k = Math.min(STAGE_BOX / dim.w, STAGE_BOX / dim.h);
+            var surf = buildSurface(def, size, k);
+            stage.appendChild(surf.box);
+            var api = makeApi(def, size, draft, surf.body, paint);
+            renderInto(def, surf.body, draft, size, paint);
+            painting = false;
+            return api;
+        }
+        paint();
+
+        // size segmented control
+        scrim.querySelectorAll('.bw-seg button').forEach(function (b) {
+            b.addEventListener('click', function () {
+                size = b.dataset.size;
+                scrim.querySelectorAll('.bw-seg button').forEach(function (x) {
+                    x.classList.toggle('is-active', x === b);
+                });
+                paint();
+            });
+        });
+
+        // per-widget settings
+        (def.settings || []).forEach(function (f) {
+            var input = scrim.querySelector('[data-key="' + f.key + '"]');
+            if (!input) return;
+            if (f.type === 'toggle') {
+                input.addEventListener('click', function () {
+                    draft[f.key] = !draft[f.key];
+                    input.classList.toggle('is-on', !!draft[f.key]);
+                    paint();
+                });
+            } else {
+                var commit = function () {
+                    draft[f.key] = f.type === 'number' ? Number(input.value) : input.value;
+                    paint();
+                };
+                input.addEventListener('change', commit);
+                if (f.type === 'text' || f.type === 'number') input.addEventListener('input', commit);
+            }
+            input.addEventListener('keydown', function (e) { e.stopPropagation(); });
+        });
+
+        // actions
+        var addBtn = scrim.querySelector('.bw-btn-add');
+        var ghost = scrim.querySelector('.bw-btn-ghost');
+        var label = addBtn.textContent;
+
+        addBtn.addEventListener('click', function () {
+            if (existing) {
+                existing.size = size;
+                existing.settings = draft;
+                applyGeometry(existing);
+                renderInstance(existing);
+                saveLayout();
+            } else {
+                var inst = spawnInstance({
+                    id: def.id, size: size,
+                    x: Math.max(16, window.innerWidth - getDim(def, size).w - 48),
+                    y: 56 + (instances.length % 5) * 32,
+                    settings: draft
+                });
+                if (inst) saveLayout();
+            }
+            tickSound(true);
+            refreshGallery();
+            addBtn.classList.add('is-done');
+            addBtn.textContent = existing ? 'Saved Changes' : 'Added to Desktop';
+            setTimeout(function () {
+                if (!addBtn.isConnected) return;
+                addBtn.classList.remove('is-done');
+                addBtn.textContent = label;
+                closeSheet();
+            }, 600);
+        });
+
+        ghost.addEventListener('click', function () {
+            if (existing) {
+                removeInstance(existing.uid);
+                closeSheet();
+            } else {
+                closeSheet();
+            }
+        });
+
+        scrim.querySelector('.bw-sheet-x').addEventListener('click', closeSheet);
+        scrim.addEventListener('pointerdown', function (e) {
+            if (e.target === scrim) closeSheet();
+        });
+        scrim.addEventListener('keydown', function (e) { e.stopPropagation(); });
+        scrim.querySelector('.bw-sheet').addEventListener('pointerdown', function (e) {
+            e.stopPropagation();
+        });
+
+        function onKey(e) {
+            if (e.key === 'Escape') {
+                e.stopPropagation();
+                closeSheet();
+            }
+        }
+
+        // Keep the tile the sheet grew out of in view.
+        if (anchor && anchor.scrollIntoView) {
+            try { anchor.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+        }
+    }
+
+    // Every control the sheet injects carries a class. That is not cosmetic:
+    // js/controls.js auto-tags any class-less button/input with
+    // `brow-auto-control`, whose gradients would leak into the sheet. The
+    // `data-brow-enhanced` flag is the same module's opt-out for native
+    // selects — it keeps a plain <select> instead of the custom dropdown.
+    function fieldHtml(f, value) {
+        var v = value === undefined ? f.def : value;
+        var label = '<label>' + esc(f.label) + '</label>';
+
+        if (f.type === 'toggle') {
+            return '<div class="bw-field"><div class="bw-switch-row"><span>' + esc(f.label) + '</span>' +
+                '<button type="button" class="bw-switch' + (v ? ' is-on' : '') + '" data-key="' + esc(f.key) + '" ' +
+                'aria-label="' + esc(f.label) + '"></button></div></div>';
+        }
+        if (f.type === 'select') {
+            return '<div class="bw-field">' + label +
+                '<select class="bw-input" data-brow-enhanced="true" data-key="' + esc(f.key) + '">' +
+                    (f.options || []).map(function (o) {
+                        var val = Array.isArray(o) ? o[0] : o;
+                        var text = Array.isArray(o) ? o[1] : o;
+                        return '<option value="' + esc(val) + '"' +
+                            (String(val) === String(v) ? ' selected' : '') + '>' + esc(text) + '</option>';
+                    }).join('') +
+                '</select></div>';
+        }
+        if (f.type === 'number') {
+            return '<div class="bw-field">' + label +
+                '<input type="number" class="bw-input" data-key="' + esc(f.key) + '" value="' + esc(v) + '"' +
+                (f.min !== undefined ? ' min="' + f.min + '"' : '') +
+                (f.max !== undefined ? ' max="' + f.max + '"' : '') + '></div>';
+        }
+        return '<div class="bw-field">' + label +
+            '<input type="text" class="bw-input" data-key="' + esc(f.key) + '" value="' + esc(v == null ? '' : v) + '"' +
+            (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '') + '></div>';
+    }
+
+    // ─── layer + lifecycle ───────────────────────────────────────────────
     function ensureLayer() {
         layer = document.getElementById(LAYER_ID);
         if (layer) return layer;
@@ -779,49 +917,59 @@
         btn.id = 'brow-widgets-btn';
         btn.className = 'status-widgets-btn';
         btn.title = 'Widgets (F8)';
-        btn.setAttribute('aria-label', 'Open widget gallery');
-        btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="3.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></svg>';
-        btn.addEventListener('click', function (e) { e.stopPropagation(); openGallery(false); });
+        btn.setAttribute('aria-label', 'Open widgets');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/>' +
+            '<circle cx="17" cy="7" r="3.5"/><circle cx="7" cy="17" r="3.5"/>' +
+            '<rect x="13.5" y="13.5" width="7" height="7" rx="3.5"/></svg>';
+        btn.addEventListener('click', function (e) { e.stopPropagation(); openGallery(); });
         bar.insertBefore(btn, bar.firstChild);
     }
 
-    function bindShortcut() {
-        // Gallery opens via the global F8 desktop key registered in
-        // js/shortcuts.js (legacy Alt+W removed — menu-mnemonic conflict).
-    }
-
     function init() {
+        if (initialized) return;
         if (!ensureLayer()) return;
+        initialized = true;
         ensureMenuButton();
-        bindShortcut();
+
         loadLayout().forEach(function (entry) {
             try { spawnInstance(entry); } catch (e) {}
         });
-        // keep pre-existing open gallery windows live
-        document.querySelectorAll('.bw-gallery-host').forEach(mountGallery);
+
+        document.querySelectorAll('.bw-gallery-host').forEach(function (host) {
+            if (!host.querySelector('.bw-gallery')) mountGallery(host);
+        });
+
         if (!tickTimer) {
             tickTimer = setInterval(function () {
-                for (const inst of instances.slice()) {
+                instances.slice().forEach(function (inst) {
                     var def = defs[inst.id];
                     if (def && typeof def.tick === 'function' && inst.body && document.body.contains(inst.el)) {
-                        try { def.tick(inst.body, apiFor(inst)); } catch (e) {}
+                        try { def.tick(inst.body, makeApi(def, inst.size, inst.settings, inst.body, function () { renderInstance(inst); })); } catch (e) {}
                     }
-                }
+                });
+                galleryLive.forEach(function (g) {
+                    if (typeof g.def.tick === 'function' && document.body.contains(g.el)) {
+                        try { g.def.tick(g.el, g.api); } catch (e) {}
+                    }
+                });
             }, 1000);
         }
+
         requestAnimationFrame(fpsLoop);
+
         window.addEventListener('resize', function () {
             instances.forEach(function (inst) {
-                var s = SIZES[inst.size] || SIZES.m;
+                var dim = getDim(defs[inst.id], inst.size);
                 var r = layer.getBoundingClientRect();
-                inst.x = clamp(inst.x, -s.w + 60, r.width - 60);
+                inst.x = clamp(inst.x, -dim.w + 60, r.width - 60);
                 inst.y = clamp(inst.y, 40, r.height - 60);
                 applyGeometry(inst);
             });
         });
     }
 
-    // public surface
+    // ─── public surface ──────────────────────────────────────────────────
     window.BrowWidgets = {
         define: define,
         init: init,
@@ -830,11 +978,15 @@
         addWidget: addWidget,
         removeInstance: removeInstance,
         removeWidget: removeInstance,
+        resizeInstance: resizeInstance,
+        showContextMenu: showWidgetContextMenu,
+        renderInstance: renderInstance,
         setEditMode: setEditMode,
         toggleEditMode: function () { setEditMode(!editMode); },
         isEditMode: function () { return editMode; },
         list: function () { return instances.slice(); },
         defs: function () { return defOrder.map(function (id) { return defs[id]; }); },
+        openSheet: openSheet,
         storeGet: storeGet,
         storeSet: storeSet,
         esc: esc,

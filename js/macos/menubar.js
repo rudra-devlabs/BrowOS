@@ -63,6 +63,11 @@
 
         // ── Rendering ───────────────────────────────────────────────────────
         render(appName) {
+            if (window.innerWidth <= 768) {
+                if (this.menusEl) this.menusEl.style.display = 'none';
+                return;
+            }
+            if (this.menusEl) this.menusEl.style.display = 'flex';
             if (!this.menusEl) return;
             this._close();
             const defs = buildMenus(appName);
@@ -337,7 +342,7 @@
             ['`', 'Spotlight Search (anywhere)'],
             ['?', 'This shortcut list'],
             ['F2 / F4', 'Mission Control / App Switcher'],
-            ['F8 / F9', 'Widget Gallery / Launchpad'],
+            ['F9', 'Launchpad'],
             ['Ctrl+Alt+← / →', 'Previous / Next Desktop'],
             ['Ctrl+Alt+1…6', 'Jump to Desktop N'],
             ['Ctrl+Alt+W / M / Z', 'Close / Minimize / Zoom Window'],

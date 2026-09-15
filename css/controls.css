@@ -232,8 +232,7 @@ input[type="radio"] {
 .xterm-mount-point .xterm-viewport,
 .terminal-tabs-track,
 .codebrow-tabs,
-.codebrow-breadcrumbs,
-.widgets-container { scrollbar-width: none; }
+.codebrow-breadcrumbs { scrollbar-width: none; }
 
 .filebrow-dark-sidebar::-webkit-scrollbar,
 .filebrow-dark-grid::-webkit-scrollbar,
@@ -241,8 +240,7 @@ input[type="radio"] {
 .xterm-mount-point .xterm-viewport::-webkit-scrollbar,
 .terminal-tabs-track::-webkit-scrollbar,
 .codebrow-tabs::-webkit-scrollbar,
-.codebrow-breadcrumbs::-webkit-scrollbar,
-.widgets-container::-webkit-scrollbar { display: none; }
+.codebrow-breadcrumbs::-webkit-scrollbar::-webkit-scrollbar { display: none; }
 
 /* Unified browser scrollbars; hidden terminal/editor scrollbars stay hidden. */
 *, *::before, *::after { scrollbar-color: rgba(143,177,255,.58) transparent; scrollbar-width: thin; }
